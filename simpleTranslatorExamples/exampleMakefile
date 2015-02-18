@@ -1,40 +1,11 @@
-# Example Makefile for ROSE users
-# This makefile is provided as an example of how to use ROSE when ROSE is
-# installed (using "make install").  This makefile is tested as part of the
-# "make distcheck" rule (run as part of tests before any CVS checkin).
-# The test of this makefile can also be run by using the "make installcheck"
-# rule (run as part of "make distcheck").
+include /home/david/Github/ROSE/edg4x-rose/compiletree/Makefile_vars
 
-
-# Location of include directory after "make install"
-ROSE_INCLUDE_DIR = /home/david/Github/ROSE/edg4x-rose/compiletree/include
-
-# Location of Boost include directory
-BOOST_CPPFLAGS = -pthread -I/home/david/BoostLib/include
-
-# Location of Dwarf include and lib (if ROSE is configured to use Dwarf)
-ROSE_DWARF_INCLUDES = 
-ROSE_DWARF_LIBS_WITH_PATH = 
-ROSE_INCLUDE_DIR += $(ROSE_DWARF_INCLUDES)
-ROSE_LIBS += $(ROSE_DWARF_LIBS_WITH_PATH)
-
-CC                    = gcc
-CXX                   = g++
-CPPFLAGS              = 
-#CXXCPPFLAGS           = @CXXCPPFLAGS@
-CXXFLAGS              =  -g -O2 -Wall
-LDFLAGS               = 
-
-# Location of library directory after "make install"
-ROSE_LIB_DIR = /home/david/Github/ROSE/edg4x-rose/compiletree/lib
-
-ROSE_LIBS = $(ROSE_LIB_DIR)/librose.la
-
-ROSE_SOURCE_DIR = /home/david/Github/ROSE/edg4x-rose/exampleTranslators/documentedExamples/simpleTranslatorExamples
+ROSE_SOURCE_DIR = /home/david/Github/ROSE/edg4x-rose/tutorial
 
 # Default make rule to use
 all: exampleTranslator
-	@if [ x$${ROSE_IN_BUILD_TREE:+present} = xpresent ]; then echo "ROSE_IN_BUILD_TREE should not be set" >&2; exit 1; fi
+	@echo "End of all rule"
+	# @if [ x$${ROSE_IN_BUILD_TREE:+present} = xpresent ]; then echo "ROSE_IN_BUILD_TREE should not be set" >&2; exit 1; fi
 
 # Example suffix rule for more experienced makefile users
 # .C.o:
@@ -42,14 +13,13 @@ all: exampleTranslator
 
 # Compile the exampleTranslator using the file identityTranslator.C
 exampleTranslator.lo:
-	/bin/sh ../../../libtool --mode=compile $(CXX) $(CXXFLAGS)  $(CPPFLAGS) -I$(ROSE_INCLUDE_DIR) $(BOOST_CPPFLAGS) -c -o exampleTranslator.lo $(ROSE_SOURCE_DIR)/identityTranslator.C
+	libtool --mode=compile g++ $(ROSE_INCLUDES) -I/home/david/Github/ROSE/edg4x-rose/compiletree -c -o exampleTranslator.lo $(ROSE_SOURCE_DIR)/identityTranslator.C
 
 exampleTranslator: exampleTranslator.lo
-	/bin/sh ../../../libtool --mode=link $(CXX) $(CXXFLAGS) $(LDFLAGS) -o exampleTranslator exampleTranslator.lo $(ROSE_LIBS)
+	libtool --mode=link g++ $(ROSE_LIBS) -o exampleTranslator exampleTranslator.lo 
 
 # Rule used by make installcheck to verify correctness of installed libraries
-check:
-	./exampleTranslator -c $(ROSE_SOURCE_DIR)/testCode.C
-
+#check:
+#	./exampleTranslator -c $(ROSE_SOURCE_DIR)/testCode.C
 
 
