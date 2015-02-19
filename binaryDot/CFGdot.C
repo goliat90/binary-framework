@@ -1,18 +1,27 @@
-// Example ROSE Translator: used for testing ROSE infrastructure
+
 
 #include "rose.h"
+#include "BinaryControlFlow.h"
 
 int main( int argc, char * argv[] ) 
    {
-  // Build the AST used by ROSE
-     SgProject* project = frontend(argc,argv);
+    // Use the frondend to generate AST.
+    // Will it handle binary or should it be changed?
+    SgProject* project = frontend(argc,argv);
 
-  // Run internal consistency tests on AST
-     AstTests::runAllTests(project);
+    // Run internal consistency tests on AST
+    //AstTests::runAllTests(project);
 
-  // Insert your own manipulation of the AST here...
+    //Create CFG from the SgProject, code from binaryCFGTraversalTutorial.C
+    BinaryAnalysis::ControlFlow cfg_analyzer;
+    BinaryAnalysis::ControlFlow::Graph* cfg = new BinaryAnalysis::ControlFlow::Graph;
 
-  // Generate source code from AST and call the vendor's compiler
-     return backend(project);
+    //this should build the graph but i need the node/binary ast here?
+    //cfg_analyzer.build_block_cfg_from_ast(SgNode here , *cfg);
+
+    //call the graph maker function when i have a cfg.
+
+    //
+    return 0;
    }
 
