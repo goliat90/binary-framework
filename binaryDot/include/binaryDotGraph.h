@@ -14,11 +14,12 @@
 #include "rose.h"
 #include "BinaryControlFlow.h"
 #include "BinaryLoader.h"
+#include "Cxx_Grammar.h"
 
 using namespace std;
 
-typedef BinaryAnalysis::ControlFlow::Graph CFG;
-typedef BinaryAnalysis::FunctionCall::Graph CG;
+typedef rose::BinaryAnalysis::ControlFlow::Graph CFG;
+typedef rose::BinaryAnalysis::FunctionCall::Graph CG;
 typedef boost::graph_traits<CFG>::vertex_iterator CFGVIter;
 typedef boost::graph_traits<CFG>::edge_iterator CFGEIter;
 typedef boost::graph_traits<CG>::vertex_iterator CG_VIter;
@@ -55,7 +56,7 @@ class BinaryDotGenerator {
              << "bgcolor=white;" << endl
              << endl;
          //Perform and callgraph analysis...
-           BinaryAnalysis::FunctionCall cg_analyzer;
+           rose::BinaryAnalysis::FunctionCall cg_analyzer;
            /*struct ExcludeLeftovers: public BinaryAnalysis::FunctionCall::VertexFilter {
                bool operator()(BinaryAnalysis::FunctionCall *analyzer, SgAsmFunction *func) {
                   return func && 0==(func->get_reason() & SgAsmFunction::FUNC_LEFTOVERS);
@@ -123,7 +124,7 @@ class BinaryDotGenerator {
                    case V_SgAsmArmInstruction:
                    case V_SgAsmPowerpcInstruction:
                    case V_SgAsmMipsInstruction:
-                   case V_SgAsmx86Instruction:
+                   case V_SgAsmX86Instruction:
                      {
                       string s = unparseInstructionWithAddress(static_cast<SgAsmInstruction *>(*it));
                       boost::replace_all(s, "<", "[");
