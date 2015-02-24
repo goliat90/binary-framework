@@ -15,7 +15,7 @@ all: CFGdot
 
 # Compile the CFGdot using the file CFGdot.C
 CFGdot.lo:
-	libtool --mode=compile g++ $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF)  -c -o CFGdot.lo CFGdot.C
+	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF)  -c -o CFGdot.lo CFGdot.C
 
 
 CFGdot: CFGdot.lo
