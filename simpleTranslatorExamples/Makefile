@@ -24,5 +24,7 @@ exampleTranslator.lo:
 exampleTranslator: exampleTranslator.lo
 	libtool --mode=link g++ $(ROSE_LIBS) -o exampleTranslator exampleTranslator.lo 
 
-
+clean:
+	rm -rf .libs
+	rm -f exampleTranslator*
 
