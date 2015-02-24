@@ -23,9 +23,9 @@ CFGdot: CFGdot.lo
 	libtool --mode=link g++ $(ROSE_LIBS) -o CFGdot CFGdot.lo 
 
 clean:
-	rm -r .libs
-	rm CFGdot
-	rm CFGdot.lo
-	rm CFGdot.o
+	rm -rf .libs
+	rm -f CFGdot
+	rm -f CFGdot.lo
+	rm -f CFGdot.o
 
 
