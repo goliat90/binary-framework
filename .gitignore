@@ -33,3 +33,7 @@
 # .libs folders
 *.libs
 
+# Picture files and dot files.
+*.png
+*.dot
+
