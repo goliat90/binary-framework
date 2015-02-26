@@ -167,7 +167,11 @@ class BinaryDotGenerator {
           case SgAsmFunction::e_this_call:       cc = "This";        break;
           case SgAsmFunction::e_last_call:       cc = "Last";        break;
          }*/
-         f << "subgraph cluster" << name << " {" << endl << "node [style=filled];" << endl 
+
+         //replace all . in the name for underscore to avoid errors in dot/dotty.
+         boost::replace_all(name, ".", "_");
+
+         f << "subgraph cluster" << name << " {" << endl << "node [style=filled];" << endl
            << "color=blue;" << endl << "fontsize=20;" << endl
            << "label=\"Function '" << func->get_name() << "' (Kind=" << kind << ", CC=" << cc << ")\";" << endl
            << "labelloc=\"t\";" << endl << "overlap=false;" << endl
