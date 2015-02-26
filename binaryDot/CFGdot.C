@@ -43,8 +43,8 @@ int main( int argc, char * argv[] )
     //std::vector<SgAsmInterpretation*> interps = SageInterface::querySubTree<SgAsmInterpretation>(project);
 
     //Create CFG from the SgProject, code from binaryCFGTraversalTutorial.C
-    //rose::BinaryAnalysis::ControlFlow cfg_analyzer;
-    //rose::BinaryAnalysis::ControlFlow::Graph* cfg = new rose::BinaryAnalysis::ControlFlow::Graph;
+    rose::BinaryAnalysis::ControlFlow cfg_analyzer;
+    rose::BinaryAnalysis::ControlFlow::Graph* cfg = new rose::BinaryAnalysis::ControlFlow::Graph;
 
     //build the CFG, interps.back = last element in the vector.
     //cfg_analyzer.build_block_cfg_from_ast(interps.back() , *cfg);
