@@ -7,7 +7,6 @@ else
 endif
 
 
-	include 
 # this could be conditional as well. 
 
 # Default make rule to use
@@ -20,7 +19,7 @@ CFGdot.lo:
 
 
 CFGdot: CFGdot.lo
-	libtool --mode=link g++ $(ROSE_LIBS) -o CFGdot CFGdot.lo 
+	libtool --mode=link g++ $(ROSE_LIBS) -o CFGdot.out CFGdot.lo 
 
 clean:
 	rm -rf .libs
