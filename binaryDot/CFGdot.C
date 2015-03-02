@@ -16,28 +16,6 @@ int main( int argc, char * argv[] )
     //retrieve the assembly interpretation.
     std::vector<SgAsmInterpretation*> test = SageInterface::querySubTree<SgAsmInterpretation>(project);
     
-    //see how many assembly interpertations we have.
-    //std::cout << "SgAsmInterpertations: " << test.size() << "\n";
-
-    //find all the SgAsmFunction nodes in the SgAsmInterpretation
-    //std::vector<SgAsmFunction*> test2 = SageInterface::querySubTree<SgAsmFunction>(test.back());
-
-    //std::cout << "SgAsmFunctions: " << test2.size() << "\n";
-
-    //print out the function names.
-    //SgAsmFunction* onlyMain;
-    //int i = 0;
-    //for (std::vector<SgAsmFunction*>::iterator iter = test2.begin(); iter != test2.end(); iter++) {
-        //print out the function name.
-        //std::cout << i << ": " << (*iter)->get_name() << "\n";
-    //    if ((*iter)->get_name() == "main") {
-    //        std::cout << "main found" << "\n";
-    //        onlyMain = *iter;
-    //        std::cout << onlyMain->get_name() << "\n";
-    //    }
-    //    i++;
-    //}
-
     //Create CFG from the SgProject, code from binaryCFGTraversalTutorial.C
     rose::BinaryAnalysis::ControlFlow cfg_analyzer;
     rose::BinaryAnalysis::ControlFlow::Graph* bigcfg = new rose::BinaryAnalysis::ControlFlow::Graph;
@@ -51,7 +29,8 @@ int main( int argc, char * argv[] )
     subCFG(*bigcfg, *subcfg, "main");
 
     //call the graph maker function when i have a cfg.
-    BinaryDotGenerator(*bigcfg, "main" , "main.dot", true);
+    //BinaryDotGenerator(*bigcfg, "main" , "main.dot", true);
+    BinaryDotGenerator(*subcfg, "main" , "main.dot", true);
 
     //
     return 0;
@@ -65,30 +44,42 @@ void subCFG (CFG &largecfg, CFG &subcfg, string function)
     //keep track of visited vertices(blocks).
     //SgAsmBlock is key, bool to determine if visited.
     map<SgAsmBlock *, bool> visitedBlock;
+    //keep track of which vertex in the old cfg represents which in the new cfg.
+    map<CFG::vertex_descriptor, CFG::vertex_descriptor> vertexMap;
 
-    //might need another that is tracks blocks relevant to the function
-    map<SgAsmBlock *, bool> relevantBlock;
+    //get the property map for original cfg and the new cfg, why do i need ::type?!
+    //this makes it possible to extract the SgAsmBlock through the map by giving the vertex_property as key.
+    boost::property_map<CFG, boost::vertex_name_t>::type largePmap = get(boost::vertex_name, largecfg);
+    boost::property_map<CFG, boost::vertex_name_t>::type subPmap = get(boost::vertex_name, subcfg);
 
     //Go through all the vertices(blocks) by starting in one block
-    //and traverse the edges to visit the next blocks. 
-
-    //get the vertices from the cfg
-
     for(std::pair<CFGVIter, CFGVIter> verticePair = vertices(largecfg);
         verticePair.first != verticePair.second; ++verticePair.first) {
         //Extract the SgAsmBlock from vertex_name property in the graph.
-        //passing the cfg and the 
-        SgAsmBlock* basicBlock = get(boost::vertex_name, largecfg, *verticePair.first);
+        //SgAsmBlock* basicBlock = get(boost::vertex_name, largecfg, *verticePair.first);
+        SgAsmBlock* basicBlock = largePmap[*verticePair.first];
         //check a vertex if it has not been visited.
-    //    if (visitedBlock.find(verticePair.first) == visitedBlock.end()) 
-            //does the vertex belong to main?
+        if (visitedBlock.find(basicBlock) == visitedBlock.end()) {
+            //does the vertex/block belong to the main function?
+            visitedBlock.insert(std::pair<SgAsmBlock*, bool>(basicBlock, true));
+            //Retrieve the enclosing function.
+            SgAsmFunction* blockFunction = basicBlock->get_enclosing_function();
+            //get the function name and compare it to the given function string
+            if (blockFunction->get_name() == function) {
+                //the blocks belongs to function main, add it to the new cfg.
+                CFG::vertex_descriptor newVertex = add_vertex(subcfg);
+                //set the values of vertex_name propertymaps in the new cfg.
+                subPmap[newVertex] = largePmap[*verticePair.first];
+                //add both vertexes to the vertexMap.
+                vertexMap.insert(std::pair<CFG::vertex_descriptor, CFG::vertex_descriptor>(*verticePair.first, newVertex));
+            }
+        }
                 //if so add it to relevant Blocks, or copy it over right away to subcfg?
                 //visit the blocks are in the edge list, check if they belong to main.
                 //if the block in the edge belongs to main then add it to the edge list.
-        
-        
         //if it does not belong to main then set as visited and continue with the next block.
     }
+    //traverse the edges.
 }
 
 
