@@ -79,6 +79,9 @@ void subCFG (CFG &largecfg, CFG &subcfg, string function)
                 //if the block in the edge belongs to main then add it to the edge list.
         //if it does not belong to main then set as visited and continue with the next block.
     }
+    //All relevant vertices have been added to the new cfg with their properties.
+    //now go through the edges and add all edges that connect between relevant blocks.
+
     //traverse the edges.
 }
 
