@@ -46,6 +46,8 @@ void subCFG (CFG &largecfg, CFG &subcfg, string function)
     map<SgAsmBlock *, bool> visitedBlock;
     //keep track of which vertex in the old cfg represents which in the new cfg.
     map<CFG::vertex_descriptor, CFG::vertex_descriptor> vertexMap;
+    //track blocks that are included in the new cfg.
+    map<CFG::vertex_descriptor, bool> copiedVertex;
 
     //get the property map for original cfg and the new cfg, why do i need ::type?!
     //this makes it possible to extract the SgAsmBlock through the map by giving the vertex_property as key.
@@ -70,19 +72,37 @@ void subCFG (CFG &largecfg, CFG &subcfg, string function)
                 CFG::vertex_descriptor newVertex = add_vertex(subcfg);
                 //set the values of vertex_name propertymaps in the new cfg.
                 subPmap[newVertex] = largePmap[*verticePair.first];
+                //save the vertex_descriptor i know which vertexes were copied.
+                copiedVertex.insert(std::pair<CFG::vertex_descriptor, bool>(*verticePair.first, true));
                 //add both vertexes to the vertexMap.
                 vertexMap.insert(std::pair<CFG::vertex_descriptor, CFG::vertex_descriptor>(*verticePair.first, newVertex));
+            } else {
+                //the block does not belong to main, it is not copied.
+                copiedVertex.insert(std::pair<CFG::vertex_descriptor, bool>(*verticePair.first, false));
             }
         }
-                //if so add it to relevant Blocks, or copy it over right away to subcfg?
-                //visit the blocks are in the edge list, check if they belong to main.
-                //if the block in the edge belongs to main then add it to the edge list.
-        //if it does not belong to main then set as visited and continue with the next block.
     }
     //All relevant vertices have been added to the new cfg with their properties.
     //now go through the edges and add all edges that connect between relevant blocks.
+    //This is done by checking the source and target of an edge_descriptor,
+    //if both source and target are relevant blocks then it is copied.
 
-    //traverse the edges.
+    for(std::pair<CFGEIter, CFGEIter> edgePair = edges(largecfg); edgePair.first != edgePair.second;
+        ++edgePair.first) {
+        //get the source and target vertex descriptors.
+        CFG::vertex_descriptor sourceVertex = source(*edgePair.first, largecfg);
+        CFG::vertex_descriptor targetVertex = target(*edgePair.first, largecfg);
+
+        //check the source vertex and target vertex of the edge.
+        if (copiedVertex[sourceVertex] && copiedVertex[targetVertex]) {
+            //both target and source vertex were copied. Add the edge.
+            //Get retrieve source and targe vertices in the new cfg.
+            CFG::vertex_descriptor newSourceV = vertexMap[sourceVertex];
+            CFG::vertex_descriptor newTargetV = vertexMap[targetVertex];
+            //add the edge to the cfg.
+            add_edge(newSourceV, newTargetV, subcfg);
+        }
+    }
 }
 
 
