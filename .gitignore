@@ -37,3 +37,6 @@
 *.png
 *.dot
 
+# Ignore pdf.
+*.pdf
+
