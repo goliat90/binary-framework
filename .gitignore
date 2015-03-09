@@ -27,6 +27,9 @@
 *.out
 *.app
 
+# Executable from rose.
+*.out.new
+
 # Vim swp file
 *.swp
 
@@ -37,6 +40,10 @@
 *.png
 *.dot
 
-# Ignore pdf.
+# Pdf.
 *.pdf
+
+# ASCII files from backend containing a dump of the binary.
+*.dump
+*.out.s
 
