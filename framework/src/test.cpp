@@ -7,10 +7,7 @@
 
 int main(int argc, char **argv) {
     //get framework object.
-    //BinaryRewriter rewriter;
-    //read the binary
-    
-    //let the framework build the ast and cfg
+    BinaryRewriter rewriter(argc, argv);
 
     return 0;
 }

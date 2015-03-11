@@ -112,6 +112,7 @@ class BinaryDotGenerator {
            << "</tr>";
          int Iindex = 0, Dindex = 0;
          if(includeInst)
+            //iterator is for a std::vector
             for(SgAsmStatementPtrList::iterator it = bb->get_statementList().begin(); 
                 it != bb->get_statementList().end(); ++it) {
                   stringstream ss;
