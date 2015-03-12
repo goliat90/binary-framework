@@ -3,6 +3,8 @@
 #ifndef BINARY_REWRITER_H
 #define BINARY_REWRITER_H
 
+//Framework headers
+#include "userTransformer.hpp"
 
 // Boost lib headers
 #include <boost/graph/adjacency_list.hpp>
@@ -27,11 +29,15 @@ class BinaryRewriter {
         //typedefs
         typedef rose::BinaryAnalysis::ControlFlow::Graph Cfg;
         typedef boost::graph_traits<Cfg>::vertex_iterator CfgVIter;
+        //map type for the property map in the cfg that contains the basic blocks.
+        typedef boost::property_map<Cfg, boost::vertex_name_t>::type basicBlockMap;
 
         //Pointer to the project AST 
-        SgProject *binaryProject;
+        SgProject* binaryProjectPtr;
         //CFG implementation
-        Cfg* blockCfg;
+        Cfg* blockCfgPtr;
+        //userTransformer object
+        userTransformer* transformPtr = NULL;
 
         // -------- Functions --------
         //Constructor, hidding it to force use of the other constructor
@@ -43,12 +49,9 @@ class BinaryRewriter {
         void blockTraversal();
         //function traversal
         void functionTraversal();
-
+        //give the framework a transformer object.
+        void passTransformer(userTransformer&);
 };
-
-
-
-
 
 #endif 
 
