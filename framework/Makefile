@@ -39,5 +39,7 @@ clean:
 	rm -f test.lo
 	rm -f binaryRewriter.lo
 	rm -f test.out
+	rm -f test.o
+	rm -f binaryRewriter.o
 
 
