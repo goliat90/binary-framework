@@ -30,7 +30,7 @@ int main( int argc, char * argv[] )
 
     //call the graph maker function when i have a cfg.
     //BinaryDotGenerator(*bigcfg, "main" , "main.dot", true);
-    BinaryDotGenerator(*subcfg, "main" , "main.dot", true);
+    BinaryDotGenerator(*subcfg, "main with neighbours" , "main_neighbours.dot", true);
 
     //
     return 0;
@@ -48,6 +48,7 @@ void subCFG (CFG &largecfg, CFG &subcfg, string function)
     map<CFG::vertex_descriptor, CFG::vertex_descriptor> vertexMap;
     //track blocks that are included in the new cfg.
     map<CFG::vertex_descriptor, bool> copiedVertex;
+    
 
     //get the property map for original cfg and the new cfg, why do i need ::type?!
     //this makes it possible to extract the SgAsmBlock through the map by giving the vertex_property as key.
@@ -72,7 +73,7 @@ void subCFG (CFG &largecfg, CFG &subcfg, string function)
                 CFG::vertex_descriptor newVertex = add_vertex(subcfg);
                 //set the values of vertex_name propertymaps in the new cfg.
                 subPmap[newVertex] = largePmap[*verticePair.first];
-                //save the vertex_descriptor i know which vertexes were copied.
+                //save the vertex_descriptor so i know which vertexes were copied.
                 copiedVertex.insert(std::pair<CFG::vertex_descriptor, bool>(*verticePair.first, true));
                 //add both vertexes to the vertexMap.
                 vertexMap.insert(std::pair<CFG::vertex_descriptor, CFG::vertex_descriptor>(*verticePair.first, newVertex));
@@ -82,11 +83,65 @@ void subCFG (CFG &largecfg, CFG &subcfg, string function)
             }
         }
     }
+    // At this point all vertices for the function in question have
+    // been added. Now we add all neighbouring vertices that have edges that
+    // jump into or out of the function. Were getting one degree of neighbours.
+
+    for(int i=0; i < 3; i++) {
+        // Before finding the neighbours add all the current copied vertexes
+        // to the copiedNeighbour map to avoid duplicate vertice copies.
+//        map<CFG::vertex_descriptor, bool> copiedNeighbourV (copiedVertex);
+        
+        std::cout << "Copying neighbours of degree " << i+1 << endl;
+
+        for(std::pair<CFGEIter, CFGEIter> edgePair = edges(largecfg);
+            edgePair.first != edgePair.second; ++edgePair.first) {
+            //get the target and source vertices.
+            CFG::vertex_descriptor sourceVertex = source(*edgePair.first, largecfg); 
+            CFG::vertex_descriptor targetVertex = target(*edgePair.first, largecfg); 
+            //check if either the target or source vertex is a copied vertex
+            //OBS! NEED TO THINK ABOUT IF A NEIGHBOUR HAS ALREADY BEEN COPIED!!
+            if (copiedVertex[targetVertex] && !copiedVertex[sourceVertex]) {
+                //The edge goes into the function. We want the block it jumps from
+                //in the graph as well. Add the source vertex and its block.
+                std::cout << "found target vertex neighbour" << endl;
+                CFG::vertex_descriptor neighbourV = add_vertex(subcfg);
+                //set the vertex_name property in the new cfg.
+                subPmap[neighbourV] = largePmap[sourceVertex];
+                //save the vertex in the neighbour copied map avoiding duplicate copying.
+                //copiedNeighbourV.insert(std::pair<CFG::vertex_descriptor, bool>(sourceVertex, true);
+                copiedVertex[sourceVertex] = true;
+                //add the neighbour vertex to the vertex map
+                vertexMap.insert(std::pair<CFG::vertex_descriptor, CFG::vertex_descriptor>(sourceVertex, neighbourV));
+                //
+            } else if (copiedVertex[sourceVertex] && !copiedVertex[targetVertex]) {
+                //The edge goes out of the function. We want the block it jumps to
+                //in the graph as well. Add the target vertex and its block.
+                std::cout << "found target source neighbour" << endl;
+                CFG::vertex_descriptor neighbourV = add_vertex(subcfg);
+                //set the vertex_name in the new cfg.
+                subPmap[neighbourV] = largePmap[targetVertex];
+                //save the vertex in the neighbour copied map so we do not copy it twice.
+                //copiedNeighbourV.insert(std::pair<CFG::vertex_descriptor, bool>(targetVertex, true));
+                copiedVertex[targetVertex] = true;
+                //add the neighbour vertex to the vertex map
+                vertexMap.insert(std::pair<CFG::vertex_descriptor, CFG::vertex_descriptor>(targetVertex, neighbourV));
+            }
+        }
+
+        //Change the neighbouring vertices false value in the copiedvertex map to true.
+//        for(std::map<CFG::vertex_descriptor, bool>::iterator neighborIter = copiedNeighbourV.begin();
+//            neighborIter != copiedNeighbourV.end(); neighborIter++) {
+//            //Transfer the copied neighbours to the copied vertex map.
+//            //copiedVertex.insert(std::pair<CFG::vertex_descriptor, bool>(neighborIter->first, true));
+//            copiedVertex[neighborIter->first] = true;
+//        }
+    }
+
     //All relevant vertices have been added to the new cfg with their properties.
     //now go through the edges and add all edges that connect between relevant blocks.
     //This is done by checking the source and target of an edge_descriptor,
     //if both source and target are relevant blocks then it is copied.
-
     for(std::pair<CFGEIter, CFGEIter> edgePair = edges(largecfg); edgePair.first != edgePair.second;
         ++edgePair.first) {
         //get the source and target vertex descriptors.
