@@ -26,11 +26,11 @@ int main( int argc, char * argv[] )
 
     // The cfg i have is to big, i want a subset of it. More specific i want
     // a graph only over main.
-    subCFG(*bigcfg, *subcfg, "init");
+    subCFG(*bigcfg, *subcfg, "main");
 
     //call the graph maker function when i have a cfg.
     //BinaryDotGenerator(*bigcfg, "main" , "main.dot", true);
-    BinaryDotGenerator(*subcfg, "init with neighbours" , "init_neighbours.dot", true);
+    BinaryDotGenerator(*subcfg, "main with neighbours" , "main_neighbours.dot", true);
 
     //
     return 0;
