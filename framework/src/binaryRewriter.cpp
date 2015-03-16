@@ -36,9 +36,15 @@ void BinaryRewriter::selectInstructionScheduling() {
 
 }
 
+//The desicion function that users can overwrite.
+//Here it will just be an empty function.
+void BinaryRewriter::transformDecision() {
+
+}
+
 // Does the actual traversal and applies transformations to the binary.
 //This function will traverse the block cfg.
-void BinaryRewriter::transformBinary() {
+void BinaryRewriter::traverseBinary() {
     //get the map for the basic blocks.
     basicBlockMap bbMap = get(boost::vertex_name, *blockCfgPtr);
     

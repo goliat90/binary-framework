@@ -23,7 +23,9 @@ class BinaryRewriter {
         //Configure instruction scheduling
         void selectInstructionScheduling();
         //Function to start rewriting
-        void transformBinary();
+        void traverseBinary();
+        //Virtual function that the user can change in his framework extension.
+        virtual void transformDecision();
 
     private:
         //typedefs
