@@ -21,10 +21,18 @@ class BinaryRewriter {
         void selectRegisterAllocation();
         //Configure instruction scheduling
         void selectInstructionScheduling();
-        //Function to start rewriting
+        //Function to begin rewriting
         void traverseBinary();
+        //Add instruction
+        void insertInstruction(SgAsmStatement*); //need an argument here.
+        //Remove current instruction
+        void removeInstruction(); 
+        //Next instruction, copies the currently inspected instruction.
+        void saveInstruction();
+        //Function that provides symbolic register labels.
+        void generateSymbolicRegister(); //need to check how operands/registers are typed.
         //Virtual function that the user can change in his framework extension.
-        virtual void transformDecision();
+        virtual void transformDecision(SgAsmStatement*);
 
     private:
         //typedefs
@@ -33,10 +41,16 @@ class BinaryRewriter {
         //map type for the property map in the cfg that contains the basic blocks.
         typedef boost::property_map<Cfg, boost::vertex_name_t>::type basicBlockMap;
 
+        //Private variables.
         //Pointer to the project AST 
         SgProject* binaryProjectPtr;
-        //CFG implementation
-        Cfg* blockCfgPtr;
+        //Control flow graph pointer.
+        Cfg* CfgPtr;
+        //Shadow statement list. This list will be swaped with the statementlist
+        //att the end of traversing a basic blocks statement list.
+        SgAsmStatementPtrList* shadowStatementListPtr;
+        //Current instruction being inspected.
+        SgAsmStatement* inspectedInstruction;
 
         // -------- Functions --------
         //Constructor, hidding it to force use of the other constructor
