@@ -12,6 +12,10 @@ BinaryRewriter::BinaryRewriter(int argc, char **binaryFile) {
 
 // Pass the binary to the frontend.
 void BinaryRewriter::initialize(int argc, char **binaryFile) {
+    
+    //variables.
+    decisionsMade = 0;
+
     // Create a cfg to be used. 
     CfgPtr = new Cfg;
 
@@ -22,6 +26,10 @@ void BinaryRewriter::initialize(int argc, char **binaryFile) {
     // build a cfg as well.
     rose::BinaryAnalysis::ControlFlow cfgAnalyzer;
     cfgAnalyzer.build_block_cfg_from_ast(asmInterpretations.back(), *CfgPtr);
+}
+
+void BinaryRewriter::printInformation() {
+    std::cout << "Decisions made " << decisionsMade << std::endl;
 }
 
 
@@ -42,10 +50,14 @@ void BinaryRewriter::traverseBinary() {
         //extract the statement list from the basic block, statement list is a SgAsmStatement* vector.
         for(SgAsmStatementPtrList::iterator stmtIter = originalStatementListPtr->begin();
             stmtIter != originalStatementListPtr->end(); stmtIter++) {
-            //Set the currently inspected instruction for the framework
-            inspectedInstruction = *stmtIter;
-            //For each instruction check what should be done.
-            transformDecision(*stmtIter);
+            //Perhaps check if the statement is actually an instruction?
+            //this if is currently not needed i think, just a test.
+            if ((*stmtIter)->variantT() == V_SgAsmMipsInstruction) {
+                //Set the currently inspected instruction for the framework
+                inspectedInstruction = *stmtIter;
+                //For each instruction check what should be done.
+                transformDecision(*stmtIter);
+            }
         }        
         //the block has been traversed. Swap the shadowBlock with the original basic block.
         originalStatementListPtr->swap(*shadowStatementListPtr);
@@ -55,7 +67,8 @@ void BinaryRewriter::traverseBinary() {
 //The desicion function that users can overwrite.
 //Here it will just be an empty function.
 void BinaryRewriter::transformDecision(SgAsmStatement* instPtr) {
-    std::cout << "Framework decision function" << std::endl;
+    //std::cout << "Framework decision function" << std::endl;
+    decisionsMade++;
     saveInstruction();
 }
 

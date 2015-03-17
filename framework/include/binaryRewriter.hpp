@@ -33,6 +33,8 @@ class BinaryRewriter {
         void generateSymbolicRegister(); //need to check how operands/registers are typed.
         //Virtual function that the user can change in his framework extension.
         virtual void transformDecision(SgAsmStatement*);
+        //Print statistics.
+        void printInformation();
 
     private:
         //typedefs
@@ -51,6 +53,8 @@ class BinaryRewriter {
         SgAsmStatementPtrList* shadowStatementListPtr;
         //Current instruction being inspected.
         SgAsmStatement* inspectedInstruction;
+        //number of decisions made
+        int decisionsMade;
 
         // -------- Functions --------
         //Constructor, hidding it to force use of the other constructor
