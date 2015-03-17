@@ -24,10 +24,6 @@ void BinaryRewriter::initialize(int argc, char **binaryFile) {
     cfgAnalyzer.build_block_cfg_from_ast(asmInterpretations.back(), *blockCfgPtr);
 }
 
-void BinaryRewriter::passTransformer(userTransformer& object) {
-
-}
-
 void BinaryRewriter::selectRegisterAllocation() {
 
 }
@@ -56,10 +52,7 @@ void BinaryRewriter::traverseBinary() {
         for(SgAsmStatementPtrList::iterator stmtIter = currentBlock->get_statementList().begin();
             stmtIter != currentBlock->get_statementList().end(); stmtIter++) {
             //For each instruction query the transformer of what to do.
-            //If a transformer object has been provided then call it.
-            if (transformPtr != NULL) {
-                //call the function in the object here.
-            }
+            transformDecision();
         }     
     }
  

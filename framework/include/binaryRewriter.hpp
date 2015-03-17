@@ -4,7 +4,6 @@
 #define BINARY_REWRITER_H
 
 //Framework headers
-#include "userTransformer.hpp"
 
 // Boost lib headers
 #include <boost/graph/adjacency_list.hpp>
@@ -38,8 +37,6 @@ class BinaryRewriter {
         SgProject* binaryProjectPtr;
         //CFG implementation
         Cfg* blockCfgPtr;
-        //userTransformer object
-        userTransformer* transformPtr = NULL;
 
         // -------- Functions --------
         //Constructor, hidding it to force use of the other constructor
@@ -51,8 +48,6 @@ class BinaryRewriter {
         void blockTraversal();
         //function traversal
         void functionTraversal();
-        //give the framework a transformer object.
-        void passTransformer(userTransformer&);
 };
 
 #endif 
