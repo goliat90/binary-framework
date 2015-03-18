@@ -54,7 +54,8 @@ void BinaryRewriter::traverseBinary() {
             //this if is currently not needed i think, just a test.
             if ((*stmtIter)->variantT() == V_SgAsmMipsInstruction) {
                 //Set the currently inspected instruction for the framework
-                inspectedInstruction = *stmtIter;
+                //inspectedInstruction = static_cast<SgAsmMipsInstruction*>(*stmtIter);
+                inspectedInstruction = isSgAsmMipsInstruction(*stmtIter);
                 //For each instruction check what should be done.
                 transformDecision(*stmtIter);
             }
@@ -64,12 +65,31 @@ void BinaryRewriter::traverseBinary() {
     }
 }
 
+/* Functions related to instruction manipulation */
+
 //The desicion function that users can overwrite.
 //Here it will just be an empty function.
 void BinaryRewriter::transformDecision(SgAsmStatement* instPtr) {
     //std::cout << "Framework decision function" << std::endl;
     decisionsMade++;
+    //printout of the instruction and the number of operands.
+    std::cout << getInstructionMnemonic() << " " << getInstructionOperands().size() << std::endl;
     saveInstruction();
+}
+
+//return what kind of mips enum instruction it is.
+MipsInstructionKind BinaryRewriter::getInstructionKind() {
+    return inspectedInstruction->get_kind(); 
+}
+
+//return the operands list for the inspected instruction.
+SgAsmExpressionPtrList BinaryRewriter::getInstructionOperands() {
+    return inspectedInstruction->get_operandList()->get_operands();
+}
+
+//return the mips instruction mnemonic string.
+std::string BinaryRewriter::getInstructionMnemonic() {
+    return inspectedInstruction->get_mnemonic();
 }
 
 //Inserts an instruction into the shadow statementlist.

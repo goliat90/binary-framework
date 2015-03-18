@@ -23,12 +23,20 @@ class BinaryRewriter {
         void selectInstructionScheduling();
         //Function to begin rewriting
         void traverseBinary();
+
         //Add instruction
         void insertInstruction(SgAsmStatement*); //need an argument here.
         //Remove current instruction
         void removeInstruction(); 
         //Next instruction, copies the currently inspected instruction.
         void saveInstruction();
+        //Get the instruction enum of the currently inspected instruction.
+        MipsInstructionKind getInstructionKind();
+        //Return the operand list of the current instruction, result and source regs.
+        SgAsmExpressionPtrList getInstructionOperands();
+        //return the mnemonic string
+        std::string getInstructionMnemonic();
+
         //Function that provides symbolic register labels.
         void generateSymbolicRegister(); //need to check how operands/registers are typed.
         //Virtual function that the user can change in his framework extension.
@@ -52,7 +60,7 @@ class BinaryRewriter {
         //att the end of traversing a basic blocks statement list.
         SgAsmStatementPtrList* shadowStatementListPtr;
         //Current instruction being inspected.
-        SgAsmStatement* inspectedInstruction;
+        SgAsmMipsInstruction* inspectedInstruction;
         //number of decisions made
         int decisionsMade;
 
