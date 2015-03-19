@@ -15,8 +15,12 @@
 /* Class declaration */
 class BinaryRewriter {
     public:
+        //Default constructor.
+        BinaryRewriter() {};
         //Constructor with file
         BinaryRewriter(int, char**);
+        //Takes argc and argv then creates an ast and cfg.
+        void initialize(int ,char**);
         //Configure register allocation
         void selectRegisterAllocation();
         //Configure instruction scheduling
@@ -26,6 +30,12 @@ class BinaryRewriter {
 
         //Add instruction
         void insertInstruction(SgAsmStatement*); //need an argument here.
+        //
+        void insertInstruction(MipsInstructionKind, std::string); //need an argument here.
+        //
+        //void insertInstruction(SgAsmStatement*); //need an argument here.
+        //
+
         //Remove current instruction
         void removeInstruction(); 
         //Next instruction, copies the currently inspected instruction.
@@ -65,11 +75,6 @@ class BinaryRewriter {
         int decisionsMade;
 
         // -------- Functions --------
-        //Constructor, hidding it to force use of the other constructor
-        //requiring argc and argv.
-        BinaryRewriter();
-        //Takes argc and argv then creates an ast and cfg.
-        void initialize(int ,char**);
         //block traversal
         void blockTraversal();
         //function traversal

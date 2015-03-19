@@ -19,7 +19,7 @@ framework.lo:
 	-c -o binaryRewriter.lo $(LIBSRCDIR)/binaryRewriter.cpp
 
 userFramework.lo:
-	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) \
+	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I$(LIBINCDIR) -I./include -I/home/$(PATHDIFF) \
 	-c -o userFramework.lo $(SRCDIR)/userFramework.cpp
 
 linking: framework.lo userFramework.lo
