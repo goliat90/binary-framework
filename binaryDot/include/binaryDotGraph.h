@@ -99,7 +99,7 @@ class BinaryDotGenerator {
          if(bb == NULL)
             return;
          stringstream bbName;
-         bbName << name << index;
+         bbName << name << "_" << bb->get_id() << "_" << index;
          nameMap[bb] = bbName.str();
          f << " \"" << bbName.str() 
            << "\" [style=\"filled\" penwidth=1 fillcolor=\"white\" fontname=\"Courier New\" shape=\"Mrecord\" label="
