@@ -30,11 +30,10 @@ class BinaryRewriter {
 
         //Add instruction
         void insertInstruction(SgAsmStatement*); //need an argument here.
-        //
-        void insertInstruction(MipsInstructionKind, std::string); //need an argument here.
-        //
-        //void insertInstruction(SgAsmStatement*); //need an argument here.
-        //
+        //Returns the input registers of the current instruction.
+        void inputRegisters();
+        //Returns the output registers of the current register
+        void outputRegisters();
 
         //Remove current instruction
         void removeInstruction(); 
@@ -64,6 +63,8 @@ class BinaryRewriter {
         //Private variables.
         //Pointer to the project AST 
         SgProject* binaryProjectPtr;
+        //Register dictionary.
+        //const RegisterDictionary mipsRegisters; 
         //Control flow graph pointer.
         Cfg* CfgPtr;
         //Shadow statement list. This list will be swaped with the statementlist

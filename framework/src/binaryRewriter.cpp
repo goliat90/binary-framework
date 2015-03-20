@@ -23,6 +23,8 @@ void BinaryRewriter::initialize(int argc, char **binaryFile) {
     binaryProjectPtr = frontend(argc, binaryFile);
     // Extract the SgAsmInterpretation to use when building the cfg
     std::vector<SgAsmInterpretation*> asmInterpretations = SageInterface::querySubTree<SgAsmInterpretation>(binaryProjectPtr);    
+    // Set the register dictionary.
+    //mipsRegisters = RegisterDictionary::dictionary_for_isa(asmInterpretations.back());
     // build a cfg as well.
     rose::BinaryAnalysis::ControlFlow cfgAnalyzer;
     cfgAnalyzer.build_block_cfg_from_ast(asmInterpretations.back(), *CfgPtr);
@@ -65,7 +67,10 @@ void BinaryRewriter::traverseBinary() {
     }
 }
 
-/* Functions related to instruction manipulation */
+
+/******************************************************************************
+* Functions providing different information of the current instruction.
+******************************************************************************/
 
 //The desicion function that users can overwrite.
 //Here it will just be an empty function.
@@ -92,6 +97,10 @@ std::string BinaryRewriter::getInstructionMnemonic() {
     return inspectedInstruction->get_mnemonic();
 }
 
+
+/******************************************************************************
+* Insert, delete and save instructions
+******************************************************************************/
 //Inserts an instruction into the shadow statementlist.
 //This could be the original instruction or one provided by
 //a user defined descision function.
@@ -114,7 +123,10 @@ void BinaryRewriter::saveInstruction() {
 }
 
 
-//Configuration functions.
+
+/******************************************************************************
+* Configuration functions.
+******************************************************************************/
 
 //Select method allocation method
 void BinaryRewriter::selectRegisterAllocation() {
