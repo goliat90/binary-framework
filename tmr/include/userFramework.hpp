@@ -13,7 +13,7 @@ class userFramework : public BinaryRewriter {
     public:
         //constructor
         userFramework(int, char**);
-//        userFramework::userFramework(int argc, char** argv) : BinaryRewriter{argc, argv} {};
+        //overriding the decision function in the framework.
         void transformDecision(SgAsmStatement*);
 
     private:

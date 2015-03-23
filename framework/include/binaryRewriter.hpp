@@ -31,9 +31,9 @@ class BinaryRewriter {
         //Add instruction
         void insertInstruction(SgAsmStatement*); //need an argument here.
         //Returns the input registers of the current instruction.
-        void inputRegisters();
+        std::string inputRegisters();
         //Returns the output registers of the current register
-        void outputRegisters();
+        std::string outputRegisters();
 
         //Remove current instruction
         void removeInstruction(); 
@@ -60,18 +60,39 @@ class BinaryRewriter {
         //map type for the property map in the cfg that contains the basic blocks.
         typedef boost::property_map<Cfg, boost::vertex_name_t>::type basicBlockMap;
 
+        // -------- instruction struct --------
+        // Contains information that is useful for the framework about
+        // the current instruction.
+        struct instructionInformation {
+            //nmemonic enum.
+            MipsInstructionKind kind;
+            //nmemonic string.
+            std::string mnemonic;
+            //input register(s)
+            std::vector<std::pair<std::string, const RegisterDescriptor*> > inregs;
+            //output register(s)
+            std::vector<std::pair<std::string, const RegisterDescriptor*> > outregs;
+            //operands list
+            SgAsmOperandList* operandsList; 
+            //operands list, but as SgAsmExpressionPtrList, one level lower than previous.
+            //SgAsmExpressionPtrList* operandExpressionList;
+            //if the instruction uses a constant then save it.
+            uint64_t instructionConstant;
+        };
         //Private variables.
         //Pointer to the project AST 
         SgProject* binaryProjectPtr;
         //Register dictionary.
-        //const RegisterDictionary mipsRegisters; 
+        const RegisterDictionary* mipsRegisters; 
         //Control flow graph pointer.
         Cfg* CfgPtr;
         //Shadow statement list. This list will be swaped with the statementlist
-        //att the end of traversing a basic blocks statement list.
+        //att the end of traversing a basic blocks statement list. (vector)
         SgAsmStatementPtrList* shadowStatementListPtr;
         //Current instruction being inspected.
         SgAsmMipsInstruction* inspectedInstruction;
+        //Inspected instruction struct with information
+        instructionInformation instInfo;
         //number of decisions made
         int decisionsMade;
 
@@ -80,6 +101,13 @@ class BinaryRewriter {
         void blockTraversal();
         //function traversal
         void functionTraversal();
+        //deconstruct the current instruction to provide information.
+        void deconstructInstruction();
+        //decode the instruction operands
+        void decodeOperands();
+        //recursive decoding function
+        void operandDecode(SgAsmExpression*);
+
 };
 
 #endif 

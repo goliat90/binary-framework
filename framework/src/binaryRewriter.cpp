@@ -19,12 +19,17 @@ void BinaryRewriter::initialize(int argc, char **binaryFile) {
     // Create a cfg to be used. 
     CfgPtr = new Cfg;
 
+    //initialize the instruction struct.
+    instInfo.kind = mips_unknown_instruction;
+    instInfo.mnemonic = "";
+    instInfo.instructionConstant = 0;
+
     // Call frontend to parse the file, save it in the private variable.
     binaryProjectPtr = frontend(argc, binaryFile);
     // Extract the SgAsmInterpretation to use when building the cfg
     std::vector<SgAsmInterpretation*> asmInterpretations = SageInterface::querySubTree<SgAsmInterpretation>(binaryProjectPtr);    
     // Set the register dictionary.
-    //mipsRegisters = RegisterDictionary::dictionary_for_isa(asmInterpretations.back());
+    mipsRegisters = RegisterDictionary::dictionary_for_isa(asmInterpretations.back());
     // build a cfg as well.
     rose::BinaryAnalysis::ControlFlow cfgAnalyzer;
     cfgAnalyzer.build_block_cfg_from_ast(asmInterpretations.back(), *CfgPtr);
@@ -58,6 +63,8 @@ void BinaryRewriter::traverseBinary() {
                 //Set the currently inspected instruction for the framework
                 //inspectedInstruction = static_cast<SgAsmMipsInstruction*>(*stmtIter);
                 inspectedInstruction = isSgAsmMipsInstruction(*stmtIter);
+                //Need to deconstruct the current instruction before calling the decision function.
+                //call it here.
                 //For each instruction check what should be done.
                 transformDecision(*stmtIter);
             }
@@ -84,7 +91,8 @@ void BinaryRewriter::transformDecision(SgAsmStatement* instPtr) {
 
 //return what kind of mips enum instruction it is.
 MipsInstructionKind BinaryRewriter::getInstructionKind() {
-    return inspectedInstruction->get_kind(); 
+    return instInfo.kind;
+    //return inspectedInstruction->get_kind(); 
 }
 
 //return the operands list for the inspected instruction.
@@ -94,7 +102,20 @@ SgAsmExpressionPtrList BinaryRewriter::getInstructionOperands() {
 
 //return the mips instruction mnemonic string.
 std::string BinaryRewriter::getInstructionMnemonic() {
-    return inspectedInstruction->get_mnemonic();
+    return instInfo.mnemonic;
+    //return 
+}
+
+
+//decide if it should return string or descriptor.
+//What registers are used as inputs on the inspected instruction.
+std::string inputRegisters() {
+     
+}
+
+//registers used as output on the inspected instruction.
+std::string outputRegisters() {
+
 }
 
 
@@ -123,6 +144,39 @@ void BinaryRewriter::saveInstruction() {
 }
 
 
+/******************************************************************************
+* Private functions for the framework
+******************************************************************************/
+//deconstructs the current function. Making information about available.
+//The inspected instruction pointer is set to the latest instruction here.
+void BinaryRewriter::deconstructInstruction() {
+    //set instruction kind
+    instInfo.kind = inspectedInstruction->get_kind();
+    //set mnemonic
+    instInfo.mnemonic = inspectedInstruction->get_mnemonic(); 
+    //save the operands list.
+    instInfo.operandsList = inspectedInstruction->get_operandList();    
+    //save the operand expressions.
+    //instInfo.operandExpressionList = &instInfo.operandsList->get_operands();
+    //decode the instruction to get the registers and constants
+    decodeOperands();
+}
+
+//deconstructs the operands of the instructions to registers or constants.
+void BinaryRewriter::decodeOperands(){
+    //go through the operands and identify it and save the information.
+    //get the expression list for the operands.
+    SgAsmExpressionPtrList* operandExpressionList = &instInfo.operandsList->get_operands(); 
+    //go through the expressions and identify them.
+    for (int i = 0; i < operandExpressionList->size(); i++) {
+        //
+    }
+
+}
+
+void operandDecode(SgAsmExpression* operandExpr) {
+
+}
 
 /******************************************************************************
 * Configuration functions.
