@@ -64,7 +64,7 @@ void BinaryRewriter::traverseBinary() {
                 //inspectedInstruction = static_cast<SgAsmMipsInstruction*>(*stmtIter);
                 inspectedInstruction = isSgAsmMipsInstruction(*stmtIter);
                 //Need to deconstruct the current instruction before calling the decision function.
-                //call it here.
+                deconstructInstruction();
                 //For each instruction check what should be done.
                 transformDecision(*stmtIter);
             }
@@ -128,6 +128,7 @@ std::string outputRegisters() {
 void BinaryRewriter::insertInstruction(SgAsmStatement* addedInstruction) {
     //The passed instruction from the user, inserted into the shadow list.
     shadowStatementListPtr->push_back(addedInstruction);
+    //!!!! The added instruction should now be deconstructed.
 }
 
 //Removes an instruction during the transformation. Basically it will just
@@ -169,13 +170,59 @@ void BinaryRewriter::decodeOperands(){
     SgAsmExpressionPtrList* operandExpressionList = &instInfo.operandsList->get_operands(); 
     //go through the expressions and identify them.
     for (int i = 0; i < operandExpressionList->size(); i++) {
-        //
+        decodeExpression(i, (*operandExpressionList)[i]);
     }
 
 }
 
-void operandDecode(SgAsmExpression* operandExpr) {
-
+//decodes one operand of an instruction.
+//operandnumber is probably needed to keep track of which operand we are decoding.
+//This is because i need to know if a operand is input or output.
+//combine with checking what instruction it is i might need to 
+void BinaryRewriter::decodeExpression(int operandNumber, SgAsmExpression* operandExpr) {
+    //Check what kind of expression it is, loking at the variantT.
+    switch(operandExpr->variantT()) {
+    case V_SgAsmDirectRegisterExpression: {
+        //Register expression. 
+        //Cast the expression to the right type.
+        SgAsmDirectRegisterExpression* regExpr = isSgAsmDirectRegisterExpression(operandExpr);
+        //get the registerdescriptor and save it
+        //I need to figure out how to identify input and output register.
+        //
+        break;
+        }
+    case V_SgAsmMemoryReferenceExpression: {
+        //Memory expression, contains another expression for the constant and register.
+        //decode the size/number of bits for the reference.
+        //decode register
+        //decode constant
+        break;
+    }
+    case V_SgAsmBinaryAdd: {
+        //Addition of two expressions, e.g. fp + constant.
+        SgAsmBinaryExpression* binaryAdd = isSgAsmBinaryExpression(operandExpr);
+        //decode rhs
+        decodeExpression(operandNumber, binaryAdd->get_rhs());
+        //decode lhs
+        decodeExpression(operandNumber, binaryAdd->get_lhs());
+        break;
+    }
+    case V_SgAsmIntegerValueExpression: {
+        //Expression for constants, e.g. constants in lw and sw instructions.
+        //do i need to save the significant bits?
+        //get the value and save it.
+        SgAsmIntegerValueExpression* valueExpr = isSgAsmIntegerValueExpression(operandExpr);
+        //save the constant
+        instInfo.instructionConstant = valueExpr->get_absoluteValue();
+        //save the significant bits, do i need to?
+        instInfo.memoryReferenceSize = valueExpr->get_significantBits();
+        break;
+    }
+    default: {
+        //This case should not be reached.
+        }
+    }
+    
 }
 
 /******************************************************************************

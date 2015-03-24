@@ -78,6 +78,11 @@ class BinaryRewriter {
             //SgAsmExpressionPtrList* operandExpressionList;
             //if the instruction uses a constant then save it.
             uint64_t instructionConstant;
+            //The number of bits/size of the memory reference
+            int memoryReferenceSize;
+            //address of the instruction, if the instruction is inserted then it
+            //is a temporary value or invalid.
+            rose_addr_t address;
         };
         //Private variables.
         //Pointer to the project AST 
@@ -106,7 +111,7 @@ class BinaryRewriter {
         //decode the instruction operands
         void decodeOperands();
         //recursive decoding function
-        void operandDecode(SgAsmExpression*);
+        void decodeExpression(int, SgAsmExpression*);
 
 };
 
