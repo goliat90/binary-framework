@@ -4,6 +4,7 @@
 #define BINARY_REWRITER_H
 
 //Framework headers
+#include "InstructionInformation.hpp"
 
 // Boost lib headers
 #include <boost/graph/adjacency_list.hpp>
