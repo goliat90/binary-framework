@@ -10,6 +10,11 @@ BinaryRewriter::BinaryRewriter(int argc, char **binaryFile) {
     initialize(argc, binaryFile);
 }
 
+//destructor
+//BinaryRewriter::~BinaryRewriter() {
+
+//}
+
 // Pass the binary to the frontend.
 void BinaryRewriter::initialize(int argc, char **binaryFile) {
     
@@ -85,39 +90,13 @@ void BinaryRewriter::transformDecision(SgAsmStatement* instPtr) {
     //std::cout << "Framework decision function" << std::endl;
     decisionsMade++;
     //printout of the instruction and the number of operands.
-    std::cout << getInstructionMnemonic() << " " << getInstructionOperands().size() << std::endl;
     saveInstruction();
 }
 
-//return what kind of mips enum instruction it is.
-MipsInstructionKind BinaryRewriter::getInstructionKind() {
-    return instInfo.kind;
-    //return inspectedInstruction->get_kind(); 
+//function returns the instruction struct.
+instructionInformation BinaryRewriter::getInstructionInfo() {
+    return instInfo;
 }
-
-//return the operands list for the inspected instruction.
-SgAsmExpressionPtrList BinaryRewriter::getInstructionOperands() {
-    return inspectedInstruction->get_operandList()->get_operands();
-}
-
-//return the mips instruction mnemonic string.
-std::string BinaryRewriter::getInstructionMnemonic() {
-    return instInfo.mnemonic;
-    //return 
-}
-
-
-//decide if it should return string or descriptor.
-//What registers are used as inputs on the inspected instruction.
-std::string inputRegisters() {
-     
-}
-
-//registers used as output on the inspected instruction.
-std::string outputRegisters() {
-
-}
-
 
 /******************************************************************************
 * Insert, delete and save instructions
@@ -150,17 +129,24 @@ void BinaryRewriter::saveInstruction() {
 ******************************************************************************/
 //deconstructs the current function. Making information about available.
 //The inspected instruction pointer is set to the latest instruction here.
-void BinaryRewriter::deconstructInstruction() {
+instructionInformation BinaryRewriter::deconstructInstruction() {
+    SgAsmMipsInstruction* instruction = inspectedInstruction;
+    //
+    instructionInformation instructionStruct;
     //set instruction kind
-    instInfo.kind = inspectedInstruction->get_kind();
+    instructionStruct.kind = instruction->get_kind();
     //set mnemonic
-    instInfo.mnemonic = inspectedInstruction->get_mnemonic(); 
+    instructionStruct.mnemonic = instruction->get_mnemonic(); 
     //save the operands list.
-    instInfo.operandsList = inspectedInstruction->get_operandList();    
+    instructionStruct.operandsList = instruction->get_operandList();    
+    //clear the registers vector.
+    instructionStruct.registers.clear();
     //save the operand expressions.
-    //instInfo.operandExpressionList = &instInfo.operandsList->get_operands();
+    //instructionStruct.operandExpressionList = &instructionStruct.operandsList->get_operands();
     //decode the instruction to get the registers and constants
-    decodeOperands();
+    //decodeOperands();
+    //
+    return instructionStruct;
 }
 
 //deconstructs the operands of the instructions to registers or constants.
@@ -170,7 +156,7 @@ void BinaryRewriter::decodeOperands(){
     SgAsmExpressionPtrList* operandExpressionList = &instInfo.operandsList->get_operands(); 
     //go through the expressions and identify them.
     for (int i = 0; i < operandExpressionList->size(); i++) {
-        decodeExpression(i, (*operandExpressionList)[i]);
+        decodeExpression((*operandExpressionList)[i]);
     }
 
 }
@@ -179,7 +165,7 @@ void BinaryRewriter::decodeOperands(){
 //operandnumber is probably needed to keep track of which operand we are decoding.
 //This is because i need to know if a operand is input or output.
 //combine with checking what instruction it is i might need to 
-void BinaryRewriter::decodeExpression(int operandNumber, SgAsmExpression* operandExpr) {
+void BinaryRewriter::decodeExpression(SgAsmExpression* operandExpr) {
     //Check what kind of expression it is, loking at the variantT.
     switch(operandExpr->variantT()) {
     case V_SgAsmDirectRegisterExpression: {
@@ -187,24 +173,31 @@ void BinaryRewriter::decodeExpression(int operandNumber, SgAsmExpression* operan
         //Cast the expression to the right type.
         SgAsmDirectRegisterExpression* regExpr = isSgAsmDirectRegisterExpression(operandExpr);
         //get the registerdescriptor and save it
-        //I need to figure out how to identify input and output register.
-        //
+        RegisterDescriptor reg = regExpr->get_descriptor();
+        //get the register string name.
+        std::string regName = mipsRegisters->lookup(reg);
+        //Insert into the vector
+        instInfo.registers.push_back(std::pair<std::string, RegisterDescriptor>(regName, reg));
         break;
         }
     case V_SgAsmMemoryReferenceExpression: {
         //Memory expression, contains another expression for the constant and register.
+        SgAsmMemoryReferenceExpression* memRef = isSgAsmMemoryReferenceExpression(operandExpr);
         //decode the size/number of bits for the reference.
-        //decode register
-        //decode constant
+        SgAsmType* refType = memRef->get_type();
+        //save the bits/size.
+        instInfo.memoryReferenceSize = refType->get_nBits();
+        //continue with extractin the address.
+        decodeExpression(memRef->get_address());
         break;
     }
     case V_SgAsmBinaryAdd: {
         //Addition of two expressions, e.g. fp + constant.
         SgAsmBinaryExpression* binaryAdd = isSgAsmBinaryExpression(operandExpr);
         //decode rhs
-        decodeExpression(operandNumber, binaryAdd->get_rhs());
+        decodeExpression(binaryAdd->get_rhs());
         //decode lhs
-        decodeExpression(operandNumber, binaryAdd->get_lhs());
+        decodeExpression(binaryAdd->get_lhs());
         break;
     }
     case V_SgAsmIntegerValueExpression: {
@@ -215,12 +208,12 @@ void BinaryRewriter::decodeExpression(int operandNumber, SgAsmExpression* operan
         //save the constant
         instInfo.instructionConstant = valueExpr->get_absoluteValue();
         //save the significant bits, do i need to?
-        instInfo.memoryReferenceSize = valueExpr->get_significantBits();
+        instInfo.significantBits = valueExpr->get_significantBits();
         break;
     }
     default: {
         //This case should not be reached.
-        }
+    }
     }
     
 }
