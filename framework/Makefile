@@ -11,14 +11,17 @@ SRCDIR = ./src
 
 all: linking 
 
-framework.lo:
+symbolicRegisters.lo:
+	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o symbolicRegisters.lo $(SRCDIR)/symbolicRegisters.cpp
+
+framework.lo: symbolicRegisters.lo
 	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o binaryRewriter.lo $(SRCDIR)/binaryRewriter.cpp
 
 test.lo:
 	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o test.lo $(SRCDIR)/test.cpp
 
 linking: framework.lo test.lo
-	libtool --mode=link g++ $(ROSE_LIBS) -o test.out test.lo binaryRewriter.lo
+	libtool --mode=link g++ $(ROSE_LIBS) -o test.out test.lo binaryRewriter.lo symbolicRegisters.lo
 
 	
 
