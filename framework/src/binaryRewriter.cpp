@@ -133,14 +133,14 @@ instructionInformation BinaryRewriter::deconstructInstruction() {
     SgAsmMipsInstruction* instruction = inspectedInstruction;
     //
     instructionInformation instructionStruct;
-    //set instruction kind
-    instructionStruct.kind = instruction->get_kind();
-    //set mnemonic
-    instructionStruct.mnemonic = instruction->get_mnemonic(); 
-    //save the operands list.
-    instructionStruct.operandsList = instruction->get_operandList();    
+//    //set instruction kind
+//    instructionStruct.kind = instruction->get_kind();
+//    //set mnemonic
+//    instructionStruct.mnemonic = instruction->get_mnemonic(); 
+//    //save the operands list.
+//    instructionStruct.operandsList = instruction->get_operandList();    
     //clear the registers vector.
-    instructionStruct.registers.clear();
+    //instructionStruct.registers.clear();
     //save the operand expressions.
     //instructionStruct.operandExpressionList = &instructionStruct.operandsList->get_operands();
     //decode the instruction to get the registers and constants
@@ -153,11 +153,11 @@ instructionInformation BinaryRewriter::deconstructInstruction() {
 void BinaryRewriter::decodeOperands(){
     //go through the operands and identify it and save the information.
     //get the expression list for the operands.
-    SgAsmExpressionPtrList* operandExpressionList = &instInfo.operandsList->get_operands(); 
+    //SgAsmExpressionPtrList* operandExpressionList = &instInfo.operandsList->get_operands(); 
     //go through the expressions and identify them.
-    for (int i = 0; i < operandExpressionList->size(); i++) {
-        decodeExpression((*operandExpressionList)[i]);
-    }
+    //for (int i = 0; i < operandExpressionList->size(); i++) {
+    //    decodeExpression((*operandExpressionList)[i]);
+    //}
 
 }
 
@@ -167,55 +167,55 @@ void BinaryRewriter::decodeOperands(){
 //combine with checking what instruction it is i might need to 
 void BinaryRewriter::decodeExpression(SgAsmExpression* operandExpr) {
     //Check what kind of expression it is, loking at the variantT.
-    switch(operandExpr->variantT()) {
-    case V_SgAsmDirectRegisterExpression: {
-        //Register expression. 
-        //Cast the expression to the right type.
-        SgAsmDirectRegisterExpression* regExpr = isSgAsmDirectRegisterExpression(operandExpr);
-        //get the registerdescriptor and save it
-        RegisterDescriptor reg = regExpr->get_descriptor();
-        //get the register string name.
-        std::string regName = mipsRegisters->lookup(reg);
-        //Insert into the vector
-        instInfo.registers.push_back(std::pair<std::string, RegisterDescriptor>(regName, reg));
-        break;
-        }
-    case V_SgAsmMemoryReferenceExpression: {
-        //Memory expression, contains another expression for the constant and register.
-        SgAsmMemoryReferenceExpression* memRef = isSgAsmMemoryReferenceExpression(operandExpr);
-        //decode the size/number of bits for the reference.
-        SgAsmType* refType = memRef->get_type();
-        //save the bits/size.
-        instInfo.memoryReferenceSize = refType->get_nBits();
-        //continue with extractin the address.
-        decodeExpression(memRef->get_address());
-        break;
-    }
-    case V_SgAsmBinaryAdd: {
-        //Addition of two expressions, e.g. fp + constant.
-        SgAsmBinaryExpression* binaryAdd = isSgAsmBinaryExpression(operandExpr);
-        //decode rhs
-        decodeExpression(binaryAdd->get_rhs());
-        //decode lhs
-        decodeExpression(binaryAdd->get_lhs());
-        break;
-    }
-    case V_SgAsmIntegerValueExpression: {
-        //Expression for constants, e.g. constants in lw and sw instructions.
-        //do i need to save the significant bits?
-        //get the value and save it.
-        SgAsmIntegerValueExpression* valueExpr = isSgAsmIntegerValueExpression(operandExpr);
-        //save the constant
-        instInfo.instructionConstant = valueExpr->get_absoluteValue();
-        //save the significant bits, do i need to?
-        instInfo.significantBits = valueExpr->get_significantBits();
-        break;
-    }
-    default: {
-        //This case should not be reached.
-    }
-    }
-    
+//    switch(operandExpr->variantT()) {
+//    case V_SgAsmDirectRegisterExpression: {
+//        //Register expression. 
+//        //Cast the expression to the right type.
+//        SgAsmDirectRegisterExpression* regExpr = isSgAsmDirectRegisterExpression(operandExpr);
+//        //get the registerdescriptor and save it
+//        RegisterDescriptor reg = regExpr->get_descriptor();
+//        //get the register string name.
+//        std::string regName = mipsRegisters->lookup(reg);
+//        //Insert into the vector
+//        instInfo.registers.push_back(std::pair<std::string, RegisterDescriptor>(regName, reg));
+//        break;
+//        }
+//    case V_SgAsmMemoryReferenceExpression: {
+//        //Memory expression, contains another expression for the constant and register.
+//        SgAsmMemoryReferenceExpression* memRef = isSgAsmMemoryReferenceExpression(operandExpr);
+//        //decode the size/number of bits for the reference.
+//        SgAsmType* refType = memRef->get_type();
+//        //save the bits/size.
+//        instInfo.memoryReferenceSize = refType->get_nBits();
+//        //continue with extractin the address.
+//        decodeExpression(memRef->get_address());
+//        break;
+//    }
+//    case V_SgAsmBinaryAdd: {
+//        //Addition of two expressions, e.g. fp + constant.
+//        SgAsmBinaryExpression* binaryAdd = isSgAsmBinaryExpression(operandExpr);
+//        //decode rhs
+//        decodeExpression(binaryAdd->get_rhs());
+//        //decode lhs
+//        decodeExpression(binaryAdd->get_lhs());
+//        break;
+//    }
+//    case V_SgAsmIntegerValueExpression: {
+//        //Expression for constants, e.g. constants in lw and sw instructions.
+//        //do i need to save the significant bits?
+//        //get the value and save it.
+//        SgAsmIntegerValueExpression* valueExpr = isSgAsmIntegerValueExpression(operandExpr);
+//        //save the constant
+//        instInfo.instructionConstant = valueExpr->get_absoluteValue();
+//        //save the significant bits, do i need to?
+//        instInfo.significantBits = valueExpr->get_significantBits();
+//        break;
+//    }
+//    default: {
+//        //This case should not be reached.
+//    }
+//    }
+//    
 }
 
 /******************************************************************************

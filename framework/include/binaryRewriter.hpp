@@ -5,6 +5,8 @@
 
 //Framework headers
 #include "mipsISA.hpp"
+#include "binaryDebug.hpp"
+#include "symbolicRegisters.hpp"
 
 // Boost lib headers
 #include <boost/graph/adjacency_list.hpp>
@@ -12,31 +14,6 @@
 
 // Rose headers
 #include "rose.h"
-
-
-// -------- instruction struct --------
-// Contains information that is useful for the framework about
-// the current instruction.
-struct instructionInformation {
-    //nmemonic enum.
-    MipsInstructionKind kind;
-    //nmemonic string.
-    std::string mnemonic;
-    //input register(s)
-    std::vector<std::pair<std::string, RegisterDescriptor> > registers;
-    //operands list
-    SgAsmOperandList* operandsList; 
-    //operands list, but as SgAsmExpressionPtrList, one level lower than previous.
-    //SgAsmExpressionPtrList* operandExpressionList;
-    //if the instruction uses a constant then save it and significant bits.
-    uint64_t instructionConstant;
-    size_t significantBits;
-    //The number of bits/size of the memory reference, 8,16,32,64
-    int memoryReferenceSize;
-    //address of the instruction, if the instruction is inserted then it
-    //is a temporary value or invalid.
-    rose_addr_t address;
-};
 
 
 /* Class declaration */
@@ -56,7 +33,8 @@ class BinaryRewriter {
         void selectRegisterAllocation();
         //Configure instruction scheduling
         void selectInstructionScheduling();
-
+        //enable debugg printing.
+        void enableDebugg(bool);
 
         /**********************************************************************
         * Traversal functions. 
@@ -76,7 +54,7 @@ class BinaryRewriter {
         //get the information struct for the current instruction.
         instructionInformation getInstructionInfo();
         //Function that provides symbolic register labels.
-        void generateSymbolicRegister(); //need to check how operands/registers are typed.
+//        void generateSymbolicRegister(); //need to check how operands/registers are typed.
         //Virtual function that the user can change in his framework extension.
         virtual void transformDecision(SgAsmStatement*);
 
@@ -133,6 +111,7 @@ class BinaryRewriter {
         void decodeExpression(SgAsmExpression*);
         //clear instruction struct
         void clearInstructionInfo();
+        
 };
 
 #endif 

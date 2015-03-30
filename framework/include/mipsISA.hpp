@@ -35,26 +35,53 @@ enum registerName {
 //RD = Destiniation register
 //RS,RT = Source operand registers
 enum ISAtype{
+    //decode R args (R1, R2, R3, const)
     R_RD_RS_RT,     //add, addu, and, mul, nor, or, slt, sltu, sub, subu, xor, sllv, srav, srlv
     R_RD_RS_C,      //sll, sra, srl,
     R_RS_RT,        //div, divu, madd, maddu, msub, msubu, mult, multu, 
     R_RD,           //mflo, mfhi,
     R_RS,           //mthi, mtlo,
+    R_NOP,          //nop
 
+    //decode I args (const, reg1, reg2(default == null))
     I_RD_RS_C,      //addi, addiu, andi, ori, xori, slti, sltiu, lb, lbu, lh, lhu, lw, lwl, lwr,
     I_RS_RT_C,      //beq, bne, sb, sh, sw, swl, swr,
     I_RS_C,         //bgez, bgezal, bgtz, blez, bltz, 
     I_RD_C,         //lui, 
 
+    //decode J args (
     J_C,            //j(jump), jal,
     J_RS,           //jr,
     J_RD_RS,        //jalr,
-    R_NOP           //nop
-    
+
+    MIPS_UNKNOWN    //The instruction is not included and format is therefore unknown. 
 };
 
-
-
+// -------- instruction struct --------
+// Contains information that is useful for the framework about
+// the current instruction.
+struct instructionInformation {
+    //nmemonic enum.
+    MipsInstructionKind kind;
+    //nmemonic string.
+    std::string mnemonic;
+    //input register(s)
+    std::vector<std::string> inregisters;
+    //output registers
+    std::vector<std::string> outregisters;
+    //operands list
+    //SgAsmOperandList* operandsList;
+    //operands list, but as SgAsmExpressionPtrList, one level lower than previous.
+    //SgAsmExpressionPtrList* operandExpressionList;
+    //if the instruction uses a constant then save it and significant bits.
+    uint64_t instructionConstant;
+    size_t significantBits;
+    //The number of bits/size of the memory reference, 8,16,32,64
+    int memoryReferenceSize;
+    //address of the instruction, if the instruction is inserted then it
+    //is a temporary value or invalid.
+    rose_addr_t address;
+};
 
 
 #endif
