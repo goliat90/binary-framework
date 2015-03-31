@@ -52,9 +52,7 @@ class BinaryRewriter {
         //Next instruction, copies the currently inspected instruction.
         void saveInstruction();
         //get the information struct for the current instruction.
-        instructionInformation getInstructionInfo();
-        //Function that provides symbolic register labels.
-//        void generateSymbolicRegister(); //need to check how operands/registers are typed.
+        //instructionInformation getInstructionInfo();
         //Virtual function that the user can change in his framework extension.
         virtual void transformDecision(SgAsmStatement*);
 
@@ -89,8 +87,6 @@ class BinaryRewriter {
         SgAsmStatementPtrList* shadowStatementListPtr;
         //Current instruction being inspected.
         SgAsmMipsInstruction* inspectedInstruction;
-        //Inspected instruction struct with information
-        instructionInformation instInfo;
         //number of decisions made
         int decisionsMade;
 
@@ -104,7 +100,7 @@ class BinaryRewriter {
         // convert a basic block vector to a list.
         void bbVectorToList(SgAsmBlock*);
         //deconstruct the current instruction to provide information.
-        instructionInformation deconstructInstruction();
+        //instructionInformation deconstructInstruction();
         //decode the instruction operands
         void decodeOperands();
         //recursive decoding function

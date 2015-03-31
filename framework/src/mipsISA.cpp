@@ -7,10 +7,13 @@
 #include "mipsISA.hpp"
 
 
-/* Return the instruction format. */
-ISAtype getInstructionFormat(SgAsmMipsInstruction* inst) {
+/* Return the instruction format. Possibly change this to decode instruction.*/
+//change the return type.
+instructionType getInstructionFormat(SgAsmMipsInstruction* inst) {
+    //struct to store information.
+    instructionStruct instruction;
     //check the variantT.
-    switch (inst->variantT) {
+    switch (inst->variantT()) {
         /********** R type instruction **********/
         //arithmetic.
         case mips_add   :
@@ -107,7 +110,7 @@ ISAtype getInstructionFormat(SgAsmMipsInstruction* inst) {
         /********** J type instruction **********/
         case mips_j     :
         case mips_jal   : return J_C;
-        case mips_jr    : return J_RD;
+        case mips_jr    : return J_RS;
         case mips_jalr  : return J_RD_RS;
 
         default: {

@@ -24,11 +24,6 @@ void BinaryRewriter::initialize(int argc, char **binaryFile) {
     // Create a cfg to be used. 
     CfgPtr = new Cfg;
 
-    //initialize the instruction struct.
-    instInfo.kind = mips_unknown_instruction;
-    instInfo.mnemonic = "";
-    instInfo.instructionConstant = 0;
-
     // Call frontend to parse the file, save it in the private variable.
     binaryProjectPtr = frontend(argc, binaryFile);
     // Extract the SgAsmInterpretation to use when building the cfg
@@ -69,7 +64,7 @@ void BinaryRewriter::traverseBinary() {
                 //inspectedInstruction = static_cast<SgAsmMipsInstruction*>(*stmtIter);
                 inspectedInstruction = isSgAsmMipsInstruction(*stmtIter);
                 //Need to deconstruct the current instruction before calling the decision function.
-                deconstructInstruction();
+                //deconstructInstruction();
                 //For each instruction check what should be done.
                 transformDecision(*stmtIter);
             }
@@ -94,9 +89,9 @@ void BinaryRewriter::transformDecision(SgAsmStatement* instPtr) {
 }
 
 //function returns the instruction struct.
-instructionInformation BinaryRewriter::getInstructionInfo() {
-    return instInfo;
-}
+//instructionInformation BinaryRewriter::getInstructionInfo() {
+//    return instInfo;
+//}
 
 /******************************************************************************
 * Insert, delete and save instructions
@@ -107,7 +102,7 @@ instructionInformation BinaryRewriter::getInstructionInfo() {
 void BinaryRewriter::insertInstruction(SgAsmStatement* addedInstruction) {
     //The passed instruction from the user, inserted into the shadow list.
     shadowStatementListPtr->push_back(addedInstruction);
-    //!!!! The added instruction should now be deconstructed.
+    //!!!! The added instruction should now be deconstructed or should it?
 }
 
 //Removes an instruction during the transformation. Basically it will just
@@ -129,10 +124,10 @@ void BinaryRewriter::saveInstruction() {
 ******************************************************************************/
 //deconstructs the current function. Making information about available.
 //The inspected instruction pointer is set to the latest instruction here.
-instructionInformation BinaryRewriter::deconstructInstruction() {
-    SgAsmMipsInstruction* instruction = inspectedInstruction;
+//instructionInformation BinaryRewriter::deconstructInstruction() {
+//    SgAsmMipsInstruction* instruction = inspectedInstruction;
     //
-    instructionInformation instructionStruct;
+  //  instructionInformation instructionStruct;
 //    //set instruction kind
 //    instructionStruct.kind = instruction->get_kind();
 //    //set mnemonic
@@ -146,8 +141,8 @@ instructionInformation BinaryRewriter::deconstructInstruction() {
     //decode the instruction to get the registers and constants
     //decodeOperands();
     //
-    return instructionStruct;
-}
+  //  return instructionStruct;
+//}
 
 //deconstructs the operands of the instructions to registers or constants.
 void BinaryRewriter::decodeOperands(){

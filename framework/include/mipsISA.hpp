@@ -7,13 +7,20 @@
 #include "rose.h"
 
 //function declarations.
+//decode instruction. what should it return.
+
+//private instructions...
+//decode register => get the registername enum.
+//decode memory.
 
 
 //name of the registers.
-enum registerName {
-    zero,           //always zero,
+enum mipsRegisterName {
+    zero,           //always zero, if zero is encountered then check if it is symbolic.
     at,             //assembly temporary
     v0,v1,          //return value from function call.
+
+    hi,lo,          //special register for multiplication and division.
 
     a0,a1,a2,a3,    //first four parameters of function call
 
@@ -34,20 +41,20 @@ enum registerName {
 //Type of instruction syntax
 //RD = Destiniation register
 //RS,RT = Source operand registers
-enum ISAtype{
+enum instructionType {
     //decode R args (R1, R2, R3, const)
     R_RD_RS_RT,     //add, addu, and, mul, nor, or, slt, sltu, sub, subu, xor, sllv, srav, srlv
     R_RD_RS_C,      //sll, sra, srl,
-    R_RS_RT,        //div, divu, madd, maddu, msub, msubu, mult, multu, 
     R_RD,           //mflo, mfhi,
+    R_RS_RT,        //div, divu, madd, maddu, msub, msubu, mult, multu, 
     R_RS,           //mthi, mtlo,
     R_NOP,          //nop
 
     //decode I args (const, reg1, reg2(default == null))
     I_RD_RS_C,      //addi, addiu, andi, ori, xori, slti, sltiu, lb, lbu, lh, lhu, lw, lwl, lwr,
+    I_RD_C,         //lui, 
     I_RS_RT_C,      //beq, bne, sb, sh, sw, swl, swr,
     I_RS_C,         //bgez, bgezal, bgtz, blez, bltz, 
-    I_RD_C,         //lui, 
 
     //decode J args (
     J_C,            //j(jump), jal,
@@ -60,27 +67,23 @@ enum ISAtype{
 // -------- instruction struct --------
 // Contains information that is useful for the framework about
 // the current instruction.
-struct instructionInformation {
+struct instructionStruct {
     //nmemonic enum.
     MipsInstructionKind kind;
-    //nmemonic string.
-    std::string mnemonic;
+    //instruction format.
+    instructionType format;
     //input register(s)
-    std::vector<std::string> inregisters;
+    std::vector<mipsRegisterName> inregisters;
     //output registers
-    std::vector<std::string> outregisters;
-    //operands list
-    //SgAsmOperandList* operandsList;
-    //operands list, but as SgAsmExpressionPtrList, one level lower than previous.
-    //SgAsmExpressionPtrList* operandExpressionList;
+    std::vector<mipsRegisterName> outregisters;
     //if the instruction uses a constant then save it and significant bits.
     uint64_t instructionConstant;
     size_t significantBits;
     //The number of bits/size of the memory reference, 8,16,32,64
     int memoryReferenceSize;
     //address of the instruction, if the instruction is inserted then it
-    //is a temporary value or invalid.
-    rose_addr_t address;
+    //is a temporary value.
+    rose_addr_t address; 
 };
 
 
