@@ -8,19 +8,24 @@ endif
 
 SRCDIR = ./src
 
+# testing adding more folders to vpath
+VPATH = src:include
 
 all: linking 
 
-symbolicRegisters.lo:
-	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o symbolicRegisters.lo $(SRCDIR)/symbolicRegisters.cpp
+symbolicRegisters.lo: symbolicRegisters.cpp
+	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o symbolicRegisters.lo \
+	$(SRCDIR)/symbolicRegisters.cpp
 
-framework.lo: symbolicRegisters.lo
-	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o binaryRewriter.lo $(SRCDIR)/binaryRewriter.cpp
+framework.lo: binaryRewriter.cpp
+	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o binaryRewriter.lo \
+	$(SRCDIR)/binaryRewriter.cpp
 
-test.lo:
-	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o test.lo $(SRCDIR)/test.cpp
+test.lo: test.cpp
+	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o test.lo \
+	$(SRCDIR)/test.cpp
 
-linking: framework.lo test.lo
+linking: framework.lo test.lo symbolicRegisters.lo
 	libtool --mode=link g++ $(ROSE_LIBS) -o test.out test.lo binaryRewriter.lo symbolicRegisters.lo
 
 	
@@ -29,8 +34,10 @@ clean:
 	rm -rf .libs
 	rm -f test.lo
 	rm -f binaryRewriter.lo
+	rm -f symbolicRegisters.lo
 	rm -f test.out
 	rm -f test.o
 	rm -f binaryRewriter.o
+	rm -f symbolicRegisters.o
 
 
