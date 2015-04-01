@@ -20,8 +20,6 @@ enum mipsRegisterName {
     at,             //assembly temporary
     v0,v1,          //return value from function call.
 
-    hi,lo,          //special register for multiplication and division.
-
     a0,a1,a2,a3,    //first four parameters of function call
 
     t0,t1,t2,t3,    //temporary variables, no need to preserve
@@ -35,7 +33,10 @@ enum mipsRegisterName {
     gp,             //global pointer
     sp,             //stack pointer
     fp,             //stack frame pointer or subroutine variable(s8)
-    ra              //return address of the last subroutine call.
+    ra,              //return address of the last subroutine call.
+
+    hi,lo          //special register for multiplication and division.
+                    //not included in the lookups.
 };
 
 //Type of instruction syntax
@@ -70,6 +71,8 @@ enum instructionType {
 struct instructionStruct {
     //nmemonic enum.
     MipsInstructionKind kind;
+    //mnemonic string
+    std::string mnemonic;
     //instruction format.
     instructionType format;
     //input register(s)

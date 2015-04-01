@@ -122,6 +122,7 @@ void BinaryRewriter::saveInstruction() {
 /******************************************************************************
 * Private functions for the framework
 ******************************************************************************/
+
 //deconstructs the current function. Making information about available.
 //The inspected instruction pointer is set to the latest instruction here.
 //instructionInformation BinaryRewriter::deconstructInstruction() {
