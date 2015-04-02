@@ -6,7 +6,7 @@
 /* header file */
 #include "mipsISA.hpp"
 
-/* function forward declarations */
+/* forward function declarations */
 /* Format of the instruction */
 instructionType     getInstructionFormat(SgAsmMipsInstruction*);
 /* Decode the instruction, calls on the specific decode instructions. */ 
@@ -17,6 +17,14 @@ instructionStruct decodeInstructionR(instructionType format, SgAsmMipsInstructio
 instructionStruct decodeInstructionI(instructionType format, SgAsmMipsInstruction*);
 /* Decode J type instructions.  */
 instructionStruct decodeInstructionJ(instructionType format, SgAsmMipsInstruction*);
+/* decode register names */
+mipsRegisterName decodeRegister(SgAsmExpression*); 
+/* decode value expression, a constant */
+void decodeValueExpression(SgAsmExpression*, instructionStruct*);
+/* decode the memory expression */
+void decodeMemoryReference(SgAsmExpression*, instructionStruct*);
+
+
 /* initfunction for the registerName map,   */
 static std::map<unsigned, mipsRegisterName> initRegisterNameMap();
 
@@ -122,7 +130,7 @@ instructionStruct decodeInstructionR(instructionType format, SgAsmMipsInstructio
     /* variable for struct */
     instructionStruct info;
     /* get the operand list */
-    
+    SgAsmExpressionPtrList* operandList = &inst->get_operandList()->get_operands();
     
     /* Decode according to the format, save relevant data in the struct.  */
     switch (format) {
@@ -199,11 +207,33 @@ mipsRegisterName decodeRegister(SgAsmExpression* expr) {
     RegisterDescriptor reg = regExpr->get_descriptor();
     //check if the register exists in the namemap
     if (registerNameMap.find(reg.get_major()) != registerNameMap.end()) {
-        //register found.
-        
+        //register found, get the iterator and get the register enum.
+        regName = registerNameMap.find(reg.get_major())->second;
+    } else {
+        //the register was not found
+        regName = reg_fault;
     }
+    return regName;
+}
+
+/* decode value expression, a constant 
+    !!! the struct might be redundant.*/
+void decodeValueExpression(SgAsmExpression* inst, instructionStruct* instStruct) {
+    /* cast the sgasmexpression */
+    SgAsmIntegerValueExpression* ve = isSgAsmIntegerValueExpression(inst); 
+}
+
+/* Decode memoryreference expressions */
+void decodeMemoryReference(SgAsmExpression* inst, instructionStruct* instStruct) {
+    /* cast the sgasmexpression */
+    SgAsmMemoryReferenceExpression* memref = isSgAsmMemoryReferenceExpression(inst);
+    /* Get the address expression */
+
+    /* the address is a binaryadd expression, parse left hand and right hand */
+
     
 }
+
 
 
 /* Return the instruction format. Possibly change this to decode instruction.*/

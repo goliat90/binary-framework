@@ -165,17 +165,6 @@ void BinaryRewriter::decodeExpression(SgAsmExpression* operandExpr) {
     //Check what kind of expression it is, loking at the variantT.
 //    switch(operandExpr->variantT()) {
 //    case V_SgAsmDirectRegisterExpression: {
-//        //Register expression. 
-//        //Cast the expression to the right type.
-//        SgAsmDirectRegisterExpression* regExpr = isSgAsmDirectRegisterExpression(operandExpr);
-//        //get the registerdescriptor and save it
-//        RegisterDescriptor reg = regExpr->get_descriptor();
-//        //get the register string name.
-//        std::string regName = mipsRegisters->lookup(reg);
-//        //Insert into the vector
-//        instInfo.registers.push_back(std::pair<std::string, RegisterDescriptor>(regName, reg));
-//        break;
-//        }
 //    case V_SgAsmMemoryReferenceExpression: {
 //        //Memory expression, contains another expression for the constant and register.
 //        SgAsmMemoryReferenceExpression* memRef = isSgAsmMemoryReferenceExpression(operandExpr);

@@ -33,10 +33,11 @@ enum mipsRegisterName {
     gp,             //global pointer
     sp,             //stack pointer
     fp,             //stack frame pointer or subroutine variable(s8)
-    ra,              //return address of the last subroutine call.
+    ra,             //return address of the last subroutine call.
 
-    hi,lo          //special register for multiplication and division.
+    hi,lo,          //special register for multiplication and division.
                     //not included in the lookups.
+    reg_fault       //used if a register is not found.
 };
 
 //Type of instruction syntax
