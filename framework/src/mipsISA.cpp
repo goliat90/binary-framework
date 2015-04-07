@@ -23,7 +23,8 @@ mipsRegisterName decodeRegister(SgAsmExpression*);
 void decodeValueExpression(SgAsmExpression*, instructionStruct*);
 /* decode the memory expression */
 void decodeMemoryReference(SgAsmExpression*, instructionStruct*);
-
+/* operandList decoder, decodes the operands in the list. */
+instructionStruct decodeOpList(SgAsmExpressionPtrList*, bool, bool, bool, bool, bool);
 
 /* initfunction for the registerName map,   */
 static std::map<unsigned, mipsRegisterName> initRegisterNameMap();
@@ -91,7 +92,7 @@ instructionStruct decodeinstruction(SgAsmMipsInstruction* inst) {
         case R_RS_RT    :
         case R_RS       :
         case R_NOP      : {
-            decodeInstructionR(format, inst);
+            instructionInfo = decodeInstructionR(format, inst);
             break;
         }
         case I_RD_RS_C  :
@@ -99,14 +100,14 @@ instructionStruct decodeinstruction(SgAsmMipsInstruction* inst) {
         case I_RS_RT_C  :
         case I_RS_C     : {
             /* Decode I type instructions.  */
-            decodeInstructionI(format, inst);
+            instructionInfo = decodeInstructionI(format, inst);
             break;
         }
         case J_C        :
         case J_RS       :
         case J_RD_RS    : {
             /* Decode J type instructions.  */
-            decodeInstructionJ(format, inst);
+            instructionInfo = decodeInstructionJ(format, inst);
             break;
         }
         default: {
@@ -128,47 +129,49 @@ instructionStruct decodeinstruction(SgAsmMipsInstruction* inst) {
 /* Decode R type instruction specific things..  */
 instructionStruct decodeInstructionR(instructionType format, SgAsmMipsInstruction* inst) {
     /* variable for struct */
-    instructionStruct info;
+    instructionStruct instStruct;
     /* get the operand list */
     SgAsmExpressionPtrList* operandList = &inst->get_operandList()->get_operands();
-    
     /* Decode according to the format, save relevant data in the struct.  */
     switch (format) {
         case R_RD_RS_RT :{
-             
+            instStruct = decodeOpList(operandList, true, true, true, false, false);
             break;
         }
         case R_RD_RS_C  :{
-        
+            instStruct = decodeOpList(operandList, true, true, false, true, false);
             break;
         }
         case R_RD       :{
-        
+            instStruct = decodeOpList(operandList, true, false, false, false, false);
             break;
         }
         case R_RS_RT    :{
-        
+            instStruct = decodeOpList(operandList, false, true, true, false, false);
             break;
         }
         case R_RS       :{
-        
+            instStruct = decodeOpList(operandList, false, true, false, false, false);
             break;
         }
         case R_NOP      : {
-            //Nop has nothing here. need to verify... need to verify...
         }
     }
     //returning the filled struct.
-    return info;
+    return instStruct;
 } 
 
 /* Decode I type instructions.  */
 instructionStruct decodeInstructionI(instructionType format, SgAsmMipsInstruction* inst) {
     /* variable for struct */
-    instructionStruct info;
+    instructionStruct instStruct;
+    /* get the operand list */
+    SgAsmExpressionPtrList* operandList = &inst->get_operandList()->get_operands();
     /* decode according to format */
     switch (format) {
         case I_RD_RS_C   :
+            instStruct = decodeOpList(operandList, true, true, false, true, false);
+            break;
         case I_RD_C      :
         case I_RS_RT_C   :
         case I_RS_C      : {
@@ -176,13 +179,13 @@ instructionStruct decodeInstructionI(instructionType format, SgAsmMipsInstructio
         }
     }
     //returning the filled struct.
-    return info;
+    return instStruct;
 }
 
 /* Decode J type instructions.  */
 instructionStruct decodeInstructionJ(instructionType format, SgAsmMipsInstruction* inst) {
     /* variable for struct */
-    instructionStruct info;
+    instructionStruct instStruct;
     /* decode instruction with the right format */
     switch (format) {
         case J_C        :
@@ -193,9 +196,54 @@ instructionStruct decodeInstructionJ(instructionType format, SgAsmMipsInstructio
         }
     }
     //returning the filled struct.
-    return info;
+    return instStruct;
 }
 
+/* operandList decoder, decodes the operands in the list. */
+instructionStruct decodeOpList(SgAsmExpressionPtrList* operandList,
+    bool hasRD, bool hasRS, bool hasRT, bool hasC, bool memOp) {
+    /* variables */
+    int opIndex = 0;
+    instructionStruct instruction;
+    /* Fill the struct with information. Check if for each type of value if it
+       is present in the instruction by checking the booleans. */ 
+    if (true == hasRD) {
+        /* Has a destination register, extract it. */
+        mipsRegisterName RDname = decodeRegister((*operandList)[opIndex]);       
+        /* Insert the register into the struct as a destination register */
+        instruction.destinationRegisters.push_back(RDname);
+        /* Increment the operand index */
+        opIndex++;
+    }
+    if (true == hasRS) {
+        /* Has a rs register operand, extract it. */
+        mipsRegisterName RSname = decodeRegister((*operandList)[opIndex]);       
+        /* insert the registers into the struct as a source register */
+        instruction.sourceRegisters.push_back(RSname);
+        /* Increment the operand index */
+        opIndex++;
+    }
+    if (true == hasRT) {
+        /* Has a rt register operand, extract it. */
+        mipsRegisterName RTname = decodeRegister((*operandList)[opIndex]);       
+        /* insert the registers into the struct as a source register */
+        instruction.sourceRegisters.push_back(RTname);
+        /* Increment the operand index */
+        opIndex++;
+    }
+    if (true == hasC) {
+        /* get the relevant values from the constant */
+        decodeValueExpression((*operandList)[opIndex], &instruction);
+        /* increment the operand index */
+        opIndex++;
+    }
+    if (true == memOp) {
+        /* this is a memory instruction, extract the register and memory constant. */
+        decodeMemoryReference((*operandList)[opIndex], &instruction);       
+    }
+    /* return the instruction information */
+    return instruction;
+}
 
 /* decode a register operand */
 mipsRegisterName decodeRegister(SgAsmExpression* expr) {
@@ -216,24 +264,32 @@ mipsRegisterName decodeRegister(SgAsmExpression* expr) {
     return regName;
 }
 
-/* decode value expression, a constant 
-    !!! the struct might be redundant.*/
+/* decode value expression, a constant. Save values in the struct */
 void decodeValueExpression(SgAsmExpression* inst, instructionStruct* instStruct) {
-    /* cast the sgasmexpression */
+    /* cast the SgAsmExpression */
     SgAsmIntegerValueExpression* ve = isSgAsmIntegerValueExpression(inst); 
+    /* save the constant  */
+    instStruct->instructionConstant = ve->get_absoluteValue();
+    /* save the significant bits, needed? */
+    instStruct->significantBits = ve->get_significantBits();
 }
 
 /* Decode memoryreference expressions */
 void decodeMemoryReference(SgAsmExpression* inst, instructionStruct* instStruct) {
     /* cast the sgasmexpression */
     SgAsmMemoryReferenceExpression* memref = isSgAsmMemoryReferenceExpression(inst);
-    /* Get the address expression */
-
-    /* the address is a binaryadd expression, parse left hand and right hand */
-
-    
+    /* Get the size of the memory reference, 8,16,32,64 */
+    SgAsmType* refType = memref->get_type();
+    instStruct->memoryReferenceSize = refType->get_nBits();
+    /* Get the address expression which is a binary add consisting of
+       one register and one constant. */
+    SgAsmBinaryExpression* binExp = isSgAsmBinaryExpression(memref->get_address());    
+    /* decode the lhs(register) and the rhs(constant) expressions */
+    mipsRegisterName regName = decodeRegister(binExp->get_lhs());
+    instStruct->sourceRegisters.push_back(regName);
+    /* decode the constant and pass the struct as well */
+    decodeValueExpression(binExp->get_rhs(), instStruct);
 }
-
 
 
 /* Return the instruction format. Possibly change this to decode instruction.*/

@@ -5,11 +5,11 @@
 #include <sstream>
 
 /* Forward declaration */
-std::string generateRegName();
+unsigned generateRegName();
 
 /* map to connect the register expression object to the symbolic register. */
-static std::map<SgAsmDirectRegisterExpression*, std::string> symbolicRegisterMap;
-typedef std::pair<SgAsmDirectRegisterExpression*, std::string> mapPair;
+static std::map<SgAsmDirectRegisterExpression*, unsigned> symbolicRegisterMap;
+typedef std::pair<SgAsmDirectRegisterExpression*, unsigned> mapPair;
 
 /* Create a symbolic register that can be used */
 SgAsmDirectRegisterExpression generateSymbolicRegister() {
@@ -17,25 +17,22 @@ SgAsmDirectRegisterExpression generateSymbolicRegister() {
     RegisterDescriptor rd = RegisterDescriptor(mips_regclass_gpr, 0, 0, 0); 
     /* Create the register expression. */
     SgAsmDirectRegisterExpression regExp = SgAsmDirectRegisterExpression(rd);
-    /* Get a sym register name */
-    std::string regName = generateRegName();
+    /* Get a sym register name (number) */
+    unsigned regName = generateRegName();
     /* Insert the register to the map with associated register */
     symbolicRegisterMap.insert(mapPair(&regExp, regName));
     /* Return the register expression */ 
     return regExp;
 }
 
-/* Generates the symbolic register name */
-std::string generateRegName() {
+/* Generates the symbolic register name, which is just a number. */
+unsigned generateRegName() {
     /* Number counter for the symbolic regs */
-    static int symbolicNumber = 0;
-    /* Create the symbolic register name */
-    std::stringstream symReg;
-    symReg << "Sym_" << symbolicNumber;
+    static unsigned symbolicNumber = 0;
     /* Increment the number */
     symbolicNumber++;
-    /* return string */
-    return symReg.str();
+    /* return the number*/
+    return symbolicNumber;
 }
 
 /* Checks if a registerexpression is symbolic or not. */
@@ -51,9 +48,9 @@ bool isSymbolicRegister(SgAsmDirectRegisterExpression* reg) {
 }
 
 /* search for a symbolic register. */
-std::string findSymbolicRegister(SgAsmDirectRegisterExpression* reg) {
+unsigned findSymbolicRegister(SgAsmDirectRegisterExpression* reg) {
     //get the symbolic name of the register.
-    std::string symRegName = symbolicRegisterMap.find(reg)->second;
+    unsigned symRegName = symbolicRegisterMap.find(reg)->second;
     //return the name.
     return symRegName;
 }

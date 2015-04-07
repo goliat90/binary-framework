@@ -53,9 +53,11 @@ enum instructionType {
     R_NOP,          //nop
 
     //decode I args (const, reg1, reg2(default == null))
-    I_RD_RS_C,      //addi, addiu, andi, ori, xori, slti, sltiu, lb, lbu, lh, lhu, lw, lwl, lwr,
+    I_RD_RS_C,      //addi, addiu, andi, ori, xori, slti, sltiu, 
+    I_RD_MEM_RS_C,  //lb, lbu, lh, lhu, lw, lwl, lwr, (instruction with a combined operand of register and constant)
     I_RD_C,         //lui, 
-    I_RS_RT_C,      //beq, bne, sb, sh, sw, swl, swr,
+    I_RS_RT_C,      //beq, bne, 
+    I_RS_MEM_RT_C,  //sb, sh, sw, swl, swr,(instruction with a combined operand of register and constant)
     I_RS_C,         //bgez, bgezal, bgtz, blez, bltz, 
 
     //decode J args (
@@ -77,9 +79,9 @@ struct instructionStruct {
     //instruction format.
     instructionType format;
     //input register(s)
-    std::vector<mipsRegisterName> inregisters;
+    std::vector<mipsRegisterName> destinationRegisters;
     //output registers
-    std::vector<mipsRegisterName> outregisters;
+    std::vector<mipsRegisterName> sourceRegisters;
     //if the instruction uses a constant then save it and significant bits.
     uint64_t instructionConstant;
     size_t significantBits;
