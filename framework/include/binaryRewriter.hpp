@@ -99,14 +99,6 @@ class BinaryRewriter {
         void functionTraversal();
         // convert a basic block vector to a list.
         void bbVectorToList(SgAsmBlock*);
-        //deconstruct the current instruction to provide information.
-        //instructionInformation deconstructInstruction();
-        //decode the instruction operands
-        void decodeOperands();
-        //recursive decoding function
-        void decodeExpression(SgAsmExpression*);
-        //clear instruction struct
-        void clearInstructionInfo();
         
 };
 

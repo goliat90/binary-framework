@@ -8,136 +8,36 @@
 
 /* forward function declarations */
 /* Format of the instruction */
-instructionType     getInstructionFormat(SgAsmMipsInstruction*);
-/* Decode the instruction, calls on the specific decode instructions. */ 
-instructionStruct   decodeInstruction(SgAsmMipsInstruction*);
-/* Decode R type instructions.  */
-instructionStruct decodeInstructionR(instructionType format, SgAsmMipsInstruction*);
-/* Decode I type instructions.  */
-instructionStruct decodeInstructionI(instructionType format, SgAsmMipsInstruction*);
-/* Decode J type instructions.  */
-instructionStruct decodeInstructionJ(instructionType format, SgAsmMipsInstruction*);
+instructionType getInstructionFormat(SgAsmMipsInstruction*);
 /* decode register names */
-mipsRegisterName decodeRegister(SgAsmExpression*); 
+registerStruct decodeRegister(SgAsmExpression*); 
 /* decode value expression, a constant */
 void decodeValueExpression(SgAsmExpression*, instructionStruct*);
 /* decode the memory expression */
 void decodeMemoryReference(SgAsmExpression*, instructionStruct*);
 /* operandList decoder, decodes the operands in the list. */
 instructionStruct decodeOpList(SgAsmExpressionPtrList*, bool, bool, bool, bool, bool);
-
 /* initfunction for the registerName map,   */
 static std::map<unsigned, mipsRegisterName> initRegisterNameMap();
 
+/* Global variables */
 /* map for the register names. Mappes values of registers to the enum name.  */
 static std::map<unsigned, mipsRegisterName> registerNameMap = initRegisterNameMap(); 
 
-/* initfunction for the registerName map,   */
-static std::map<unsigned, mipsRegisterName> initRegisterNameMap() {
-    //variable for the register
-    std::map<unsigned, mipsRegisterName> registerName; 
-
-    registerName.insert(std::pair<unsigned, mipsRegisterName>(0,zero));
-    registerName.insert(std::pair<unsigned, mipsRegisterName>(1,at));    
-    registerName.insert(std::pair<unsigned, mipsRegisterName>(2,v0));    
-    registerName.insert(std::pair<unsigned, mipsRegisterName>(3,v1));    
-
-    registerName.insert(std::pair<unsigned, mipsRegisterName>(4,a0));    
-    registerName.insert(std::pair<unsigned, mipsRegisterName>(5,a1));    
-    registerName.insert(std::pair<unsigned, mipsRegisterName>(6,a2));    
-    registerName.insert(std::pair<unsigned, mipsRegisterName>(7,a3));    
-
-    registerName.insert(std::pair<unsigned, mipsRegisterName>(8,t0));    
-    registerName.insert(std::pair<unsigned, mipsRegisterName>(9,t1));    
-    registerName.insert(std::pair<unsigned, mipsRegisterName>(10,t2));    
-    registerName.insert(std::pair<unsigned, mipsRegisterName>(11,t3));    
-    registerName.insert(std::pair<unsigned, mipsRegisterName>(12,t4));    
-    registerName.insert(std::pair<unsigned, mipsRegisterName>(13,t5));    
-    registerName.insert(std::pair<unsigned, mipsRegisterName>(14,t6));    
-    registerName.insert(std::pair<unsigned, mipsRegisterName>(15,t7));    
-
-    registerName.insert(std::pair<unsigned, mipsRegisterName>(16,s0));    
-    registerName.insert(std::pair<unsigned, mipsRegisterName>(17,s1));    
-    registerName.insert(std::pair<unsigned, mipsRegisterName>(18,s2));    
-    registerName.insert(std::pair<unsigned, mipsRegisterName>(19,s3));    
-    registerName.insert(std::pair<unsigned, mipsRegisterName>(20,s4));    
-    registerName.insert(std::pair<unsigned, mipsRegisterName>(21,s5));    
-    registerName.insert(std::pair<unsigned, mipsRegisterName>(22,s6));    
-    registerName.insert(std::pair<unsigned, mipsRegisterName>(23,s7));    
-
-    registerName.insert(std::pair<unsigned, mipsRegisterName>(24,t8));    
-    registerName.insert(std::pair<unsigned, mipsRegisterName>(25,t9));    
-
-    registerName.insert(std::pair<unsigned, mipsRegisterName>(26,k0));    
-    registerName.insert(std::pair<unsigned, mipsRegisterName>(27,k1));    
-
-    registerName.insert(std::pair<unsigned, mipsRegisterName>(28,gp));    
-    registerName.insert(std::pair<unsigned, mipsRegisterName>(29,sp));    
-    registerName.insert(std::pair<unsigned, mipsRegisterName>(30,fp));    
-    registerName.insert(std::pair<unsigned, mipsRegisterName>(31,ra));    
-
-    return registerName;
-}
 
 /* decode instruction. Calls on the R,I or J decode functions. */
 instructionStruct decodeinstruction(SgAsmMipsInstruction* inst) {
-    instructionStruct instructionInfo;
+    instructionStruct instStruct;
     /* Check what kind of instruction format it is.  */
     instructionType format = getInstructionFormat(inst);
-    /* depending on instruction format use appropriate decode function */
-    switch (format) {
-        case R_RD_RS_RT :
-        case R_RD_RS_C  :
-        case R_RD       :
-        case R_RS_RT    :
-        case R_RS       :
-        case R_NOP      : {
-            instructionInfo = decodeInstructionR(format, inst);
-            break;
-        }
-        case I_RD_RS_C  :
-        case I_RD_C     :
-        case I_RS_RT_C  :
-        case I_RS_C     : {
-            /* Decode I type instructions.  */
-            instructionInfo = decodeInstructionI(format, inst);
-            break;
-        }
-        case J_C        :
-        case J_RS       :
-        case J_RD_RS    : {
-            /* Decode J type instructions.  */
-            instructionInfo = decodeInstructionJ(format, inst);
-            break;
-        }
-        default: {
-            //The instruction is unknown.
-            
-        }
-    }
-    /* Save the address of the instruction, consider other
-       values that are common to all instructions. kind,mnemonic, */
-    instructionInfo.kind = inst->get_kind();
-    instructionInfo.mnemonic = inst->get_mnemonic();
-    instructionInfo.format = format;
-    instructionInfo.address = inst->get_address();
-
-    /* Return the insturction struct from the decoding */    
-    return instructionInfo;
-}
-
-/* Decode R type instruction specific things..  */
-instructionStruct decodeInstructionR(instructionType format, SgAsmMipsInstruction* inst) {
-    /* variable for struct */
-    instructionStruct instStruct;
     /* get the operand list */
     SgAsmExpressionPtrList* operandList = &inst->get_operandList()->get_operands();
-    /* Decode according to the format, save relevant data in the struct.  */
+    /* depending on instruction format use right arguments for decode function */
     switch (format) {
-        case R_RD_RS_RT :{
+        /* R instructions */
+        case R_RD_RS_RT :
             instStruct = decodeOpList(operandList, true, true, true, false, false);
             break;
-        }
         case R_RD_RS_C  :{
             instStruct = decodeOpList(operandList, true, true, false, true, false);
             break;
@@ -155,49 +55,54 @@ instructionStruct decodeInstructionR(instructionType format, SgAsmMipsInstructio
             break;
         }
         case R_NOP      : {
+            break;
         }
-    }
-    //returning the filled struct.
-    return instStruct;
-} 
-
-/* Decode I type instructions.  */
-instructionStruct decodeInstructionI(instructionType format, SgAsmMipsInstruction* inst) {
-    /* variable for struct */
-    instructionStruct instStruct;
-    /* get the operand list */
-    SgAsmExpressionPtrList* operandList = &inst->get_operandList()->get_operands();
-    /* decode according to format */
-    switch (format) {
+        /* I instructions  */
         case I_RD_RS_C   :
             instStruct = decodeOpList(operandList, true, true, false, true, false);
             break;
+        case I_RD_MEM_RS_C: 
+            instStruct = decodeOpList(operandList, true, false, false, false, true);
+            break;
         case I_RD_C      :
+            instStruct = decodeOpList(operandList, true, false, false, true, false);
+            break;
         case I_RS_RT_C   :
+            instStruct = decodeOpList(operandList, false, true, true, true, false);
+            break;
+        case I_RS_MEM_RT_C:
+            instStruct = decodeOpList(operandList, false, true, false, false, true);
+            break;
         case I_RS_C      : {
+            instStruct = decodeOpList(operandList, false, true, false, true, false);
             break;
         }
+        /* J instructions */
+        case J_C        :
+            instStruct = decodeOpList(operandList, false, false, false, true, false);
+            break;
+        case J_RS       :
+            instStruct = decodeOpList(operandList, false, true, false, false, false);
+            break;
+        case J_RD_RS    : {
+            instStruct = decodeOpList(operandList, true, true, false, false, false);
+            break;
+        }
+        default: {
+            //The instruction is unknown.
+        }
     }
-    //returning the filled struct.
+    /* Save the address of the instruction, consider other
+       values that are common to all instructions. kind,mnemonic, */
+    instStruct.kind = inst->get_kind();
+    instStruct.mnemonic = inst->get_mnemonic();
+    instStruct.format = format;
+    instStruct.address = inst->get_address();
+
+    /* Return the insturction struct from the decoding */    
     return instStruct;
 }
 
-/* Decode J type instructions.  */
-instructionStruct decodeInstructionJ(instructionType format, SgAsmMipsInstruction* inst) {
-    /* variable for struct */
-    instructionStruct instStruct;
-    /* decode instruction with the right format */
-    switch (format) {
-        case J_C        :
-        case J_RS       :
-        case J_RD_RS    : {
-            //J instruction decoding.
-            break;
-        }
-    }
-    //returning the filled struct.
-    return instStruct;
-}
 
 /* operandList decoder, decodes the operands in the list. */
 instructionStruct decodeOpList(SgAsmExpressionPtrList* operandList,
@@ -209,25 +114,25 @@ instructionStruct decodeOpList(SgAsmExpressionPtrList* operandList,
        is present in the instruction by checking the booleans. */ 
     if (true == hasRD) {
         /* Has a destination register, extract it. */
-        mipsRegisterName RDname = decodeRegister((*operandList)[opIndex]);       
+        registerStruct RDstruct = decodeRegister((*operandList)[opIndex]);       
         /* Insert the register into the struct as a destination register */
-        instruction.destinationRegisters.push_back(RDname);
+        instruction.destinationRegisters.push_back(RDstruct);
         /* Increment the operand index */
         opIndex++;
     }
     if (true == hasRS) {
         /* Has a rs register operand, extract it. */
-        mipsRegisterName RSname = decodeRegister((*operandList)[opIndex]);       
+        registerStruct RSstruct = decodeRegister((*operandList)[opIndex]);
         /* insert the registers into the struct as a source register */
-        instruction.sourceRegisters.push_back(RSname);
+        instruction.sourceRegisters.push_back(RSstruct);
         /* Increment the operand index */
         opIndex++;
     }
     if (true == hasRT) {
         /* Has a rt register operand, extract it. */
-        mipsRegisterName RTname = decodeRegister((*operandList)[opIndex]);       
+        registerStruct RTstruct = decodeRegister((*operandList)[opIndex]);       
         /* insert the registers into the struct as a source register */
-        instruction.sourceRegisters.push_back(RTname);
+        instruction.sourceRegisters.push_back(RTstruct);
         /* Increment the operand index */
         opIndex++;
     }
@@ -246,9 +151,9 @@ instructionStruct decodeOpList(SgAsmExpressionPtrList* operandList,
 }
 
 /* decode a register operand */
-mipsRegisterName decodeRegister(SgAsmExpression* expr) {
-    //variable for the registername
-    mipsRegisterName regName;
+registerStruct decodeRegister(SgAsmExpression* expr) {
+    /* the register struct */
+    registerStruct regStruct;
     //cast it to register expression
     SgAsmDirectRegisterExpression* regExpr = isSgAsmDirectRegisterExpression(expr);
     //get the register descriptor, from it i can get majr(number)
@@ -256,12 +161,19 @@ mipsRegisterName decodeRegister(SgAsmExpression* expr) {
     //check if the register exists in the namemap
     if (registerNameMap.find(reg.get_major()) != registerNameMap.end()) {
         //register found, get the iterator and get the register enum.
-        regName = registerNameMap.find(reg.get_major())->second;
+        regStruct.regName = registerNameMap.find(reg.get_major())->second;
+        /* If the register is zero then check if it is symbolic. */
+        if (true == isSymbolicRegister(regExpr)) {
+            /* Set the regName member to the symbolic enum */
+            regStruct.regName = symbolic_reg;
+            /* Save the symbolic register number. */
+            regStruct.symbolicNumber = findSymbolicRegister(regExpr);
+        }
     } else {
-        //the register was not found
-        regName = reg_fault;
+        //the register is not an existing one.
+        regStruct.regName = reg_fault;
     }
-    return regName;
+    return regStruct;
 }
 
 /* decode value expression, a constant. Save values in the struct */
@@ -285,15 +197,13 @@ void decodeMemoryReference(SgAsmExpression* inst, instructionStruct* instStruct)
        one register and one constant. */
     SgAsmBinaryExpression* binExp = isSgAsmBinaryExpression(memref->get_address());    
     /* decode the lhs(register) and the rhs(constant) expressions */
-    mipsRegisterName regName = decodeRegister(binExp->get_lhs());
-    instStruct->sourceRegisters.push_back(regName);
+    registerStruct reg = decodeRegister(binExp->get_lhs());
+    instStruct->sourceRegisters.push_back(reg);
     /* decode the constant and pass the struct as well */
     decodeValueExpression(binExp->get_rhs(), instStruct);
 }
 
-
 /* Return the instruction format. Possibly change this to decode instruction.*/
-//change the return type.
 instructionType getInstructionFormat(SgAsmMipsInstruction* inst) {
     //struct to store information.
     instructionStruct instruction;
@@ -360,7 +270,7 @@ instructionType getInstructionFormat(SgAsmMipsInstruction* inst) {
 
         //condition, testing
         case mips_slti  :
-        case mips_sltiu :
+        case mips_sltiu : return I_RD_RS_C;
 
         //load operations.
         case mips_lb    :
@@ -369,18 +279,18 @@ instructionType getInstructionFormat(SgAsmMipsInstruction* inst) {
         case mips_lhu   :
         case mips_lw    :
         case mips_lwl   :
-        case mips_lwr   : return I_RD_RS_C;
+        case mips_lwr   : return I_RD_MEM_RS_C;
 
         //conditional branch 
         case mips_beq   :
-        case mips_bne   :
+        case mips_bne   : return I_RS_RT_C;
 
         //store operations
         case mips_sb    :
         case mips_sh    :
         case mips_sw    :
         case mips_swl   :
-        case mips_swr   : return I_RS_RT_C;
+        case mips_swr   : return I_RS_MEM_RT_C;
 
         //conditional branches
         case mips_bgez  :
@@ -405,4 +315,51 @@ instructionType getInstructionFormat(SgAsmMipsInstruction* inst) {
     }
 }
 
+
+/* initfunction for the registerName map,   */
+static std::map<unsigned, mipsRegisterName> initRegisterNameMap() {
+    //variable for the register
+    std::map<unsigned, mipsRegisterName> registerName; 
+
+    registerName.insert(std::pair<unsigned, mipsRegisterName>(0,zero));
+    registerName.insert(std::pair<unsigned, mipsRegisterName>(1,at));    
+    registerName.insert(std::pair<unsigned, mipsRegisterName>(2,v0));    
+    registerName.insert(std::pair<unsigned, mipsRegisterName>(3,v1));    
+
+    registerName.insert(std::pair<unsigned, mipsRegisterName>(4,a0));    
+    registerName.insert(std::pair<unsigned, mipsRegisterName>(5,a1));    
+    registerName.insert(std::pair<unsigned, mipsRegisterName>(6,a2));    
+    registerName.insert(std::pair<unsigned, mipsRegisterName>(7,a3));    
+
+    registerName.insert(std::pair<unsigned, mipsRegisterName>(8,t0));    
+    registerName.insert(std::pair<unsigned, mipsRegisterName>(9,t1));    
+    registerName.insert(std::pair<unsigned, mipsRegisterName>(10,t2));    
+    registerName.insert(std::pair<unsigned, mipsRegisterName>(11,t3));    
+    registerName.insert(std::pair<unsigned, mipsRegisterName>(12,t4));    
+    registerName.insert(std::pair<unsigned, mipsRegisterName>(13,t5));    
+    registerName.insert(std::pair<unsigned, mipsRegisterName>(14,t6));    
+    registerName.insert(std::pair<unsigned, mipsRegisterName>(15,t7));    
+
+    registerName.insert(std::pair<unsigned, mipsRegisterName>(16,s0));    
+    registerName.insert(std::pair<unsigned, mipsRegisterName>(17,s1));    
+    registerName.insert(std::pair<unsigned, mipsRegisterName>(18,s2));    
+    registerName.insert(std::pair<unsigned, mipsRegisterName>(19,s3));    
+    registerName.insert(std::pair<unsigned, mipsRegisterName>(20,s4));    
+    registerName.insert(std::pair<unsigned, mipsRegisterName>(21,s5));    
+    registerName.insert(std::pair<unsigned, mipsRegisterName>(22,s6));    
+    registerName.insert(std::pair<unsigned, mipsRegisterName>(23,s7));    
+
+    registerName.insert(std::pair<unsigned, mipsRegisterName>(24,t8));    
+    registerName.insert(std::pair<unsigned, mipsRegisterName>(25,t9));    
+
+    registerName.insert(std::pair<unsigned, mipsRegisterName>(26,k0));    
+    registerName.insert(std::pair<unsigned, mipsRegisterName>(27,k1));    
+
+    registerName.insert(std::pair<unsigned, mipsRegisterName>(28,gp));    
+    registerName.insert(std::pair<unsigned, mipsRegisterName>(29,sp));    
+    registerName.insert(std::pair<unsigned, mipsRegisterName>(30,fp));    
+    registerName.insert(std::pair<unsigned, mipsRegisterName>(31,ra));    
+
+    return registerName;
+}
 

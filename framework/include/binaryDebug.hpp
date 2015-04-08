@@ -5,6 +5,8 @@
 
 /* Headers. */
 #include "rose.h"
+/* get instruction decoding functions.  */
+#include "mipsISA.hpp"
 
 /* function declarations  */
 void printBasicBlockInstructions(SgAsmBlock*);

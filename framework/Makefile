@@ -13,6 +13,10 @@ VPATH = src:include
 
 all: linking 
 
+binaryDebug.lo: binaryDebug.cpp binaryDebug.hpp
+	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o binaryDebug.lo \
+	$(SRCDIR)/binaryDebug.cpp
+
 mipsISA.lo: mipsISA.cpp
 	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o mipsISA.lo \
 	$(SRCDIR)/mipsISA.cpp
@@ -29,18 +33,21 @@ test.lo: test.cpp
 	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o test.lo \
 	$(SRCDIR)/test.cpp
 
-linking: framework.lo test.lo symbolicRegisters.lo mipsISA.lo
-	libtool --mode=link g++ $(ROSE_LIBS) -o test.out test.lo binaryRewriter.lo symbolicRegisters.lo
+linking: framework.lo test.lo symbolicRegisters.lo binaryDebug.lo mipsISA.lo 
+	libtool --mode=link g++ $(ROSE_LIBS) -o test.out test.lo binaryRewriter.lo symbolicRegisters.lo \
+	binaryDebug.lo
 
 	
 
 clean:
 	rm -rf .libs
+	rm -f test.out
+	rm -f binaryDebug.lo
 	rm -f test.lo
 	rm -f binaryRewriter.lo
 	rm -f symbolicRegisters.lo
 	rm -f mipsISA.lo
-	rm -f test.out
+	rm -f binaryDebug.o
 	rm -f test.o
 	rm -f binaryRewriter.o
 	rm -f symbolicRegisters.o

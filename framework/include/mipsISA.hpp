@@ -1,18 +1,19 @@
-/* Header file for InstructionInformation */
+/*string * Header file for InstructionInformation */
 
 #ifndef MIPSISA_H
-#define IMIPSISA_H
+#define MIPSISA_H
 
 /* Headers */
 #include "rose.h"
+#include "symbolicRegisters.hpp"
+
+/* forward declarations */
+struct registerStruct;
+struct instructionStruct;
 
 //function declarations.
-//decode instruction. what should it return.
-
-//private instructions...
-//decode register => get the registername enum.
-//decode memory.
-
+/* Decode the instruction, calls on the specific decode instructions. */
+instructionStruct decodeInstruction(SgAsmMipsInstruction*);
 
 //name of the registers.
 enum mipsRegisterName {
@@ -37,6 +38,7 @@ enum mipsRegisterName {
 
     hi,lo,          //special register for multiplication and division.
                     //not included in the lookups.
+    symbolic_reg,   //sumbolic registers.
     reg_fault       //used if a register is not found.
 };
 
@@ -44,7 +46,7 @@ enum mipsRegisterName {
 //RD = Destiniation register
 //RS,RT = Source operand registers
 enum instructionType {
-    //decode R args (R1, R2, R3, const)
+    //decode R 
     R_RD_RS_RT,     //add, addu, and, mul, nor, or, slt, sltu, sub, subu, xor, sllv, srav, srlv
     R_RD_RS_C,      //sll, sra, srl,
     R_RD,           //mflo, mfhi,
@@ -52,7 +54,7 @@ enum instructionType {
     R_RS,           //mthi, mtlo,
     R_NOP,          //nop
 
-    //decode I args (const, reg1, reg2(default == null))
+    //decode I 
     I_RD_RS_C,      //addi, addiu, andi, ori, xori, slti, sltiu, 
     I_RD_MEM_RS_C,  //lb, lbu, lh, lhu, lw, lwl, lwr, (instruction with a combined operand of register and constant)
     I_RD_C,         //lui, 
@@ -60,13 +62,23 @@ enum instructionType {
     I_RS_MEM_RT_C,  //sb, sh, sw, swl, swr,(instruction with a combined operand of register and constant)
     I_RS_C,         //bgez, bgezal, bgtz, blez, bltz, 
 
-    //decode J args (
+    //decode J 
     J_C,            //j(jump), jal,
     J_RS,           //jr,
     J_RD_RS,        //jalr,
 
     MIPS_UNKNOWN    //The instruction is not included and format is therefore unknown. 
 };
+
+/* struct for register information. Contains enum and symbolic number */
+struct registerStruct {
+    //constructor
+    registerStruct():regName(reg_fault), symbolicNumber(0){};
+    //members
+    mipsRegisterName regName;
+    unsigned symbolicNumber;
+};
+
 
 // -------- instruction struct --------
 // Contains information that is useful for the framework about
@@ -79,9 +91,9 @@ struct instructionStruct {
     //instruction format.
     instructionType format;
     //input register(s)
-    std::vector<mipsRegisterName> destinationRegisters;
+    std::vector<registerStruct> destinationRegisters;
     //output registers
-    std::vector<mipsRegisterName> sourceRegisters;
+    std::vector<registerStruct> sourceRegisters;
     //if the instruction uses a constant then save it and significant bits.
     uint64_t instructionConstant;
     size_t significantBits;
