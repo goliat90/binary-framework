@@ -2,7 +2,6 @@
 
 /* Header file */
 #include "symbolicRegisters.hpp"
-#include <sstream>
 
 /* Forward declaration */
 unsigned generateRegName();
@@ -27,8 +26,9 @@ SgAsmDirectRegisterExpression generateSymbolicRegister() {
 
 /* Generates the symbolic register name, which is just a number. */
 unsigned generateRegName() {
-    /* Number counter for the symbolic regs */
-    static unsigned symbolicNumber = 0;
+    /* Number counter for the symbolic regs, starting on 1 since
+       0 is the default value for registerstructs. */
+    static unsigned symbolicNumber = 1;
     /* Increment the number */
     symbolicNumber++;
     /* return the number*/

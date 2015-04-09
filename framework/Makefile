@@ -17,15 +17,15 @@ binaryDebug.lo: binaryDebug.cpp binaryDebug.hpp
 	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o binaryDebug.lo \
 	$(SRCDIR)/binaryDebug.cpp
 
-mipsISA.lo: mipsISA.cpp
+mipsISA.lo: mipsISA.cpp mipsISA.hpp
 	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o mipsISA.lo \
 	$(SRCDIR)/mipsISA.cpp
 
-symbolicRegisters.lo: symbolicRegisters.cpp
+symbolicRegisters.lo: symbolicRegisters.cpp symbolicRegisters.hpp
 	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o symbolicRegisters.lo \
 	$(SRCDIR)/symbolicRegisters.cpp
 
-framework.lo: binaryRewriter.cpp
+framework.lo: binaryRewriter.cpp binaryRewriter.hpp
 	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o binaryRewriter.lo \
 	$(SRCDIR)/binaryRewriter.cpp
 
@@ -33,9 +33,9 @@ test.lo: test.cpp
 	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o test.lo \
 	$(SRCDIR)/test.cpp
 
-linking: framework.lo test.lo symbolicRegisters.lo binaryDebug.lo mipsISA.lo 
+linking: framework.lo test.lo symbolicRegisters.lo mipsISA.lo binaryDebug.lo
 	libtool --mode=link g++ $(ROSE_LIBS) -o test.out test.lo binaryRewriter.lo symbolicRegisters.lo \
-	binaryDebug.lo
+	binaryDebug.lo mipsISA.lo
 
 	
 

@@ -7,9 +7,14 @@
 #include "rose.h"
 /* get instruction decoding functions.  */
 #include "mipsISA.hpp"
+/* string stream */
+#include <sstream>
+#include <string>
+
 
 /* function declarations  */
 void printBasicBlockInstructions(SgAsmBlock*);
 
 
 #endif
+

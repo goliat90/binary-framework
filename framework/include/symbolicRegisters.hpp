@@ -1,5 +1,6 @@
 /* Code for handling the symbolic registers. */
-
+#ifndef SYMBOLICREGISTER_H
+#define SYMBOLICREGISTER_H
 
 /* header files */
 #include "rose.h"
@@ -15,4 +16,4 @@ unsigned findSymbolicRegister(SgAsmDirectRegisterExpression*); //!!need to chang
 bool isSymbolicRegister(SgAsmDirectRegisterExpression*);
 
 
-
+#endif

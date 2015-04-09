@@ -36,10 +36,9 @@ enum mipsRegisterName {
     fp,             //stack frame pointer or subroutine variable(s8)
     ra,             //return address of the last subroutine call.
 
-    hi,lo,          //special register for multiplication and division.
+    //hi,lo,          //special register for multiplication and division.
                     //not included in the lookups.
-    symbolic_reg,   //sumbolic registers.
-    reg_fault       //used if a register is not found.
+    symbolic_reg    //sumbolic registers.
 };
 
 //Type of instruction syntax
@@ -73,7 +72,7 @@ enum instructionType {
 /* struct for register information. Contains enum and symbolic number */
 struct registerStruct {
     //constructor
-    registerStruct():regName(reg_fault), symbolicNumber(0){};
+    registerStruct():regName(symbolic_reg), symbolicNumber(0){};
     //members
     mipsRegisterName regName;
     unsigned symbolicNumber;
@@ -84,6 +83,9 @@ struct registerStruct {
 // Contains information that is useful for the framework about
 // the current instruction.
 struct instructionStruct {
+    //Constructor
+    instructionStruct():kind(mips_unknown_instruction), mnemonic(""), format(MIPS_UNKNOWN),
+    instructionConstant(0), significantBits(0), memoryReferenceSize(0), address(0){};
     //nmemonic enum.
     MipsInstructionKind kind;
     //mnemonic string

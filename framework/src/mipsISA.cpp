@@ -26,7 +26,7 @@ static std::map<unsigned, mipsRegisterName> registerNameMap = initRegisterNameMa
 
 
 /* decode instruction. Calls on the R,I or J decode functions. */
-instructionStruct decodeinstruction(SgAsmMipsInstruction* inst) {
+instructionStruct decodeInstruction(SgAsmMipsInstruction* inst) {
     instructionStruct instStruct;
     /* Check what kind of instruction format it is.  */
     instructionType format = getInstructionFormat(inst);
@@ -169,9 +169,6 @@ registerStruct decodeRegister(SgAsmExpression* expr) {
             /* Save the symbolic register number. */
             regStruct.symbolicNumber = findSymbolicRegister(regExpr);
         }
-    } else {
-        //the register is not an existing one.
-        regStruct.regName = reg_fault;
     }
     return regStruct;
 }
