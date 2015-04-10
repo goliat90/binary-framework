@@ -9,24 +9,32 @@ void printInstruction(instructionStruct*);
 std::map<mipsRegisterName, std::string> initRegStringMap();
 /* adds registers to the stringstream object */
 void printRegisters(std::stringstream* regStream, std::vector<registerStruct>* registers); 
+/* Print instruction constants */
+void printConstant(std::stringstream* conStream, instructionStruct* instStruct);
 
 /* print the instructions contained in a basicblock */
 void printBasicBlockInstructions(SgAsmBlock* block) {
     //get the list of instructions in the block.
     SgAsmStatementPtrList* stmtlistPtr = &block->get_statementList();
     /* print the block number */
+    std::cout << "********** "
+              << "Block: " << std::dec << block->get_id()
+              << " **********" << std::endl;
 
-    //iterate through the statement list and print.
+    /* iterate through the statement list and print. */
     for(SgAsmStatementPtrList::iterator instIter = stmtlistPtr->begin();
         instIter != stmtlistPtr->end(); instIter++) {
         /* Cast the SgAsmStatement to SgAsmMipsInstruction */
         SgAsmMipsInstruction* mipsInst = isSgAsmMipsInstruction(*instIter);
         /* decode the instruction and print the information */
         instructionStruct instruction = decodeInstruction(mipsInst);
-        
+        /* call print instruction */
 
     }
     /* print some delimiter as well */
+    std::cout << "********** "
+              << "End of Block: " << std::dec << block->get_id()
+              << " **********" << std::endl;
 }
 
 /* Prints out relevant information about a instruction */
@@ -38,7 +46,10 @@ void printInstruction(instructionStruct* instStruct) {
     /* add registers, first output then input registers. */ 
     printRegisters(&instStream, &instStruct->destinationRegisters);
     printRegisters(&instStream, &instStruct->sourceRegisters);
-    /* check if there are any constant and include them if so */
+    /* check if there are any constant, if so then include them. */
+    printConstant(&instStream, instStruct);
+    /* print the instructions information */
+    std::cout << instStream.str() << std::endl;
     
 }
 
