@@ -7,6 +7,7 @@
 #include "mipsISA.hpp"
 #include "binaryDebug.hpp"
 #include "symbolicRegisters.hpp"
+#include "cfgFunctions.hpp"
 
 // Boost lib headers
 #include <boost/graph/adjacency_list.hpp>
@@ -68,10 +69,10 @@ class BinaryRewriter {
         /**********************************************************************
         * Typedefs. 
         **********************************************************************/
-        typedef rose::BinaryAnalysis::ControlFlow::Graph Cfg;
-        typedef boost::graph_traits<Cfg>::vertex_iterator CfgVIter;
-        //map type for the property map in the cfg that contains the basic blocks.
-        typedef boost::property_map<Cfg, boost::vertex_name_t>::type basicBlockMap;
+//        typedef rose::BinaryAnalysis::ControlFlow::Graph Cfg;
+//        typedef boost::graph_traits<Cfg>::vertex_iterator CfgVIter;
+//        //map type for the property map in the cfg that contains the basic blocks.
+//        typedef boost::property_map<Cfg, boost::vertex_name_t>::type basicBlockMap;
 
         /**********************************************************************
         * Private variables
@@ -81,7 +82,7 @@ class BinaryRewriter {
         //Register dictionary.
         const RegisterDictionary* mipsRegisters; 
         //Control flow graph pointer.
-        Cfg* CfgPtr;
+        CFG* CfgPtr;
         //Shadow statement list. This list will be swaped with the statementlist
         //att the end of traversing a basic blocks statement list. (vector)
         SgAsmStatementPtrList* shadowStatementListPtr;

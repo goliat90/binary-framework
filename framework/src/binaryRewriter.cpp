@@ -18,7 +18,7 @@ void BinaryRewriter::initialize(int argc, char **binaryFile) {
     decisionsMade = 0;
 
     // Create a cfg to be used. 
-    CfgPtr = new Cfg;
+    CfgPtr = new CFG;
 
     // Call frontend to parse the file, save it in the private variable.
     binaryProjectPtr = frontend(argc, binaryFile);
@@ -40,9 +40,9 @@ void BinaryRewriter::printInformation() {
 //This function will traverse the block cfg.
 void BinaryRewriter::traverseBinary() {
     //get the map for the basic blocks.
-    basicBlockMap bbMap = get(boost::vertex_name, *CfgPtr);
+    basicBlockPropertyMap bbMap = get(boost::vertex_name, *CfgPtr);
     
-    for(std::pair<CfgVIter, CfgVIter> VPair = vertices(*CfgPtr);
+    for(std::pair<CFGVIter, CFGVIter> VPair = vertices(*CfgPtr);
         VPair.first != VPair.second; ++VPair.first) {
         //Retrieve the basic block from the map by using the vertex as key.
         SgAsmBlock* currentBlock = bbMap[*VPair.first];

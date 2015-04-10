@@ -13,6 +13,11 @@ VPATH = src:include
 
 all: linking 
 
+
+cfgFunctions.lo: cfgFunctions.cpp cfgFunctions.hpp
+	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o cfgFunctions.lo \
+	$(SRCDIR)/cfgFunctions.cpp
+
 binaryDebug.lo: binaryDebug.cpp binaryDebug.hpp
 	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o binaryDebug.lo \
 	$(SRCDIR)/binaryDebug.cpp
@@ -33,9 +38,9 @@ test.lo: test.cpp
 	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o test.lo \
 	$(SRCDIR)/test.cpp
 
-linking: framework.lo test.lo symbolicRegisters.lo mipsISA.lo binaryDebug.lo
+linking: framework.lo test.lo symbolicRegisters.lo mipsISA.lo binaryDebug.lo cfgFunctions.lo
 	libtool --mode=link g++ $(ROSE_LIBS) -o test.out test.lo binaryRewriter.lo symbolicRegisters.lo \
-	binaryDebug.lo mipsISA.lo
+	binaryDebug.lo mipsISA.lo cfgFunctions.lo
 
 	
 
@@ -47,10 +52,12 @@ clean:
 	rm -f binaryRewriter.lo
 	rm -f symbolicRegisters.lo
 	rm -f mipsISA.lo
+	rm -f cfgFunctions.lo
 	rm -f binaryDebug.o
 	rm -f test.o
 	rm -f binaryRewriter.o
 	rm -f symbolicRegisters.o
 	rm -f mipsISA.o
+	rm -f cfgFunctions.o
 
 
