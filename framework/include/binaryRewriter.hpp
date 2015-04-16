@@ -69,10 +69,6 @@ class BinaryRewriter {
         /**********************************************************************
         * Typedefs. 
         **********************************************************************/
-//        typedef rose::BinaryAnalysis::ControlFlow::Graph Cfg;
-//        typedef boost::graph_traits<Cfg>::vertex_iterator CfgVIter;
-//        //map type for the property map in the cfg that contains the basic blocks.
-//        typedef boost::property_map<Cfg, boost::vertex_name_t>::type basicBlockMap;
 
         /**********************************************************************
         * Private variables
@@ -80,7 +76,7 @@ class BinaryRewriter {
         //Pointer to the project AST 
         SgProject* binaryProjectPtr;
         //Register dictionary.
-        const RegisterDictionary* mipsRegisters; 
+//        const RegisterDictionary* mipsRegisters; 
         //Control flow graph pointer.
         CFG* CfgPtr;
         //Shadow statement list. This list will be swaped with the statementlist
@@ -96,11 +92,6 @@ class BinaryRewriter {
         **********************************************************************/
         //block traversal
         void blockTraversal();
-        //function traversal
-        void functionTraversal();
-        // convert a basic block vector to a list.
-        void bbVectorToList(SgAsmBlock*);
-        
 };
 
 #endif 

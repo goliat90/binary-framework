@@ -1,5 +1,4 @@
 
-
 /* Framework header */
 #include "binaryRewriter.hpp"
 
@@ -24,8 +23,6 @@ void BinaryRewriter::initialize(int argc, char **binaryFile) {
     binaryProjectPtr = frontend(argc, binaryFile);
     // Extract the SgAsmInterpretation to use when building the cfg
     std::vector<SgAsmInterpretation*> asmInterpretations = SageInterface::querySubTree<SgAsmInterpretation>(binaryProjectPtr);    
-    // Set the register dictionary.
-    mipsRegisters = RegisterDictionary::dictionary_for_isa(asmInterpretations.back());
     // build a cfg as well.
     rose::BinaryAnalysis::ControlFlow cfgAnalyzer;
     cfgAnalyzer.build_block_cfg_from_ast(asmInterpretations.back(), *CfgPtr);
