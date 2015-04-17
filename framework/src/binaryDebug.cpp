@@ -18,8 +18,9 @@ void printBasicBlockInstructions(SgAsmBlock* block) {
     SgAsmStatementPtrList* stmtlistPtr = &block->get_statementList();
     /* print the block number */
     std::cout << "********** "
-              << "Block: " << std::dec << block->get_id()
-              << " **********" << std::endl;
+              << "Block: " << std::hex << block->get_id()
+              << " **********" << std::endl
+              << std::dec; //dont print numbers in after this
 
     /* iterate through the statement list and print. */
     for(SgAsmStatementPtrList::iterator instIter = stmtlistPtr->begin();
@@ -33,8 +34,9 @@ void printBasicBlockInstructions(SgAsmBlock* block) {
     }
     /* print some delimiter as well */
     std::cout << "********** "
-              << "End of Block: " << std::dec << block->get_id()
-              << " **********" << std::endl;
+              << "End of Block: " << std::hex << block->get_id()
+              << " **********" << std::endl
+              << std::dec; //dont print numbers in hex after this
 }
 
 /* Prints out relevant information about a instruction */
