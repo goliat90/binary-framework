@@ -31,20 +31,39 @@ typedef boost::property_map<CFG, boost::vertex_name_t>::type basicBlockPropertyM
 *******************************************************************************/
 class CFGhandler {
     public:
-        /* Allowed to transform this instruction */
-        /* Get the branch instructions target address */
-    private:
-        /* Keep track of where a branch jumps, this is for the whole program */
-        /* Track the spectrum of addresses in the function, */
-        /* Track forbidden instructions to transform, only for the
-            selected function that is being transformed */
-};
-
+/**********************************************************************
+* Function.
+**********************************************************************/
 /*  Extract a specific function from the whole program cfg.
     Returns a sub cfg that contains only the specified function.
     The cfg is build by adding the nodes(blocks) that belong to
     the function. */
-CFG* createFunctionCFG(CFG*, std::string);
+        void createFunctionCFG(CFG*, std::string);
+        /* Allowed to transform this instruction */
+        bool isForbiddenInstruction(); //need to consider the instructions, as arg
+        /* Check if an instruction has a new address */
+        bool hasNewAddress(rose_addr_t); //Consider args
+        /* Get the new address of an instruction */
+        rose_addr_t getNewAddress(rose_addr_t);
+        /* return pointer to function cfg */
+        CFG* getFunctionCFG();
+        /* return pointer to program CFG */
+        CFG* getProgramCFG();
+    private:
+/**********************************************************************
+* Variables.
+**********************************************************************/
+        /* CFG pointers, for program and function cfg */
+        CFG* programCFG;
+        CFG* functionCFG;
+        /* Keep track of where a branch jumps, this is for the whole program */
+        /* Mapping between an old and new address */
+        std::map<rose_addr_t, rose_addr_t> instructionMap;
+        /* Track forbidden instructions to transform, only for this selected
+            function that is being transformed, search vector with std::find */
+        std::vector<SgAsmInstruction*> forbiddenInstructions;
+};
+
  
 
 #endif
