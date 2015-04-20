@@ -24,6 +24,7 @@ void BinaryRewriter::initialize(int argc, char **binaryFile) {
     // Extract the SgAsmInterpretation to use when building the cfg
     std::vector<SgAsmInterpretation*> asmInterpretations = SageInterface::querySubTree<SgAsmInterpretation>(binaryProjectPtr);    
     // build a cfg as well.
+    //TODO move this cfg build call to the building of the subcfg function
     rose::BinaryAnalysis::ControlFlow cfgAnalyzer;
     cfgAnalyzer.build_block_cfg_from_ast(asmInterpretations.back(), *CfgPtr);
 }

@@ -3,10 +3,87 @@
 #include "cfgFunctions.hpp"
 
 
+/* Get the new address for the instruction */
+rose_addr_t CFGhandler::getNewAddress(rose_addr_t oldAddress) {
+    /* search address map for entry */
+    return instructionMap.find(oldAddress)->second;
+}
+
+
+/* Check if the address has been relocated */
+bool CFGhandler::hasNewAddress(rose_addr_t instructionAddress) {
+    /* search address map for entry */
+    int found = instructionMap.count(instructionAddress);
+    /* address i present then found is 1, otherwise 0 */
+    if (found == 1) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
+
+/* Is the instruction allowed to be transformed? */
+bool CFGhandler::isForbiddenInstruction(SgAsmInstruction* inst) {
+    /* Search through the vector for the instruction, return true if found. */
+    std::vector<SgAsmInstruction*>::iterator it;
+    /* use std::find to search vector, it returns a iterator to
+        found value or end. */
+    it = std::find(forbiddenInstruction.begin(), forbiddenInstruction.end(), inst);
+    /* check if the it points to end or not */
+    if (it != forbiddenInstruction.end()) {
+        /* is a forbidden instruction */
+        return false;
+    } else {
+        /* the instruction is allowed to be transformed */
+        return true;
+    }
+}
+
+/* Searches the function cfg for activation records.
+    These are saved for later use and also added to the forbidden
+    instructions map. */
+void CFGhandler::findActivationRecords() {
+    /* The activation record that is to be found is the addition unsigned
+        which changes the sp value, which is done in the first and last block.
+        Done by checking all which vertices is source and target of a edge.
+        When all edges have been checked then the lists can be checked for
+        nodes only containing outward or inward edges. */
+    /* Vector for edges */ 
+    std::set<CFG::vertex_descriptor> targetVertices;
+    std::set<CFG::vertex_descriptor> sourceVertices;
+    /* Block pointers */
+    SgAsmBlock* firstBlock;
+    SgAsmBlock* lastBlock;
+    
+    for(std::pair<CFGEIter, CFGEIter> edgeIter = edges(*functionCFG);
+        edgeIter.first != edgeIter.second; ++edgeIter.first) {
+        /* retrieve each edges target and source and save */
+        targetVertices.insert(target(*edgeIter.first, *functionCFG));
+        sourceVertices.insert(source(*edgeIter.first, *functionCFG));
+    }
+    /* At this point all vertices that are either a target or a source
+        for a edge is saved. The first and last block will only be
+        present as a target or source. */
+    for(std::set<CFG::vertex_descriptor>::iterator iter = targetVertices.begin();
+        iter != targetVertices.end(); ++iter) {
+        /* consider while loop instead.  */
+    }
+    
+}
+
+/* Find the lowest and highest address in the function cfg */
+void CFGhandler::findAddressRange() {
+
+}
+
 /* Makes a cfg for a specific function */
-CFG* createFunctionCFG(CFG* programCFG, std::string functionName) {
+void CFGhandler::createFunctionCFG(CFG* newProgramCFG, std::string newFunctionName) {
+    /* Save the programcfg and the function name. */
+    programCFG = newProgramCFG;
+    functionName = newFunctionName;
     /* New cfg variable */
-    CFG* functionCFG = new CFG;
+    functionCFG = new CFG;
     /* track visited blocks */
     std::map<SgAsmBlock *, bool> visitedBlock;
     /* track mapping between programcfg and functioncfg vertices */
@@ -69,7 +146,6 @@ CFG* createFunctionCFG(CFG* programCFG, std::string functionName) {
             add_edge(newSourceV, newTargetV, *functionCFG);
         }
     }
-    return functionCFG;
 }
 
 
