@@ -17,7 +17,7 @@ int main(int argc, char **argv) {
     
 
     //initalize a traversal of the binary, no changes done.
-    rewriter.traverseBinary();
+    rewriter.transformBinary();
 
     //print traversal information.
     rewriter.printInformation();

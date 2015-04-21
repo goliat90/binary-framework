@@ -16,17 +16,19 @@ void BinaryRewriter::initialize(int argc, char **binaryFile) {
     //variables.
     decisionsMade = 0;
 
-    // Create a cfg to be used. 
-    CfgPtr = new CFG;
-
     // Call frontend to parse the file, save it in the private variable.
     binaryProjectPtr = frontend(argc, binaryFile);
-    // Extract the SgAsmInterpretation to use when building the cfg
-    std::vector<SgAsmInterpretation*> asmInterpretations = SageInterface::querySubTree<SgAsmInterpretation>(binaryProjectPtr);    
-    // build a cfg as well.
-    //TODO move this cfg build call to the building of the subcfg function
-    rose::BinaryAnalysis::ControlFlow cfgAnalyzer;
-    cfgAnalyzer.build_block_cfg_from_ast(asmInterpretations.back(), *CfgPtr);
+
+    /* initialize the cfghandler */
+    cfgContainer = new CFGhandler;
+    /* pass the project to build the programcfg */
+    cfgContainer->initialize(binaryProjectPtr);
+}
+
+/* Used to select the function to be transformed and builds the functioncfg */
+void BinaryRewriter::functionSelect(std::string fName) {
+    /* call on cfghandler to build the functioncfg */
+    cfgContainer->createFunctionCFG(fName);
 }
 
 void BinaryRewriter::printInformation() {
@@ -36,36 +38,50 @@ void BinaryRewriter::printInformation() {
 
 // Does the actual traversal and applies transformations to the binary.
 //This function will traverse the block cfg.
-void BinaryRewriter::traverseBinary() {
-    //get the map for the basic blocks.
-    basicBlockPropertyMap bbMap = get(boost::vertex_name, *CfgPtr);
-    
-    for(std::pair<CFGVIter, CFGVIter> VPair = vertices(*CfgPtr);
-        VPair.first != VPair.second; ++VPair.first) {
-        //Retrieve the basic block from the map by using the vertex as key.
-        SgAsmBlock* currentBlock = bbMap[*VPair.first];
-        //Get the original statement list to a pointer.
-        SgAsmStatementPtrList* originalStatementListPtr = &currentBlock->get_statementList(); 
-        //Initialize the shadowStatementList.
-        shadowStatementListPtr = new SgAsmStatementPtrList; 
-        //extract the statement list from the basic block, statement list is a SgAsmStatement* vector.
-        for(SgAsmStatementPtrList::iterator stmtIter = originalStatementListPtr->begin();
-            stmtIter != originalStatementListPtr->end(); stmtIter++) {
-            //Perhaps check if the statement is actually an instruction?
-            //this if is currently not needed i think, just a test.
+void BinaryRewriter::transformBinary() {
+
+    /* Traverse the function cfg and apply the user transformations.
+        Get the function CFG and traverse its blocks. */
+    CFG* functionGraph = cfgContainer->getFunctionCFG();
+
+    /* Iterater through all the blocks and apply transformations */
+    for(std::pair<CFGVIter, CFGVIter> vPair = vertices(*functionGraph);
+        vPair.first != vPair.second; ++vPair.first) {
+        /* get the basic block from the property map */
+        SgAsmBlock* currentBB = get(boost::vertex_name, *functionGraph, *vPair.first);
+        /* get the statement list of the block, which is the instructions */
+        SgAsmStatementPtrList* orgStmtPtrList = &currentBB->get_statementList();
+        /* Initialize the shadowstatement list */
+        shadowStatementListPtr = new SgAsmStatementPtrList;
+        /* Iterate through the statment list and check each instruction */
+        for(SgAsmStatementPtrList::iterator stmtIter = orgStmtPtrList->begin();
+            stmtIter != orgStmtPtrList->end(); ++stmtIter) {
+            /* Check that the statement is a mipsinstruction and if it is
+                forbidden or not. */
             if ((*stmtIter)->variantT() == V_SgAsmMipsInstruction) {
-                //Set the currently inspected instruction for the framework
-                //inspectedInstruction = static_cast<SgAsmMipsInstruction*>(*stmtIter);
+                /* cast the instruction to mips */
                 inspectedInstruction = isSgAsmMipsInstruction(*stmtIter);
-                //Need to deconstruct the current instruction before calling the decision function.
-                //deconstructInstruction();
-                //For each instruction check what should be done.
-                transformDecision(*stmtIter);
+                /* check if the instruction is allowed to be transformed or not */ 
+                if(cfgContainer->isForbiddenInstruction(inspectedInstruction) == false) {
+                    /* The instruction is allowed to be transformed.
+                        Call the user decision function. */
+                    transformDecision(inspectedInstruction);
+                }
             }
-        }        
-        //the block has been traversed. Swap the shadowBlock with the original basic block.
-        originalStatementListPtr->swap(*shadowStatementListPtr);
+        }
+        /* The blocks statement list has been traversed. swap the list with
+            the shadow list and continue with the next block */
+        orgStmtPtrList->swap(*shadowStatementListPtr);
     }
+    
+    /* Apply naive or optimized transformation */
+
+    /* Correct addresses */
+
+    /* Correct branch instructions */
+
+    /* Adjust segment sizes */
+
 }
 
 
@@ -75,7 +91,7 @@ void BinaryRewriter::traverseBinary() {
 
 //The desicion function that users can overwrite.
 //Here it will just be an empty function.
-void BinaryRewriter::transformDecision(SgAsmStatement* instPtr) {
+void BinaryRewriter::transformDecision(SgAsmMipsInstruction* instPtr) {
     //std::cout << "Framework decision function" << std::endl;
     decisionsMade++;
     //printout of the instruction and the number of operands.
@@ -83,7 +99,7 @@ void BinaryRewriter::transformDecision(SgAsmStatement* instPtr) {
 }
 
 /******************************************************************************
-* Insert, delete and save instructions
+* Insert, delete, save and move instructions
 ******************************************************************************/
 //Inserts an instruction into the shadow statementlist.
 //This could be the original instruction or one provided by
@@ -91,7 +107,6 @@ void BinaryRewriter::transformDecision(SgAsmStatement* instPtr) {
 void BinaryRewriter::insertInstruction(SgAsmStatement* addedInstruction) {
     //The passed instruction from the user, inserted into the shadow list.
     shadowStatementListPtr->push_back(addedInstruction);
-    //!!!! The added instruction should now be deconstructed or should it?
 }
 
 //Removes an instruction during the transformation. Basically it will just

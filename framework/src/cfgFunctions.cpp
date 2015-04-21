@@ -2,6 +2,25 @@
 
 #include "cfgFunctions.hpp"
 
+/* setup for this class */
+void CFGhandler::initialize(SgProject* root) {
+    /* With the SgProject build the programcfg and save it */
+    std::vector<SgAsmInterpretation*> interpretation = SageInterface::querySubTree<SgAsmInterpretation>(root);
+    /* build cfg. */
+    rose::BinaryAnalysis::ControlFlow cfganalyzer;
+    programCFG = new CFG;
+    cfganalyzer.build_block_cfg_from_ast(interpretation.back(), *programCFG);
+}
+
+/* returns the function cfg */
+CFG* CFGhandler::getFunctionCFG() {
+    return functionCFG;
+}
+
+/* returns the program cfg */
+CFG* CFGhandler::getProgramCFG() {
+    return programCFG;
+}
 
 /* Get the new address for the instruction */
 rose_addr_t CFGhandler::getNewAddress(rose_addr_t oldAddress) {
@@ -24,7 +43,7 @@ bool CFGhandler::hasNewAddress(rose_addr_t instructionAddress) {
 
 
 /* Is the instruction allowed to be transformed? */
-bool CFGhandler::isForbiddenInstruction(SgAsmInstruction* inst) {
+bool CFGhandler::isForbiddenInstruction(SgAsmMipsInstruction* inst) {
     /* Search through the vector for the instruction, return true if found. */
     std::vector<SgAsmInstruction*>::iterator it;
     /* use std::find to search vector, it returns a iterator to
@@ -52,6 +71,9 @@ void CFGhandler::findActivationRecords() {
     /* Vector for edges */ 
     std::set<CFG::vertex_descriptor> targetVertices;
     std::set<CFG::vertex_descriptor> sourceVertices;
+    /* First and last vertex pointers */
+    CFG::vertex_descriptor entryVertex;
+    CFG::vertex_descriptor exitVertex;
     /* Block pointers */
     SgAsmBlock* firstBlock;
     SgAsmBlock* lastBlock;
@@ -67,20 +89,51 @@ void CFGhandler::findActivationRecords() {
         present as a target or source. */
     for(std::set<CFG::vertex_descriptor>::iterator iter = targetVertices.begin();
         iter != targetVertices.end(); ++iter) {
-        /* consider while loop instead.  */
+        /* find the vertex that is not among the source vertices.
+            That vertex is the exitVertex */
+        
     }
     
 }
 
 /* Find the lowest and highest address in the function cfg */
 void CFGhandler::findAddressRange() {
-
+    /* variables */
+    rose_addr_t lowestAddr = std::numeric_limits<rose_addr_t>::max();
+    rose_addr_t highestAddr = std::numeric_limits<rose_addr_t>::min();
+    /* Go through the basic blocks and look at the first
+        and last address compare to previous values and save */
+    for(std::pair<CFGVIter, CFGVIter> pIter = vertices(*functionCFG);
+        pIter.first != pIter.second; ++pIter.first) {
+        /* get the basic block */
+        SgAsmBlock* bb = get(boost::vertex_name, *functionCFG, *pIter.first);
+        /* extract the statement list and check the address of the
+            first and last instruction */
+        SgAsmStatementPtrList* stmtList = &bb->get_statementList();
+        /* Iterate over the list until the first mips instruction is found. */
+        for(SgAsmStatementPtrList::iterator iter = stmtList->begin();
+            iter != stmtList->end(); ++iter); {
+            if ((*iter)->variantT() == V_SgAsmMipsInstruction) {
+                /* the statement is an instruction, cast it */
+                SgAsmMipsInstruction* mipsInst = isSgAsmMipsIntruction(*iter);
+                rose_addr_t instAddr = mipsInst->get_address();
+                /* check the address, is it higher than the highest or lower than the lowest?
+                    If it is any of it then save it as the new highest or lowest */
+                if (instAddr > highestAddr) {
+                    highestAddr = instAddr;
+                } else if (instAddr < lowestAddr) {
+                    lowestAddr = instAddr;
+                } else if (lowestAddr == 0 && highestAddr == 0) {
+                    
+                }
+            }
+        }
+    }
 }
 
 /* Makes a cfg for a specific function */
-void CFGhandler::createFunctionCFG(CFG* newProgramCFG, std::string newFunctionName) {
+void CFGhandler::createFunctionCFG(std::string newFunctionName) {
     /* Save the programcfg and the function name. */
-    programCFG = newProgramCFG;
     functionName = newFunctionName;
     /* New cfg variable */
     functionCFG = new CFG;
@@ -91,8 +144,7 @@ void CFGhandler::createFunctionCFG(CFG* newProgramCFG, std::string newFunctionNa
     /* keep track of which blocks are included in the functioncfg */
     std::map<CFG::vertex_descriptor, bool> copiedVertex;
 
-    /*  Get the property maps of the program cfg and the function cfg   */
-    boost::property_map<CFG, boost::vertex_name_t>::type programPropMap = get(boost::vertex_name, *programCFG);
+    /*  Get the property map of the function cfg   */
     boost::property_map<CFG, boost::vertex_name_t>::type functionPropMap = get(boost::vertex_name, *functionCFG);
 
     /*  Go through all vertices (blocks) and find blocks belonging to the

@@ -36,12 +36,14 @@ class BinaryRewriter {
         void selectInstructionScheduling();
         //enable debugg printing.
         void enableDebugg(bool);
+        /* Function that is to be transformed */
+        void functionSelect(std::string);
 
         /**********************************************************************
         * Traversal functions. 
         **********************************************************************/
         //Function to begin rewriting
-        void traverseBinary();
+        void transformBinary();
 
         /**********************************************************************
         * Binary manipulation. 
@@ -55,7 +57,7 @@ class BinaryRewriter {
         //get the information struct for the current instruction.
         //instructionInformation getInstructionInfo();
         //Virtual function that the user can change in his framework extension.
-        virtual void transformDecision(SgAsmStatement*);
+        virtual void transformDecision(SgAsmMipsInstruction*);
 
         /**********************************************************************
         * Misc. 
@@ -75,10 +77,8 @@ class BinaryRewriter {
         **********************************************************************/
         //Pointer to the project AST 
         SgProject* binaryProjectPtr;
-        //Register dictionary.
-//        const RegisterDictionary* mipsRegisters; 
-        //Control flow graph pointer.
-        CFG* CfgPtr;
+        /* Cfghandler pointer */
+        CFGhandler* cfgContainer;
         //Shadow statement list. This list will be swaped with the statementlist
         //att the end of traversing a basic blocks statement list. (vector)
         SgAsmStatementPtrList* shadowStatementListPtr;
@@ -88,7 +88,7 @@ class BinaryRewriter {
         int decisionsMade;
 
         /**********************************************************************
-        * Functions. 
+        * Private Functions. 
         **********************************************************************/
         //block traversal
         void blockTraversal();

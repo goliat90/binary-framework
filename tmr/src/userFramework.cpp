@@ -15,15 +15,15 @@ int main(int argc, char** argv) {
 
     userFramework* uT = new userFramework(argc, argv);
 
-    uT->traverseBinary();
+    uT->transformBinary();
 
     return 0;
 }
 
 
-//user written decision function.
-void userFramework::transformDecision(SgAsmStatement*) {
-    //std::cout << "user decision function" << std::endl;
+/* The user defined decision function */
+void userFramework::transformDecision(SgAsmMipsInstruction*) {
+    /*   */
 }
 
 
