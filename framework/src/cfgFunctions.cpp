@@ -98,7 +98,8 @@ void CFGhandler::findActivationRecords() {
 
 /* Find the lowest and highest address in the function cfg */
 void CFGhandler::findAddressRange() {
-    /* variables */
+    /* variables for highest and lowest address, initialized
+        to min and max values for the types. */
     rose_addr_t lowestAddr = std::numeric_limits<rose_addr_t>::max();
     rose_addr_t highestAddr = std::numeric_limits<rose_addr_t>::min();
     /* Go through the basic blocks and look at the first
@@ -112,10 +113,10 @@ void CFGhandler::findAddressRange() {
         SgAsmStatementPtrList* stmtList = &bb->get_statementList();
         /* Iterate over the list until the first mips instruction is found. */
         for(SgAsmStatementPtrList::iterator iter = stmtList->begin();
-            iter != stmtList->end(); ++iter); {
+            iter != stmtList->end(); ++iter) {
             if ((*iter)->variantT() == V_SgAsmMipsInstruction) {
                 /* the statement is an instruction, cast it */
-                SgAsmMipsInstruction* mipsInst = isSgAsmMipsIntruction(*iter);
+                SgAsmMipsInstruction* mipsInst = isSgAsmMipsInstruction(*iter);
                 rose_addr_t instAddr = mipsInst->get_address();
                 /* check the address, is it higher than the highest or lower than the lowest?
                     If it is any of it then save it as the new highest or lowest */
@@ -123,9 +124,7 @@ void CFGhandler::findAddressRange() {
                     highestAddr = instAddr;
                 } else if (instAddr < lowestAddr) {
                     lowestAddr = instAddr;
-                } else if (lowestAddr == 0 && highestAddr == 0) {
-                    
-                }
+                } 
             }
         }
     }
