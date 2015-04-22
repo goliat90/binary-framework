@@ -30,7 +30,7 @@ enum mipsRegisterName {
     s4,s5,s6,s7,
 
     t8,t9,          //more temporary variables
-    k0,k1,          //kernel use register, migh change unexpectedly.
+    k0,k1,          //kernel use register, might change unexpectedly.
     gp,             //global pointer
     sp,             //stack pointer
     fp,             //stack frame pointer or subroutine variable(s8)
