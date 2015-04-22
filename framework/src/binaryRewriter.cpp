@@ -47,7 +47,6 @@ void BinaryRewriter::transformBinary() {
         Get the function CFG and traverse its blocks. */
     CFG* functionGraph = cfgContainer->getFunctionCFG();
 
-
     /* Iterater through all the blocks and apply transformations */
     for(std::pair<CFGVIter, CFGVIter> vPair = vertices(*functionGraph);
         vPair.first != vPair.second; ++vPair.first) {
