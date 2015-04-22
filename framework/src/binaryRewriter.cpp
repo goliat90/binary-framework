@@ -5,8 +5,11 @@
 
 // Constructor which takes the path to the file as input.
 BinaryRewriter::BinaryRewriter(int argc, char **binaryFile) {
-    //build ast and cfg.
+    /* build ast and cfg. */
     initialize(argc, binaryFile);
+    /* Set default values on some of the variables  */
+    debugging = false;
+    decisionsMade = 0;
 }
 
 
@@ -44,11 +47,16 @@ void BinaryRewriter::transformBinary() {
         Get the function CFG and traverse its blocks. */
     CFG* functionGraph = cfgContainer->getFunctionCFG();
 
+
     /* Iterater through all the blocks and apply transformations */
     for(std::pair<CFGVIter, CFGVIter> vPair = vertices(*functionGraph);
         vPair.first != vPair.second; ++vPair.first) {
         /* get the basic block from the property map */
         SgAsmBlock* currentBB = get(boost::vertex_name, *functionGraph, *vPair.first);
+        /* If debugging is active then print the block before transformation */
+        if (debugging) {
+            printBasicBlockInstructions(currentBB);
+        }
         /* get the statement list of the block, which is the instructions */
         SgAsmStatementPtrList* orgStmtPtrList = &currentBB->get_statementList();
         /* Initialize the shadowstatement list */
@@ -72,13 +80,25 @@ void BinaryRewriter::transformBinary() {
         /* The blocks statement list has been traversed. swap the list with
             the shadow list and continue with the next block */
         orgStmtPtrList->swap(*shadowStatementListPtr);
+        if (debugging) {
+            std::cout << "Block transformed" << std::endl;
+            printBasicBlockInstructions(currentBB);
+        }
     }
+
+    /* Debug print, print all the blocks and their instructions */
     
     /* Apply naive or optimized transformation */
 
+    /* Debug print */
+
     /* Correct addresses */
 
+    /* Debug print */
+
     /* Correct branch instructions */
+
+    /* Debug print */
 
     /* Adjust segment sizes */
 
@@ -139,4 +159,9 @@ void BinaryRewriter::selectRegisterAllocation() {
 //Select scheduling method.
 void BinaryRewriter::selectInstructionScheduling() {
 
+}
+
+/* enable disable debugging */
+void BinaryRewriter::setDebug(bool setting) {
+    debugging = setting;
 }

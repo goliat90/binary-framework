@@ -14,6 +14,8 @@ struct instructionStruct;
 //function declarations.
 /* Decode the instruction, calls on the specific decode instructions. */
 instructionStruct decodeInstruction(SgAsmMipsInstruction*);
+/* Builds an instruction from an instructionStruct */
+SgAsmMipsInstruction* buildInstruction(instructionStruct*);
 
 //name of the registers.
 enum mipsRegisterName {

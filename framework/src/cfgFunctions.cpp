@@ -52,10 +52,10 @@ bool CFGhandler::isForbiddenInstruction(SgAsmMipsInstruction* inst) {
     /* check if the it points to end or not */
     if (it != forbiddenInstruction.end()) {
         /* is a forbidden instruction */
-        return false;
+        return true;
     } else {
         /* the instruction is allowed to be transformed */
-        return true;
+        return false;
     }
 }
 
@@ -128,6 +128,9 @@ void CFGhandler::findAddressRange() {
             }
         }
     }
+    /* The highest and lowest address in the function cfg has been found, save it*/
+    addressRange.first = highestAddr;
+    addressRange.second = lowestAddr;
 }
 
 /* Makes a cfg for a specific function */

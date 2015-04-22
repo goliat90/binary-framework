@@ -35,7 +35,7 @@ class BinaryRewriter {
         //Configure instruction scheduling
         void selectInstructionScheduling();
         //enable debugg printing.
-        void enableDebugg(bool);
+        void setDebug(bool);
         /* Function that is to be transformed */
         void functionSelect(std::string);
 
@@ -54,8 +54,6 @@ class BinaryRewriter {
         void removeInstruction(); 
         //Next instruction, copies the currently inspected instruction.
         void saveInstruction();
-        //get the information struct for the current instruction.
-        //instructionInformation getInstructionInfo();
         //Virtual function that the user can change in his framework extension.
         virtual void transformDecision(SgAsmMipsInstruction*);
 
@@ -86,6 +84,8 @@ class BinaryRewriter {
         SgAsmMipsInstruction* inspectedInstruction;
         //number of decisions made
         int decisionsMade;
+        /* Is debugging enabled */
+        bool debugging;
 
         /**********************************************************************
         * Private Functions. 

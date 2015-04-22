@@ -25,19 +25,83 @@ static std::map<unsigned, mipsRegisterName> initRegisterNameMap();
 static std::map<unsigned, mipsRegisterName> registerNameMap = initRegisterNameMap(); 
 
 
+/* Builds an SgAsmMipsInstruction that can be inserted into the binary */
+SgAsmMipsInstruction* buildInstruction(instructionStruct* instInfo) {
+    /* Construct a mips instruction. */
+    SgAsmMipsInstruction* mipsInst = new SgAsmMipsInstruction;
+    /* Get the statementlist and extract it.  */
+    //SgAsmExpressionPtrList* operandList = &inst->get_operandList()->get_operands();
+    /* depending on instruction format use right arguments for build function */
+    switch (instInfo->format) {
+        /* R instructions */
+        case R_RD_RS_RT :{
+            break;
+        }
+        case R_RD_RS_C  :{
+            break;
+        }
+        case R_RD       :{
+            break;
+        }
+        case R_RS_RT    :{
+            break;
+        }
+        case R_RS       :{
+            break;
+        }
+        case R_NOP  :{
+            break;
+        }
+        /* I instructions  */
+        case I_RD_RS_C   :{
+            break;
+        }
+        case I_RD_MEM_RS_C:{
+            break;
+        }
+        case I_RD_C      :{
+            break;
+        }
+        case I_RS_RT_C   :{
+            break;
+        }
+        case I_RS_MEM_RT_C:{
+            break;
+        }
+        case I_RS_C      :{
+            break;
+        }
+        /* J instructions */
+        case J_C        :{
+            break;
+        }
+        case J_RS       :{
+            break;
+        }
+        case J_RD_RS    :{
+            break;
+        }
+        default: {
+            //The instruction is unknown.
+        }
+    }
+}
+
 /* decode instruction. Calls on the R,I or J decode functions. */
 instructionStruct decodeInstruction(SgAsmMipsInstruction* inst) {
     instructionStruct instStruct;
     /* Check what kind of instruction format it is.  */
     instructionType format = getInstructionFormat(inst);
+    instStruct.format = format;
     /* get the operand list */
     SgAsmExpressionPtrList* operandList = &inst->get_operandList()->get_operands();
     /* depending on instruction format use right arguments for decode function */
     switch (format) {
         /* R instructions */
-        case R_RD_RS_RT :
+        case R_RD_RS_RT :{
             instStruct = decodeOpList(operandList, true, true, true, false, false);
             break;
+        }
         case R_RD_RS_C  :{
             instStruct = decodeOpList(operandList, true, true, false, true, false);
             break;
@@ -54,7 +118,7 @@ instructionStruct decodeInstruction(SgAsmMipsInstruction* inst) {
             instStruct = decodeOpList(operandList, false, true, false, false, false);
             break;
         }
-        case R_NOP      : {
+        case R_NOP  :{
             break;
         }
         /* I instructions  */
@@ -96,7 +160,6 @@ instructionStruct decodeInstruction(SgAsmMipsInstruction* inst) {
        values that are common to all instructions. kind,mnemonic, */
     instStruct.kind = inst->get_kind();
     instStruct.mnemonic = inst->get_mnemonic();
-    instStruct.format = format;
     instStruct.address = inst->get_address();
 
     /* Return the insturction struct from the decoding */    

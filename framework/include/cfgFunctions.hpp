@@ -63,7 +63,7 @@ class CFGhandler {
         /* Name of the function that the function cfg is based on */
         std::string functionName;
         /* Variable to remember the address range the transformed instruction
-            is withing. */
+            is withing. First = highest, second = lowest. */
         std::pair<rose_addr_t, rose_addr_t> addressRange;
         /*  Mapping between an old and new address, used later when correcting
             branches and rewriting addresses */

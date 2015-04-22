@@ -20,7 +20,7 @@ void printBasicBlockInstructions(SgAsmBlock* block) {
     std::cout << "********** "
               << "Block: " << std::hex << block->get_id()
               << " **********" << std::endl
-              << std::dec; //dont print numbers in after this
+              << std::dec; //dont print hex numbers in after this
 
     /* iterate through the statement list and print. */
     for(SgAsmStatementPtrList::iterator instIter = stmtlistPtr->begin();
@@ -30,13 +30,13 @@ void printBasicBlockInstructions(SgAsmBlock* block) {
         /* decode the instruction and print the information */
         instructionStruct instruction = decodeInstruction(mipsInst);
         /* call print instruction */
-
+        printInstruction(&instruction);
     }
     /* print some delimiter as well */
     std::cout << "********** "
               << "End of Block: " << std::hex << block->get_id()
               << " **********" << std::endl
-              << std::dec; //dont print numbers in hex after this
+              << std::dec; //dont print hex numbers in hex after this
 }
 
 /* Prints out relevant information about a instruction */
@@ -44,7 +44,7 @@ void printInstruction(instructionStruct* instStruct) {
     /* string stream object */
     std::stringstream instStream;
     /* insert address, nemonic */
-    instStream << instStruct->address << ": " << instStruct->mnemonic << " ";
+    instStream << std::hex << instStruct->address << ": " << instStruct->mnemonic << " ";
     /* add registers, first output then input registers. */ 
     printRegisters(&instStream, &instStruct->destinationRegisters);
     printRegisters(&instStream, &instStruct->sourceRegisters);
