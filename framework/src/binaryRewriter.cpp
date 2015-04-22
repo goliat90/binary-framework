@@ -55,6 +55,7 @@ void BinaryRewriter::transformBinary() {
         SgAsmBlock* currentBB = get(boost::vertex_name, *functionGraph, *vPair.first);
         /* If debugging is active then print the block before transformation */
         if (debugging) {
+            std::cout << std::endl;
             printBasicBlockInstructions(currentBB);
         }
         /* get the statement list of the block, which is the instructions */

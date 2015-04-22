@@ -63,7 +63,7 @@ void printConstant(std::stringstream* conStream, instructionStruct* instStruct) 
         case I_RS_MEM_RT_C: {
             /* instructions that work with memory and has constant 
                has instructionConstatn, significantBits, memoryreferencesize */
-            *conStream << "DataSize: " << instStruct->memoryReferenceSize << " bits ";
+            *conStream << "DataSize: " << std::dec << instStruct->memoryReferenceSize << " bits ";
         }
         case R_RD_RS_C:
         case I_RD_RS_C:
@@ -71,8 +71,12 @@ void printConstant(std::stringstream* conStream, instructionStruct* instStruct) 
         case I_RS_C: {
             /* instructions with regular constant
                has instructionConstant, significantBits */
-            *conStream << "Constant: " << std::hex << instStruct->instructionConstant << " ";
-            *conStream << "SignBits: " << instStruct->significantBits << " ";
+            *conStream << "Constant: 0x" << std::hex << instStruct->instructionConstant << " ";
+            *conStream << "SignBits: " << std::dec << instStruct->significantBits << " ";
+        break;
+        }
+        default: {
+            //std::cout << "skipped constants on address: " << std::hex << instStruct->address << std::endl;
         }
     }
     

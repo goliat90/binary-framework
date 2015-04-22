@@ -92,10 +92,10 @@ instructionStruct decodeInstruction(SgAsmMipsInstruction* inst) {
     instructionStruct instStruct;
     /* Check what kind of instruction format it is.  */
     instructionType format = getInstructionFormat(inst);
-    instStruct.format = format;
     /* get the operand list */
     SgAsmExpressionPtrList* operandList = &inst->get_operandList()->get_operands();
-    /* depending on instruction format use right arguments for decode function */
+    /* depending on instruction format use right arguments for decode function
+        and save the returned instruction struct. */
     switch (format) {
         /* R instructions */
         case R_RD_RS_RT :{
@@ -161,6 +161,7 @@ instructionStruct decodeInstruction(SgAsmMipsInstruction* inst) {
     instStruct.kind = inst->get_kind();
     instStruct.mnemonic = inst->get_mnemonic();
     instStruct.address = inst->get_address();
+    instStruct.format = format;
 
     /* Return the insturction struct from the decoding */    
     return instStruct;
@@ -222,9 +223,9 @@ registerStruct decodeRegister(SgAsmExpression* expr) {
     //get the register descriptor, from it i can get majr(number)
     RegisterDescriptor reg = regExpr->get_descriptor();
     //check if the register exists in the namemap
-    if (registerNameMap.find(reg.get_major()) != registerNameMap.end()) {
+    if (registerNameMap.find(reg.get_minor()) != registerNameMap.end()) {
         //register found, get the iterator and get the register enum.
-        regStruct.regName = registerNameMap.find(reg.get_major())->second;
+        regStruct.regName = registerNameMap.find(reg.get_minor())->second;
         /* If the register is zero then check if it is symbolic. */
         if (true == isSymbolicRegister(regExpr)) {
             /* Set the regName member to the symbolic enum */
