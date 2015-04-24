@@ -52,12 +52,12 @@ clean:
 	rm -f binaryRewriter.lo
 	rm -f symbolicRegisters.lo
 	rm -f mipsISA.lo
-	rm -f cfgFunctions.lo
+	rm -f cfgHandler.lo
 	rm -f binaryDebug.o
 	rm -f test.o
 	rm -f binaryRewriter.o
 	rm -f symbolicRegisters.o
 	rm -f mipsISA.o
-	rm -f cfgFunctions.o
+	rm -f cfgHandler.o
 
 
