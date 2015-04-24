@@ -74,6 +74,12 @@ void BinaryRewriter::transformBinary() {
                     /* The instruction is allowed to be transformed.
                         Call the user decision function. */
                     transformDecision(inspectedInstruction);
+                } else {
+                    /* Instruction is not allowed to be transformed save it and move on */
+                    saveInstruction();
+                    if (debugging) {
+                        std::cout << "Forbidden instruction, skip transform" << std::endl;
+                    }
                 }
             }
         }

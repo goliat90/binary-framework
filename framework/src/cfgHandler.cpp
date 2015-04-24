@@ -1,6 +1,6 @@
-/* CFG functions */
+/* CFG Handler */
 
-#include "cfgFunctions.hpp"
+#include "cfgHandler.hpp"
 
 /* setup for this class */
 void CFGhandler::initialize(SgProject* root) {
@@ -63,20 +63,12 @@ bool CFGhandler::isForbiddenInstruction(SgAsmMipsInstruction* inst) {
     These are saved for later use and also added to the forbidden
     instructions map. */
 void CFGhandler::findActivationRecords() {
-    /* The activation record that is to be found is the addition unsigned
-        which changes the sp value, which is done in the first and last block.
-        Done by checking all which vertices is source and target of a edge.
-        When all edges have been checked then the lists can be checked for
-        nodes only containing outward or inward edges. */
     /* Vector for edges */ 
     std::set<CFG::vertex_descriptor> targetVertices;
     std::set<CFG::vertex_descriptor> sourceVertices;
-    /* First and last vertex pointers */
-    CFG::vertex_descriptor entryVertex;
-    CFG::vertex_descriptor exitVertex;
-    /* Block pointers */
-    SgAsmBlock* firstBlock;
-    SgAsmBlock* lastBlock;
+    /* Block statement lists */
+    SgAsmStatementPtrList* firstStatementList;
+    SgAsmStatementPtrList* lastStatementList;
     
     for(std::pair<CFGEIter, CFGEIter> edgeIter = edges(*functionCFG);
         edgeIter.first != edgeIter.second; ++edgeIter.first) {
@@ -84,16 +76,71 @@ void CFGhandler::findActivationRecords() {
         targetVertices.insert(target(*edgeIter.first, *functionCFG));
         sourceVertices.insert(source(*edgeIter.first, *functionCFG));
     }
+
     /* At this point all vertices that are either a target or a source
         for a edge is saved. The first and last block will only be
         present as a target or source. */
+    for(std::set<CFG::vertex_descriptor>::iterator iter = sourceVertices.begin();
+        iter != sourceVertices.end(); ++iter) {
+        /* Find the source vertex that is not among the target vertices.
+            That vertex is the entry vertex */
+        if (targetVertices.count(*iter) == 0) {
+            /* The current vertex is the first block in the instruction,
+                save the vertex block as firstBlock */
+            SgAsmBlock* firstBlock = get(boost::vertex_name, *functionCFG, (*iter));
+            firstStatementList = &firstBlock->get_statementList();
+        }
+    }
     for(std::set<CFG::vertex_descriptor>::iterator iter = targetVertices.begin();
         iter != targetVertices.end(); ++iter) {
-        /* find the vertex that is not among the source vertices.
-            That vertex is the exitVertex */
-        
+        /* Find the target vertex that is not among the source vertices.
+            That vertex is the exit vertex */
+        if (sourceVertices.count(*iter) == 0) {
+            /* The current vertex is the last block in the instruction,
+                save the vertex block as lastBlock */
+            SgAsmBlock* lastBlock = get(boost::vertex_name, *functionCFG, (*iter));
+            lastStatementList = &lastBlock->get_statementList();
+        }
     }
-    
+
+    /* Go through the blocks and find the activation records.
+        The instruction in question is an addiu instruction with
+        sp as RD as well as RS and constant  */
+    for(SgAsmStatementPtrList::iterator iter = firstStatementList->begin();
+        iter != firstStatementList->end(); ++iter) {
+        /* decode instruction */
+        SgAsmMipsInstruction* mipsInst = isSgAsmMipsInstruction(*iter);
+        instructionStruct currentInst = decodeInstruction(mipsInst);
+        /* check instruction */
+        if (currentInst.kind == mips_addiu) {
+            /* check if the rd and rs is sp */
+            registerStruct destination = *currentInst.destinationRegisters.begin();
+            registerStruct source = *currentInst.sourceRegisters.begin();
+            if (destination.regName == sp && source.regName == sp) {
+                /* the registers are correct, add the instruction to the forbidden list. */
+                forbiddenInstruction.push_back(mipsInst);
+                std::cout << "forbidden instruction found: " << std::hex << currentInst.address << std::endl;
+            }
+        }
+    }
+    /* check the last blocks instructions. */
+    for(SgAsmStatementPtrList::iterator iter = lastStatementList->begin();
+        iter != lastStatementList->end(); ++iter) {
+        /* decode instruction */
+        SgAsmMipsInstruction* mipsInst = isSgAsmMipsInstruction(*iter);
+        instructionStruct currentInst = decodeInstruction(mipsInst);
+        /* check instruction */
+        if (currentInst.kind == mips_addiu) {
+            /* check if the rd and rs is sp */
+            registerStruct destination = *currentInst.destinationRegisters.begin();
+            registerStruct source = *currentInst.sourceRegisters.begin();
+            if (destination.regName == sp && source.regName == sp) {
+                /* the registers are correct, add the instruction to the forbidden list. */
+                forbiddenInstruction.push_back(mipsInst);
+                std::cout << "forbidden instruction found: " << std::hex << currentInst.address << std::endl;
+            }
+        }
+    }
 }
 
 /* Find the lowest and highest address in the function cfg */
@@ -200,6 +247,11 @@ void CFGhandler::createFunctionCFG(std::string newFunctionName) {
             add_edge(newSourceV, newTargetV, *functionCFG);
         }
     }
+
+    /* Find activation records */
+    findActivationRecords();
+    /* Find the address range */
+    findAddressRange();
 }
 
 

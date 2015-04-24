@@ -1,12 +1,12 @@
 /* Functions related to control flow graph.  */
-#ifndef CFGFUNCTIONS_H
-#define CFGFUNCTIONS_H
+#ifndef CFGHANDLER_H
+#define CFGHANDLER_H
 
 /**********************************************************************
 * Includes.
 **********************************************************************/
 /* Framework */
-
+#include "mipsISA.hpp"
 
 #include "rose.h"
 /* std::map  */

@@ -63,7 +63,10 @@ void printConstant(std::stringstream* conStream, instructionStruct* instStruct) 
         case I_RS_MEM_RT_C: {
             /* instructions that work with memory and has constant 
                has instructionConstatn, significantBits, memoryreferencesize */
+            *conStream << "Constant: 0x" << std::hex << instStruct->instructionConstant << " ";
+            *conStream << "SignBits: " << std::dec << instStruct->significantBits << " ";
             *conStream << "DataSize: " << std::dec << instStruct->memoryReferenceSize << " bits ";
+            break;
         }
         case R_RD_RS_C:
         case I_RD_RS_C:

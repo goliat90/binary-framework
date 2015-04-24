@@ -7,7 +7,7 @@
 #include "mipsISA.hpp"
 #include "binaryDebug.hpp"
 #include "symbolicRegisters.hpp"
-#include "cfgFunctions.hpp"
+#include "cfgHandler.hpp"
 
 // Boost lib headers
 #include <boost/graph/adjacency_list.hpp>
