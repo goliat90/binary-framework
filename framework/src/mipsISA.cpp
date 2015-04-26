@@ -6,8 +6,29 @@
 /* header file */
 #include "mipsISA.hpp"
 
-/* forward function declarations */
-/* Format of the instruction */
+
+/******************************************************************************
+* Forward function declarations
+******************************************************************************/
+
+/********** Building instruction functions **********/
+/* Builds an SgAsmMipsInstruction that can be inserted into the binary */
+SgAsmMipsInstruction* buildInstruction(instructionStruct* instInfo); 
+/* Build operand list */
+SgAsmExpressionPtrList* buildOperandList(instructionStruct, bool, bool, bool, bool, bool);
+/* Creates a register expression */
+SgAsmExpression* buildRegister(registerStruct);
+/* Create a value expression, constant */
+void buildValueExpression(SgAsmExpression*, instructionStruct*);
+/* Create a memory expression */
+void buildMemoryReference(SgAsmExpression*, instructionStruct*);
+
+/********** Decoding instruction functions. **********/
+/* Decode the instruction */
+instructionStruct decodeInstruction(SgAsmMipsInstruction*);
+/* operandList decoder, decodes the operands in the list. */
+instructionStruct decodeOpList(SgAsmExpressionPtrList*, bool, bool, bool, bool, bool);
+/* Get the format of the instructions */
 instructionType getInstructionFormat(SgAsmMipsInstruction*);
 /* decode register names */
 registerStruct decodeRegister(SgAsmExpression*); 
@@ -15,8 +36,9 @@ registerStruct decodeRegister(SgAsmExpression*);
 void decodeValueExpression(SgAsmExpression*, instructionStruct*);
 /* decode the memory expression */
 void decodeMemoryReference(SgAsmExpression*, instructionStruct*);
-/* operandList decoder, decodes the operands in the list. */
-instructionStruct decodeOpList(SgAsmExpressionPtrList*, bool, bool, bool, bool, bool);
+
+
+/********** Misc functions **********/
 /* initfunction for the registerName map,   */
 static std::map<unsigned, mipsRegisterName> initRegisterNameMap();
 
@@ -25,6 +47,9 @@ static std::map<unsigned, mipsRegisterName> initRegisterNameMap();
 static std::map<unsigned, mipsRegisterName> registerNameMap = initRegisterNameMap(); 
 
 
+/******************************************************************************
+* Build instruction functions. 
+******************************************************************************/
 /* Builds an SgAsmMipsInstruction that can be inserted into the binary */
 SgAsmMipsInstruction* buildInstruction(instructionStruct* instInfo) {
     /* Construct a mips instruction. */
@@ -87,6 +112,83 @@ SgAsmMipsInstruction* buildInstruction(instructionStruct* instInfo) {
     }
 }
 
+
+/* Build operand list */
+SgAsmExpressionPtrList* buildOperandList(instructionStruct inst,
+    bool hasRD, bool hasRS, bool hasRT, bool hasC, bool memOp) {
+    /* variables */
+    SgAsmExpressionPtrList* tmp;
+    //int opIndex = 0;
+    //instructionStruct instruction;
+    /* Fill the struct with information. Check if for each type of value if it
+       is present in the instruction by checking the booleans. */ 
+    if (true == hasRD) {
+        /* Has a destination register, extract it. */
+//        registerStruct RDstruct = decodeRegister((*operandList)[opIndex]);       
+//        /* Insert the register into the struct as a destination register */
+//        instruction.destinationRegisters.push_back(RDstruct);
+//        /* Increment the operand index */
+//        opIndex++;
+    }
+    if (true == hasRS) {
+        /* Has a rs register operand, extract it. */
+//        registerStruct RSstruct = decodeRegister((*operandList)[opIndex]);
+//        /* insert the registers into the struct as a source register */
+//        instruction.sourceRegisters.push_back(RSstruct);
+//        /* Increment the operand index */
+//        opIndex++;
+    }
+    if (true == hasRT) {
+        /* Has a rt register operand, extract it. */
+//        registerStruct RTstruct = decodeRegister((*operandList)[opIndex]);       
+//        /* insert the registers into the struct as a source register */
+//        instruction.sourceRegisters.push_back(RTstruct);
+//        /* Increment the operand index */
+//        opIndex++;
+    }
+    if (true == hasC) {
+        /* get the relevant values from the constant */
+//        decodeValueExpression((*operandList)[opIndex], &instruction);
+//        /* increment the operand index */
+//        opIndex++;
+    }
+    if (true == memOp) {
+        /* this is a memory instruction, extract the register and memory constant. */
+//        decodeMemoryReference((*operandList)[opIndex], &instruction);       
+    }
+    /* return the instruction information */
+    
+    return tmp;
+}
+
+/* Creates a register expression */
+SgAsmExpression* buildRegister(registerStruct regStruct) {
+    SgAsmExpression* expr;
+    /* the register struct */
+//    registerStruct regStruct;
+//    //cast it to register expression
+//    SgAsmDirectRegisterExpression* regExpr = isSgAsmDirectRegisterExpression(expr);
+//    //get the register descriptor, from it i can get majr(number)
+//    RegisterDescriptor reg = regExpr->get_descriptor();
+//    //check if the register exists in the namemap
+//    if (registerNameMap.find(reg.get_minor()) != registerNameMap.end()) {
+//        //register found, get the iterator and get the register enum.
+//        regStruct.regName = registerNameMap.find(reg.get_minor())->second;
+//        /* If the register is zero then check if it is symbolic. */
+//        if (true == isSymbolicRegister(regExpr)) {
+//            /* Set the regName member to the symbolic enum */
+//            regStruct.regName = symbolic_reg;
+//            /* Save the symbolic register number. */
+//            regStruct.symbolicNumber = findSymbolicRegister(regExpr);
+//        }
+//    }
+    return expr;
+}
+
+
+/******************************************************************************
+* Decode instruction functions.
+******************************************************************************/
 /* decode instruction. Calls on the R,I or J decode functions. */
 instructionStruct decodeInstruction(SgAsmMipsInstruction* inst) {
     instructionStruct instStruct;
@@ -377,6 +479,9 @@ instructionType getInstructionFormat(SgAsmMipsInstruction* inst) {
 }
 
 
+/******************************************************************************
+* Misc functions.
+******************************************************************************/
 /* initfunction for the registerName map,   */
 static std::map<unsigned, mipsRegisterName> initRegisterNameMap() {
     //variable for the register
