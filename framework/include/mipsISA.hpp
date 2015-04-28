@@ -6,6 +6,7 @@
 /* Headers */
 #include "rose.h"
 #include "symbolicRegisters.hpp"
+#include "boost/bimap.hpp"
 
 /* forward declarations */
 struct registerStruct;
@@ -103,7 +104,7 @@ struct instructionStruct {
     size_t significantBits;
     //The number of bits/size of the memory reference, 8,16,32,64
     int memoryReferenceSize;
-    //address of the instruction, if the instruction is inserted then it
+   //address of the instruction, if the instruction is inserted then it
     //is a temporary value.
     rose_addr_t address; 
 };
