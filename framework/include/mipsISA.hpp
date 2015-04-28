@@ -1,4 +1,4 @@
-/*string * Header file for InstructionInformation */
+/* Header file for InstructionInformation */
 
 #ifndef MIPSISA_H
 #define MIPSISA_H

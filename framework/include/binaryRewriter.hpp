@@ -4,10 +4,10 @@
 #define BINARY_REWRITER_H
 
 //Framework headers
-#include "mipsISA.hpp"
 #include "binaryDebug.hpp"
-#include "symbolicRegisters.hpp"
 #include "cfgHandler.hpp"
+#include "mipsISA.hpp"
+#include "symbolicRegisters.hpp"
 
 // Boost lib headers
 #include <boost/graph/adjacency_list.hpp>

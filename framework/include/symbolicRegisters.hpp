@@ -4,12 +4,15 @@
 
 /* header files */
 #include "rose.h"
-
+#include "mipsISA.hpp"
 
 /* function forward declarations */
 
 /* returns a register expression mapped to a symbolic register. */
-SgAsmDirectRegisterExpression generateSymbolicRegister();
+//TODO change return type to unsigned?. 
+//SgAsmDirectRegisterExpression generateSymbolicRegister();
+/* Returns the directregisterexpression connected to a specific symbolic register */
+SgAsmDirectRegisterExpression* getDirectRegisterExpression(unsigned); 
 /* returns the symbolic register name mapped to the register expression */
 unsigned findSymbolicRegister(SgAsmDirectRegisterExpression*);
 /* Check if a register is symbolic */

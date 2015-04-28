@@ -15,17 +15,20 @@ typedef std::pair<SgAsmDirectRegisterExpression*, unsigned> mapPair;
 static unsigned symbolicNumber = 1;
 
 /* Create a symbolic register that can be used */
-SgAsmDirectRegisterExpression generateSymbolicRegister() {
+unsigned generateSymbolicRegister() {
     /* Create the register descriptor, it references zero. */
     RegisterDescriptor rd = RegisterDescriptor(mips_regclass_gpr, 0, 0, 0); 
     /* Create the register expression. */
     SgAsmDirectRegisterExpression regExp = SgAsmDirectRegisterExpression(rd);
     /* Get a sym register name (number) */
-    unsigned regName = generateRegName();
+    unsigned regNumber = generateRegName();
     /* Insert the register to the map with associated register */
-    symbolicRegisterMap.insert(mapPair(&regExp, regName));
+    symbolicRegisterMap.insert(mapPair(&regExp, regNumber));
+    /* Create a symbolic registerStruct with the generated number */
+    registerStruct rs;
+    rs.symbolicNumber = regNumber;
     /* Return the register expression */ 
-    return regExp;
+    return 0;
 }
 
 

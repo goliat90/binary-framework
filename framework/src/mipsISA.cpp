@@ -312,22 +312,22 @@ SgAsmExpression* buildRegister(registerStruct regStruct) {
         needs to be set again. */
     RegisterDescriptor rd = RegisterDescriptor(mips_regclass_gpr, 0, 0, 32);
     /* Direct register expression ptr */
-    SgAsmDirectRegisterExpression* expr; //= new SgAsmDirectRegisterExpression();
-//    //get the register descriptor, from it i can get majr(number)
-//    RegisterDescriptor reg = regExpr->get_descriptor();
-//    //check if the register exists in the namemap
-//    if (registerNameMap.find(reg.get_minor()) != registerNameMap.end()) {
-//        //register found, get the iterator and get the register enum.
-//        regStruct.regName = registerNameMap.find(reg.get_minor())->second;
-//        /* If the register is zero then check if it is symbolic. */
-//        if (true == isSymbolicRegister(regExpr)) {
-//            /* Set the regName member to the symbolic enum */
-//            regStruct.regName = symbolic_reg;
-//            /* Save the symbolic register number. */
-//            regStruct.symbolicNumber = findSymbolicRegister(regExpr);
-//        }
-//    }
-    return expr;
+    SgAsmDirectRegisterExpression* directReg;
+
+    /* If the register descriptor is not a symbolic register then
+        the minor number needs to be set to the correct register */
+    if (regStruct.regName != symbolic_reg) {
+        /* Get the number or the regname and set it to minor */
+        unsigned newMinor = registerNameMap.right.find(regStruct.regName)->second;
+        rd.set_minor(newMinor);
+        /* Construct the directregisterexpression with the register descriptor */
+        directReg = new SgAsmDirectRegisterExpression(rd);
+    } else if (regStruct.regName == symbolic_reg) {
+        /* if the register is symbolic the register expression needs
+            to be retrieved from the map */
+    }
+    /* return the register expression */
+    return directReg;
 }
 
 /* decode a register operand */
