@@ -213,10 +213,9 @@ SgAsmOperandList* buildOperandList(instructionStruct* inst,
     bool hasRD, bool hasRS, bool hasRT, bool hasC, bool memOp) {
     /* variables */
     SgAsmOperandList* asmOpListPtr = new SgAsmOperandList;
-    //instructionStruct instruction;
-    /* Fill the struct with information. Check if for each type of value if it
-       is present in the instruction by checking the booleans. */ 
     if (true == hasRD) {
+        /* Build RD register expression */
+        
         /* Has a destination register, extract it. */
 //        registerStruct RDstruct = decodeRegister((*operandList)[opIndex]);       
 //        /* Insert the register into the struct as a destination register */
@@ -357,6 +356,15 @@ registerStruct decodeRegister(SgAsmExpression* expr) {
 /******************************************************************************
 * Build/decode value expression functions.
 ******************************************************************************/
+/* Builds value expressions for instructions */
+//TODO change the return type?
+void buildValueExpression(SgAsmExpression* expr, instructionStruct* container) {
+    /* Create the expression  */
+    SgAsmIntegerValueExpression* intValExpr = new SgAsmIntegerValueExpression();
+    /* set the absolute value(constant) from the struct */
+    intValExpr->set_absoluteValue(container->instructionConstant);
+}
+
 /* decode value expression, a constant. Save values in the struct */
 void decodeValueExpression(SgAsmExpression* inst, instructionStruct* instStruct) {
     /* cast the SgAsmExpression */
@@ -370,6 +378,16 @@ void decodeValueExpression(SgAsmExpression* inst, instructionStruct* instStruct)
 /******************************************************************************
 * Build/Decode memoryreference functions.
 ******************************************************************************/
+/* Create a memory expression */
+void buildMemoryReference(SgAsmExpression* inst, instructionStruct* container) {
+    /* Create a sgasmtype with the correct value */
+   
+    /* Create the lhs and rhs expression for the binary add.
+        Create a registerexpression and a constant */
+ 
+    /* Create a binary expression with the lhs and rhs. */
+}
+
 /* Decode memoryreference expressions */
 void decodeMemoryReference(SgAsmExpression* inst, instructionStruct* instStruct) {
     /* cast the sgasmexpression */
