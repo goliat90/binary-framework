@@ -325,6 +325,7 @@ SgAsmExpression* buildRegister(registerStruct regStruct) {
     } else if (regStruct.regName == symbolic_reg) {
         /* if the register is symbolic the register expression needs
             to be retrieved from the map */
+        directReg = getDirectRegisterExpression(regStruct.symbolicNumber);
     }
     /* return the register expression */
     return directReg;

@@ -7,8 +7,8 @@
 unsigned generateRegName();
 
 /* map to connect the register expression object to the symbolic register. */
-static std::map<SgAsmDirectRegisterExpression*, unsigned> symbolicRegisterMap;
-typedef std::pair<SgAsmDirectRegisterExpression*, unsigned> mapPair;
+typedef boost::bimap<unsigned, SgAsmDirectRegisterExpression*> regBiMap;
+static regBiMap biRegisterMap;
 
 /* Number counter for the symbolic regs, starting on 1 since
    0 is the default value for registerstructs. */
@@ -19,16 +19,21 @@ unsigned generateSymbolicRegister() {
     /* Create the register descriptor, it references zero. */
     RegisterDescriptor rd = RegisterDescriptor(mips_regclass_gpr, 0, 0, 0); 
     /* Create the register expression. */
-    SgAsmDirectRegisterExpression regExp = SgAsmDirectRegisterExpression(rd);
+    SgAsmDirectRegisterExpression* regExp = new SgAsmDirectRegisterExpression(rd);
     /* Get a sym register name (number) */
     unsigned regNumber = generateRegName();
     /* Insert the register to the map with associated register */
-    symbolicRegisterMap.insert(mapPair(&regExp, regNumber));
-    /* Create a symbolic registerStruct with the generated number */
-    registerStruct rs;
-    rs.symbolicNumber = regNumber;
-    /* Return the register expression */ 
-    return 0;
+    biRegisterMap.insert(regBiMap::value_type(regNumber, regExp));
+    /* Return the register number*/ 
+    return regNumber;
+}
+
+/* Retrieve the DirectRegisterExpression */
+SgAsmDirectRegisterExpression* getDirectRegisterExpression(unsigned number) {
+    /* search the map for the correct register expression */
+    SgAsmDirectRegisterExpression* reg = biRegisterMap.left.find(number)->second;
+    /* return the expression */
+    return reg;
 }
 
 
@@ -37,7 +42,7 @@ void clearSymbolicRegister() {
     /* set symbolic number to 1 again */
     symbolicNumber = 1;
     /* clear the map */
-    symbolicRegisterMap.clear();
+    biRegisterMap.clear();
 }
 
 /* Generates the symbolic register name, which is just a number. */
@@ -51,11 +56,9 @@ unsigned generateRegName() {
 /* Checks if a registerexpression is symbolic or not. */
 bool isSymbolicRegister(SgAsmDirectRegisterExpression* reg) {
     /* Check if the register expression is present in the map. */
-    if (symbolicRegisterMap.find(reg) != symbolicRegisterMap.end()) {
-        //the register is present in the map so it is symbolic.
+    if (biRegisterMap.right.find(reg) != biRegisterMap.right.end()) {
         return true;
     } else {
-        //the register was not found, so it is a real register that is used.
         return false;
     }
 }
@@ -63,7 +66,7 @@ bool isSymbolicRegister(SgAsmDirectRegisterExpression* reg) {
 /* search for a symbolic register. */
 unsigned findSymbolicRegister(SgAsmDirectRegisterExpression* reg) {
     //get the symbolic name of the register.
-    unsigned symRegName = symbolicRegisterMap.find(reg)->second;
+    unsigned symRegName = biRegisterMap.right.find(reg)->second;
     //return the name.
     return symRegName;
 }
