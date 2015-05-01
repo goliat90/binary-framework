@@ -17,11 +17,11 @@ SgAsmMipsInstruction* buildInstruction(instructionStruct* instInfo);
 /* Build operand list */
 SgAsmOperandList* buildOperandList(instructionStruct*, bool, bool, bool, bool, bool);
 /* Creates a register expression */
-SgAsmExpression* buildRegister(registerStruct);
+SgAsmDirectRegisterExpression* buildRegister(registerStruct);
 /* Create a value expression, constant */
-void buildValueExpression(SgAsmExpression*, instructionStruct*);
+SgAsmIntegerValueExpression* buildValueExpression(instructionStruct*);
 /* Create a memory expression */
-void buildMemoryReference(SgAsmExpression*, instructionStruct*);
+SgAsmMemoryReferenceExpression* buildMemoryReference(instructionStruct*);
 
 /********** Decoding instruction functions. **********/
 /* Decode the instruction */
@@ -213,25 +213,32 @@ SgAsmOperandList* buildOperandList(instructionStruct* inst,
     bool hasRD, bool hasRS, bool hasRT, bool hasC, bool memOp) {
     /* variables */
     SgAsmOperandList* asmOpListPtr = new SgAsmOperandList;
+    /* Get the expression list that we can insert expressions into */
+    SgAsmExpressionPtrList& exprList = asmOpListPtr->get_operands();    
+
     if (true == hasRD) {
         /* Build RD register expression */
-        
-        /* Has a destination register, extract it. */
-//        registerStruct RDstruct = decodeRegister((*operandList)[opIndex]);       
-//        /* Insert the register into the struct as a destination register */
-//        instruction.destinationRegisters.push_back(RDstruct);
-//        /* Increment the operand index */
-//        opIndex++;
+        SgAsmDirectRegisterExpression* regRD = buildRegister(inst->destinationRegisters.back());
+        /* Remove the register from the vector */
+        inst->destinationRegisters.pop_back();
+        /* Add the rd register to the operand list */
+        exprList.push_back(regRD);
     }
     if (true == hasRS) {
-        /* Has a rs register operand, extract it. */
-//        registerStruct RSstruct = decodeRegister((*operandList)[opIndex]);
-//        /* insert the registers into the struct as a source register */
-//        instruction.sourceRegisters.push_back(RSstruct);
-//        /* Increment the operand index */
-//        opIndex++;
+        /* Build RS register expression */
+        SgAsmDirectRegisterExpression* regRS = buildRegister(inst->sourceRegisters.back());
+        /* Remove the register from the vector */
+        inst->sourceRegisters.pop_back();
+        /* Add the rs register to the operand list */
+        exprList.push_back(regRS);
     }
     if (true == hasRT) {
+        /* Build RT register expression */
+        SgAsmDirectRegisterExpression* regRT = buildRegister(inst->sourceRegisters.back());
+        /* Remove the register from the vector */
+        inst->sourceRegisters.pop_back();
+        /* Add the rs register to the operand list */
+        exprList.push_back(regRT);
         /* Has a rt register operand, extract it. */
 //        registerStruct RTstruct = decodeRegister((*operandList)[opIndex]);       
 //        /* insert the registers into the struct as a source register */
@@ -305,7 +312,7 @@ instructionStruct decodeOpList(SgAsmExpressionPtrList* operandList,
 * Build/decode register functions.
 ******************************************************************************/
 /* Creates a register expression */
-SgAsmExpression* buildRegister(registerStruct regStruct) {
+SgAsmDirectRegisterExpression* buildRegister(registerStruct regStruct) {
     /* Register expression, requires a register descriptor, it is
         initially created as a zero register descriptor, however minor
         needs to be set again. */
@@ -357,12 +364,13 @@ registerStruct decodeRegister(SgAsmExpression* expr) {
 * Build/decode value expression functions.
 ******************************************************************************/
 /* Builds value expressions for instructions */
-//TODO change the return type?
-void buildValueExpression(SgAsmExpression* expr, instructionStruct* container) {
+SgAsmIntegerValueExpression* buildValueExpression(instructionStruct* container) {
     /* Create the expression  */
     SgAsmIntegerValueExpression* intValExpr = new SgAsmIntegerValueExpression();
     /* set the absolute value(constant) from the struct */
     intValExpr->set_absoluteValue(container->instructionConstant);
+    /* return the pointer */
+    return intValExpr;
 }
 
 /* decode value expression, a constant. Save values in the struct */
@@ -379,13 +387,25 @@ void decodeValueExpression(SgAsmExpression* inst, instructionStruct* instStruct)
 * Build/Decode memoryreference functions.
 ******************************************************************************/
 /* Create a memory expression */
-void buildMemoryReference(SgAsmExpression* inst, instructionStruct* container) {
-    /* Create a sgasmtype with the correct value */
-   
-    /* Create the lhs and rhs expression for the binary add.
-        Create a registerexpression and a constant */
- 
-    /* Create a binary expression with the lhs and rhs. */
+SgAsmMemoryReferenceExpression* buildMemoryReference(instructionStruct* container) {
+    /* Create the lhs and rhs expression for the binary add. */
+    /* Registerexpression */
+    registerStruct reg = container->sourceRegisters.back();
+    SgAsmDirectRegisterExpression* lhs_reg = buildRegister(reg); 
+    /* Constant */
+    SgAsmIntegerValueExpression* rhs_valexpr = buildValueExpression(container);
+
+    /* Create a binary expression with the lhs and rhs expressions. */
+    SgAsmBinaryAdd* binAdd = new SgAsmBinaryAdd(lhs_reg, rhs_valexpr);
+
+    /* Create a sgasmintegertype with the correct value */
+    SgAsmIntegerType* integerType = new 
+        SgAsmIntegerType(ByteOrder::ORDER_LSB, container->memoryReferenceSize, container->isSignedMemory);
+    /* Create the memoryexpression and set the type */
+    //TODO consider adding segment expression 
+    SgAsmMemoryReferenceExpression* memRef = new SgAsmMemoryReferenceExpression(binAdd, NULL);
+    
+    return memRef;
 }
 
 /* Decode memoryreference expressions */
@@ -393,11 +413,12 @@ void decodeMemoryReference(SgAsmExpression* inst, instructionStruct* instStruct)
     /* cast the sgasmexpression */
     SgAsmMemoryReferenceExpression* memref = isSgAsmMemoryReferenceExpression(inst);
     /* Get the size of the memory reference, 8,16,32,64 */
-    SgAsmType* refType = memref->get_type();
+    SgAsmIntegerType* refType = isSgAsmIntegerType(memref->get_type());
     instStruct->memoryReferenceSize = refType->get_nBits();
+    instStruct->isSignedMemory = refType->get_isSigned();
     /* Get the address expression which is a binary add consisting of
        one register and one constant. */
-    SgAsmBinaryExpression* binExp = isSgAsmBinaryExpression(memref->get_address());    
+    SgAsmBinaryAdd* binExp = isSgAsmBinaryAdd(memref->get_address());    
     /* decode the lhs(register) and the rhs(constant) expressions */
     registerStruct reg = decodeRegister(binExp->get_lhs());
     instStruct->sourceRegisters.push_back(reg);

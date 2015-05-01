@@ -102,10 +102,15 @@ struct instructionStruct {
     //if the instruction uses a constant then save it and significant bits.
     uint64_t instructionConstant;
     size_t significantBits;
+   
+    /* Information related to information */ 
     //The number of bits/size of the memory reference, 8,16,32,64
+    //TODO consider adding segment to saved information.
     int memoryReferenceSize;
-   //address of the instruction, if the instruction is inserted then it
-    //is a temporary value.
+    bool isSignedMemory;
+    
+    //It is relevant to memory expressions.
+    //address of the instruction, if the instruction is inserted then it is a temporary value.
     rose_addr_t address; 
 };
 
