@@ -1,8 +1,8 @@
 ifeq ($(USER),david) 
     include /home/david/Github/ROSE/edg4x-rose/compiletree/Makefile_vars
 	PATHDIFF = david/Github/ROSE/edg4x-rose/compiletree
-	LIBINCDIR = /home/david/Github/ROSE/binary-framework/framework/include
-	LIBSRCDIR = /home/david/Github/ROSE/binary-framework/framework/src
+	LIBINCDIR = /home/david/Github/binary-framework/framework/include
+	LIBSRCDIR = /home/david/Github/binary-framework/framework/src
 else
     include /home/almd/Github/edg4x-rose/Compiletree/Makefile_vars
 	PATHDIFF = almd/Github/edg4x-rose/Compiletree
