@@ -19,7 +19,7 @@ SgAsmOperandList* buildOperandList(instructionStruct*, bool, bool, bool, bool, b
 /* Creates a register expression */
 SgAsmDirectRegisterExpression* buildRegister(registerStruct);
 /* Create a value expression, constant */
-SgAsmIntegerValueExpression* buildValueExpression(instructionStruct*);
+SgAsmIntegerValueExpression* buildValueExpression(uint64_t);
 /* Create a memory expression */
 SgAsmMemoryReferenceExpression* buildMemoryReference(instructionStruct*);
 
@@ -55,10 +55,10 @@ static biRegMap registerNameMap = initRegisterNameMap();
 SgAsmMipsInstruction* buildInstruction(instructionStruct* instInfo) {
     /* Construct a mips instruction, use information from the struct. */
     SgAsmMipsInstruction* mipsInst = new SgAsmMipsInstruction;
-    /* Get the statementlist reference */
-    SgAsmOperandList* asmOpList; //= mipsInst->get_operandList(); 
-    //SgAsmExpressionPtrList& operandList = mipsInst->get_operandList()->get_operands();
-    /* depending on instruction format use right arguments for build function */
+    /* Create statementlist pointer reference */
+    SgAsmOperandList* asmOpList; 
+    /* depending on instruction format use right arguments for build function
+        and create the operandlist. */
     switch (instInfo->format) {
         /* R instructions */
         case R_RD_RS_RT :{
@@ -66,15 +66,19 @@ SgAsmMipsInstruction* buildInstruction(instructionStruct* instInfo) {
             break;
         }
         case R_RD_RS_C  :{
+            asmOpList = buildOperandList(instInfo, true, true, false, true, false);
             break;
         }
         case R_RD       :{
+            asmOpList = buildOperandList(instInfo, true, false, false, false, false);
             break;
         }
         case R_RS_RT    :{
+            asmOpList = buildOperandList(instInfo, false, true, true, false, false);
             break;
         }
         case R_RS       :{
+            asmOpList = buildOperandList(instInfo, false, true, false, false, false);
             break;
         }
         case R_NOP  :{
@@ -82,38 +86,46 @@ SgAsmMipsInstruction* buildInstruction(instructionStruct* instInfo) {
         }
         /* I instructions  */
         case I_RD_RS_C   :{
+            asmOpList = buildOperandList(instInfo, true, true, false, true, false);
             break;
         }
         case I_RD_MEM_RS_C:{
+            asmOpList = buildOperandList(instInfo, true, false, false, false, true);
             break;
         }
         case I_RD_C      :{
+            asmOpList = buildOperandList(instInfo, true, false, false, true, false);
             break;
         }
         case I_RS_RT_C   :{
+            asmOpList = buildOperandList(instInfo, false, true, true, true, false);
             break;
         }
         case I_RS_MEM_RT_C:{
+            asmOpList = buildOperandList(instInfo, false, true, false, false, true);
             break;
         }
         case I_RS_C      :{
+            asmOpList = buildOperandList(instInfo, false, true, false, true, false);
             break;
         }
         /* J instructions */
         case J_C        :{
+            asmOpList = buildOperandList(instInfo, false, false, false, true, false);
             break;
         }
         case J_RS       :{
+            asmOpList = buildOperandList(instInfo, false, true, false, false, false);
             break;
         }
         case J_RD_RS    :{
+            asmOpList = buildOperandList(instInfo, true, true, false, false, false);
             break;
         }
         default: {
             //The instruction is unknown.
         }
     }
-
     /* Set the general values of the instruction. */
     mipsInst->set_kind(instInfo->kind);
     mipsInst->set_mnemonic(instInfo->mnemonic);
@@ -215,6 +227,7 @@ SgAsmOperandList* buildOperandList(instructionStruct* inst,
     SgAsmOperandList* asmOpListPtr = new SgAsmOperandList;
     /* Get the expression list that we can insert expressions into */
     SgAsmExpressionPtrList& exprList = asmOpListPtr->get_operands();    
+    //TODO consider not poping the registers and instead indexing */
 
     if (true == hasRD) {
         /* Build RD register expression */
@@ -239,25 +252,20 @@ SgAsmOperandList* buildOperandList(instructionStruct* inst,
         inst->sourceRegisters.pop_back();
         /* Add the rs register to the operand list */
         exprList.push_back(regRT);
-        /* Has a rt register operand, extract it. */
-//        registerStruct RTstruct = decodeRegister((*operandList)[opIndex]);       
-//        /* insert the registers into the struct as a source register */
-//        instruction.sourceRegisters.push_back(RTstruct);
-//        /* Increment the operand index */
-//        opIndex++;
     }
     if (true == hasC) {
-        /* get the relevant values from the constant */
-//        decodeValueExpression((*operandList)[opIndex], &instruction);
-//        /* increment the operand index */
-//        opIndex++;
+        /* Build constant expression */
+        SgAsmIntegerValueExpression* constExpr = buildValueExpression(inst->instructionConstant);
+        /* Add the constant expression to the operand list */
+        exprList.push_back(constExpr);
     }
     if (true == memOp) {
         /* this is a memory instruction, extract the register and memory constant. */
-//        decodeMemoryReference((*operandList)[opIndex], &instruction);       
+        SgAsmMemoryReferenceExpression* memExpr = buildMemoryReference(inst);
+        /* Add memory expression to the operand list */
+        exprList.push_back(memExpr);
     }
-    /* return the instruction information */
-    
+    /* return the operandlist */
     return asmOpListPtr;
 }
 
@@ -364,11 +372,12 @@ registerStruct decodeRegister(SgAsmExpression* expr) {
 * Build/decode value expression functions.
 ******************************************************************************/
 /* Builds value expressions for instructions */
-SgAsmIntegerValueExpression* buildValueExpression(instructionStruct* container) {
+SgAsmIntegerValueExpression* buildValueExpression(uint64_t constantVal) {
     /* Create the expression  */
     SgAsmIntegerValueExpression* intValExpr = new SgAsmIntegerValueExpression();
     /* set the absolute value(constant) from the struct */
-    intValExpr->set_absoluteValue(container->instructionConstant);
+    //TODO find the significance of the significant bits size i can't set them.
+    intValExpr->set_absoluteValue(constantVal);
     /* return the pointer */
     return intValExpr;
 }
@@ -393,7 +402,7 @@ SgAsmMemoryReferenceExpression* buildMemoryReference(instructionStruct* containe
     registerStruct reg = container->sourceRegisters.back();
     SgAsmDirectRegisterExpression* lhs_reg = buildRegister(reg); 
     /* Constant */
-    SgAsmIntegerValueExpression* rhs_valexpr = buildValueExpression(container);
+    SgAsmIntegerValueExpression* rhs_valexpr = buildValueExpression(container->instructionConstant);
 
     /* Create a binary expression with the lhs and rhs expressions. */
     SgAsmBinaryAdd* binAdd = new SgAsmBinaryAdd(lhs_reg, rhs_valexpr);
