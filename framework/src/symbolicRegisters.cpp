@@ -15,17 +15,20 @@ static regBiMap biRegisterMap;
 static unsigned symbolicNumber = 1;
 
 /* Create a symbolic register that can be used */
-unsigned generateSymbolicRegister() {
+registerStruct generateSymbolicRegister() {
+    /* Create register struct to return  */
+    registerStruct regStruct;
+    regStruct.regName = symbolic_reg;
     /* Create the register descriptor, it references zero. */
     RegisterDescriptor rd = RegisterDescriptor(mips_regclass_gpr, 0, 0, 0); 
     /* Create the register expression. */
     SgAsmDirectRegisterExpression* regExp = new SgAsmDirectRegisterExpression(rd);
     /* Get a sym register name (number) */
-    unsigned regNumber = generateRegName();
+    regStruct.symbolicNumber = generateRegName();
     /* Insert the register to the map with associated register */
-    biRegisterMap.insert(regBiMap::value_type(regNumber, regExp));
+    biRegisterMap.insert(regBiMap::value_type(regStruct.symbolicNumber, regExp));
     /* Return the register number*/ 
-    return regNumber;
+    return regStruct;
 }
 
 /* Retrieve the DirectRegisterExpression */

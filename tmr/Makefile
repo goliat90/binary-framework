@@ -50,8 +50,8 @@ clean:
 	rm -rf .libs
 	rm -f cfgHandler.lo
 	rm -f cfgHandler.o
-	rm -f binarDebug.lo
-	rm -f binarDebug.o
+	rm -f binaryDebug.lo
+	rm -f binaryDebug.o
 	rm -f mipsISA.lo
 	rm -f mipsISA.o
 	rm -f symbolicRegisters.lo

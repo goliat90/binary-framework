@@ -9,7 +9,6 @@
 #include "boost/bimap.hpp"
 
 /* forward declarations */
-struct registerStruct;
 struct instructionStruct;
 
 //function declarations.
@@ -18,31 +17,6 @@ instructionStruct decodeInstruction(SgAsmMipsInstruction*);
 /* Builds an instruction from an instructionStruct */
 SgAsmMipsInstruction* buildInstruction(instructionStruct*);
 
-//name of the registers.
-enum mipsRegisterName {
-    zero,           //always zero, if zero is encountered then check if it is symbolic.
-    at,             //assembly temporary
-    v0,v1,          //return value from function call.
-
-    a0,a1,a2,a3,    //first four parameters of function call
-
-    t0,t1,t2,t3,    //temporary variables, no need to preserve
-    t4,t5,t6,t7,
-
-    s0,s1,s2,s3,    //function variables, must be preserved.
-    s4,s5,s6,s7,
-
-    t8,t9,          //more temporary variables
-    k0,k1,          //kernel use register, might change unexpectedly.
-    gp,             //global pointer
-    sp,             //stack pointer
-    fp,             //stack frame pointer or subroutine variable(s8)
-    ra,             //return address of the last subroutine call.
-
-    //hi,lo,          //special register for multiplication and division.
-                    //not included in the lookups.
-    symbolic_reg    //sumbolic registers.
-};
 
 //Type of instruction syntax
 //RD = Destiniation register
@@ -72,14 +46,6 @@ enum instructionType {
     MIPS_UNKNOWN    //The instruction is not included and format is therefore unknown. 
 };
 
-/* struct for register information. Contains enum and symbolic number */
-struct registerStruct {
-    //constructor
-    registerStruct():regName(symbolic_reg), symbolicNumber(0){};
-    //members
-    mipsRegisterName regName;
-    unsigned symbolicNumber;
-};
 
 
 // -------- instruction struct --------
