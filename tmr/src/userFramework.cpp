@@ -83,7 +83,7 @@ void userFramework::transformDecision(SgAsmMipsInstruction* inst) {
             accumulationOne.kind = mips_addu;
             accumulationOne.mnemonic = "addu";
             accumulationOne.format = getInstructionFormat(mips_addu);
-            /* Set the destination registers from duplicated instructions as source */
+            /* Set the source registers from duplicated instructions as source */
             accumulationOne.sourceRegisters.push_back(regOne);
             accumulationOne.sourceRegisters.push_back(regTwo);
             /* Reuse one of the symbolic registers as destination */
@@ -98,6 +98,11 @@ void userFramework::transformDecision(SgAsmMipsInstruction* inst) {
             denomInst.mnemonic = "addiu";
             denomInst.format = getInstructionFormat(mips_addiu);
             denomInst.instructionConstant = 0x3;
+            /* Set the source register, needs to be zero */
+            registerStruct zeroReg;
+            zeroReg.regName = zero;
+            denomInst.sourceRegisters.push_back(zeroReg);
+            denomInst.destinationRegisters.push_back(regTwo);
             SgAsmMipsInstruction* divConst = buildInstruction(&denomInst);
             insertInstruction(divConst);
 
@@ -119,10 +124,23 @@ void userFramework::transformDecision(SgAsmMipsInstruction* inst) {
             divInst.kind = mips_divu;
             divInst.mnemonic = "divu";
             divInst.format = getInstructionFormat(mips_divu);
-            /* set the operands of the division */
-            //divInst.sourceRegisters.push_back(
+            /* set the operands of the division, nominator then denominator */
+            divInst.sourceRegisters.push_back(orgInstDest);
+            divInst.sourceRegisters.push_back(regTwo);
+            /* Build the instruction and insert it*/
+            SgAsmMipsInstruction* divisionInst = buildInstruction(&divInst);
+            insertInstruction(divisionInst);
 
-            /* Move the result from the special register */
+            /* Move the result from the special register low */
+            instructionStruct moveInst;
+            moveInst.kind = mips_mflo;
+            moveInst.mnemonic = "mflo";
+            moveInst.format = getInstructionFormat(mips_mflo);
+            /* set the original destination register as destination */
+            moveInst.destinationRegisters.push_back(orgInstDest);
+            /* build and insert instruction */
+            SgAsmMipsInstruction* move = buildInstruction(&moveInst);
+            insertInstruction(move);
 
         }
         case mips_addi: {
