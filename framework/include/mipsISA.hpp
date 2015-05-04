@@ -11,13 +11,6 @@
 /* forward declarations */
 struct instructionStruct;
 
-//function declarations.
-/* Decode the instruction, calls on the specific decode instructions. */
-instructionStruct decodeInstruction(SgAsmMipsInstruction*);
-/* Builds an instruction from an instructionStruct */
-SgAsmMipsInstruction* buildInstruction(instructionStruct*);
-
-
 //Type of instruction syntax
 //RD = Destiniation register
 //RS,RT = Source operand registers
@@ -46,7 +39,13 @@ enum instructionType {
     MIPS_UNKNOWN    //The instruction is not included and format is therefore unknown. 
 };
 
-
+//function declarations.
+/* Decode the instruction, calls on the specific decode instructions. */
+instructionStruct decodeInstruction(SgAsmMipsInstruction*);
+/* Builds an instruction from an instructionStruct */
+SgAsmMipsInstruction* buildInstruction(instructionStruct*);
+/* Return the format of an instruction defined by the framework */
+instructionType getInstructionFormat(MipsInstructionKind);
 
 // -------- instruction struct --------
 // Contains information that is useful for the framework about
@@ -54,7 +53,7 @@ enum instructionType {
 struct instructionStruct {
     //Constructor
     instructionStruct():kind(mips_unknown_instruction), mnemonic(""), format(MIPS_UNKNOWN),
-    instructionConstant(0), significantBits(0), memoryReferenceSize(0), address(0){};
+    instructionConstant(0), significantBits(0), memoryReferenceSize(0), isSignedMemory(false), address(0){};
     //nmemonic enum.
     MipsInstructionKind kind;
     //mnemonic string

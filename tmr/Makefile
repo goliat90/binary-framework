@@ -12,7 +12,7 @@ endif
 
 SRCDIR = ./src
 
-VPATH = $(LIBSRCDIR):$(LIBINCDIR)
+VPATH = $(LIBSRCDIR):$(LIBINCDIR):src:include
 
 all: linking 
 
@@ -32,11 +32,11 @@ symbolicRegisters.lo: symbolicRegisters.cpp symbolicRegisters.hpp
 	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I$(LIBINCDIR) -I/home/$(PATHDIFF) -c -o symbolicRegisters.lo \
 	$(LIBSRCDIR)/symbolicRegisters.cpp
 
-framework.lo:
+framework.lo: binaryRewriter.cpp binaryRewriter.hpp
 	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I$(LIBINCDIR) -I/home/$(PATHDIFF) -c -o binaryRewriter.lo \
 	$(LIBSRCDIR)/binaryRewriter.cpp
 
-userFramework.lo:
+userFramework.lo: userFramework.cpp userFramework.hpp
 	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I$(LIBINCDIR) -I./include -I/home/$(PATHDIFF) \
 	-c -o userFramework.lo $(SRCDIR)/userFramework.cpp
 

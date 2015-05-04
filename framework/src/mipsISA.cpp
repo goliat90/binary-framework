@@ -28,8 +28,6 @@ SgAsmMemoryReferenceExpression* buildMemoryReference(instructionStruct*);
 instructionStruct decodeInstruction(SgAsmMipsInstruction*);
 /* operandList decoder, decodes the operands in the list. */
 instructionStruct decodeOpList(SgAsmExpressionPtrList*, bool, bool, bool, bool, bool);
-/* Get the format of the instructions */
-instructionType getInstructionFormat(SgAsmMipsInstruction*);
 /* decode register names */
 registerStruct decodeRegister(SgAsmExpression*); 
 /* decode value expression, a constant */
@@ -140,7 +138,7 @@ SgAsmMipsInstruction* buildInstruction(instructionStruct* instInfo) {
 instructionStruct decodeInstruction(SgAsmMipsInstruction* inst) {
     instructionStruct instStruct;
     /* Check what kind of instruction format it is.  */
-    instructionType format = getInstructionFormat(inst);
+    instructionType format = getInstructionFormat(inst->get_kind());
     /* get the operand list */
     SgAsmExpressionPtrList* operandList = &inst->get_operandList()->get_operands();
     /* depending on instruction format use right arguments for decode function
@@ -439,11 +437,9 @@ void decodeMemoryReference(SgAsmExpression* inst, instructionStruct* instStruct)
 /******************************************************************************
 * Return the instruction format.
 ******************************************************************************/
-instructionType getInstructionFormat(SgAsmMipsInstruction* inst) {
-    //struct to store information.
-    instructionStruct instruction;
+instructionType getInstructionFormat(MipsInstructionKind mipsKind) {
     //check the check the kind of instruction.
-    switch (inst->get_kind()) {
+    switch (mipsKind) {
         /********** R type instruction **********/
         //arithmetic.
         case mips_add   :
