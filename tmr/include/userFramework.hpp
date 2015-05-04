@@ -14,7 +14,7 @@ class userFramework : public BinaryRewriter {
         //constructor
         userFramework(int, char**);
         //overriding the decision function in the framework.
-        void transformDecision(SgAsmStatement*);
+        void transformDecision(SgAsmMipsInstruction*);
 
     private:
         //Hide default constructor again.
