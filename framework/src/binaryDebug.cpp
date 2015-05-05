@@ -99,7 +99,7 @@ void printRegisters(std::stringstream* regStream, std::vector<registerStruct>* r
             *regStream << registerMap.find(regS.regName)->second;
         } else if (regS.regName == symbolic_reg) {
             /* the register is symbolic */
-            *regStream << "symbolic: " << regS.symbolicNumber;
+            *regStream << "sym_" << std::dec << regS.symbolicNumber;
         } else {
             /* the register is neither physical or symbolic. error */
             *regStream << "Non symbolic or physical register.";

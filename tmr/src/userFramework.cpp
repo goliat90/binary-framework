@@ -13,12 +13,14 @@ userFramework::userFramework(int argc, char** argv) {
 
 int main(int argc, char** argv) {
 
-    userFramework* uT = new userFramework(argc, argv);
+    userFramework* ut = new userFramework(argc, argv);
 
     /* set which function is to be transformed */
-    //functionSelect(string);
-
-    uT->transformBinary();
+    ut->functionSelect("main");
+    /* enable printing */
+    ut->setDebug(true);
+    /* transform the function */
+    ut->transformBinary();
 
     return 0;
 }
@@ -31,7 +33,10 @@ void userFramework::transformDecision(SgAsmMipsInstruction* inst) {
     /* Depending on the kind of instruction do appropriate transformation
         consider more functions. */
     switch(currentInst.kind) {
-        case mips_add: {
+        case mips_addu: {
+            /* Save the original instruction */
+            saveInstruction();
+            //std::cout << "User transforming instruction: " << std::hex << currentInst.address << std::endl;
             /* Add two new add instructions using the original input operands */
             //TODO change the instructions so they are addu instead of addi
             instructionStruct firstDup;
@@ -74,7 +79,9 @@ void userFramework::transformDecision(SgAsmMipsInstruction* inst) {
 
             /* insert the duplicated instructions. */
             insertInstruction(firstMipsDup);
+            //std::cout << "First insertion" << std::endl;
             insertInstruction(secondMipsDup);
+            //std::cout << "Second insertion" << std::endl;
             
             /* another add to combine the result of two inserted adds,
                 one more to combine the result of the original instruction
@@ -90,6 +97,7 @@ void userFramework::transformDecision(SgAsmMipsInstruction* inst) {
             accumulationOne.destinationRegisters.push_back(regOne);
             SgAsmMipsInstruction* accInst = buildInstruction(&accumulationOne);
             insertInstruction(accInst);
+            //std::cout << "Third insertion" << std::endl;
             
             /* use one of the generated register and set it to three
                 so it can be used in the division. */
@@ -105,18 +113,23 @@ void userFramework::transformDecision(SgAsmMipsInstruction* inst) {
             denomInst.destinationRegisters.push_back(regTwo);
             SgAsmMipsInstruction* divConst = buildInstruction(&denomInst);
             insertInstruction(divConst);
+            //std::cout << "Fourth insertion" << std::endl;
 
             /* final accumulation instruction */
             instructionStruct accumulationFinal;
             accumulationFinal.kind = mips_addu;
             accumulationFinal.mnemonic = "addu";
             accumulationFinal.format = getInstructionFormat(mips_addu);
-            /* Set the source registers, one symbolic and the destination register from
-                the original instruction. */
+            /* Set the source registers, one symbolic. */
             accumulationFinal.sourceRegisters.push_back(regOne);
             registerStruct orgInstDest = currentInst.destinationRegisters.back();
             accumulationFinal.sourceRegisters.push_back(orgInstDest);
+            /* set destination register, its the RD from the original instruction. */
+            accumulationFinal.destinationRegisters.push_back(orgInstDest);
+            /* build and insert instruction */
             SgAsmMipsInstruction* accFinal = buildInstruction(&accumulationFinal);
+            insertInstruction(accFinal);
+            //std::cout << "Firth insertion" << std::endl;
 
             /* division instruction with the total sum of the adds
                 that is divided by three. Giving us the average value.  */
@@ -125,11 +138,12 @@ void userFramework::transformDecision(SgAsmMipsInstruction* inst) {
             divInst.mnemonic = "divu";
             divInst.format = getInstructionFormat(mips_divu);
             /* set the operands of the division, nominator then denominator */
-            divInst.sourceRegisters.push_back(orgInstDest);
             divInst.sourceRegisters.push_back(regTwo);
+            divInst.sourceRegisters.push_back(orgInstDest);
             /* Build the instruction and insert it*/
             SgAsmMipsInstruction* divisionInst = buildInstruction(&divInst);
             insertInstruction(divisionInst);
+            //std::cout << "Sixth insertion" << std::endl;
 
             /* Move the result from the special register low */
             instructionStruct moveInst;
@@ -141,10 +155,11 @@ void userFramework::transformDecision(SgAsmMipsInstruction* inst) {
             /* build and insert instruction */
             SgAsmMipsInstruction* move = buildInstruction(&moveInst);
             insertInstruction(move);
-
+            //std::cout << "Seventh insertion" << std::endl;
+            break;
         }
-        case mips_addi: {
-
+        default: {
+            saveInstruction();
         }
     }
 }
