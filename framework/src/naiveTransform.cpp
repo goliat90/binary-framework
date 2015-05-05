@@ -1,6 +1,6 @@
 /* Naive transformation implementation.  */
 
-#include "naiveTransformatiom.hpp";
+#include "naiveTransform.hpp";
 
 
 

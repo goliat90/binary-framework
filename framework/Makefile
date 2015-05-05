@@ -13,6 +13,9 @@ VPATH = src:include
 
 all: linking 
 
+naiveTransform.lo: naiveTransform.cpp naiveTransform.hpp
+	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o naiveTransform.lo \
+	$(SRCDIR)/naiveTransform.cpp
 
 cfgHandler.lo: cfgHandler.cpp cfgHandler.hpp
 	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o cfgHandler.lo \
@@ -38,7 +41,7 @@ test.lo: test.cpp
 	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o test.lo \
 	$(SRCDIR)/test.cpp
 
-linking: framework.lo test.lo symbolicRegisters.lo mipsISA.lo binaryDebug.lo cfgHandler.lo
+linking: framework.lo test.lo symbolicRegisters.lo mipsISA.lo binaryDebug.lo cfgHandler.lo naiveTransform.lo
 	libtool --mode=link g++ $(ROSE_LIBS) -o test.out test.lo binaryRewriter.lo symbolicRegisters.lo \
 	binaryDebug.lo mipsISA.lo cfgHandler.lo
 
@@ -53,11 +56,13 @@ clean:
 	rm -f symbolicRegisters.lo
 	rm -f mipsISA.lo
 	rm -f cfgHandler.lo
+	rm -f naiveTransform.lo
 	rm -f binaryDebug.o
 	rm -f test.o
 	rm -f binaryRewriter.o
 	rm -f symbolicRegisters.o
 	rm -f mipsISA.o
 	rm -f cfgHandler.o
+	rm -f naiveTransform.o
 
 
