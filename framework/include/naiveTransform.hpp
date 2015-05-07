@@ -8,10 +8,38 @@
 
 /* Includes */
 #include "rose.h"
+/* Boost includes. Adjacency list with propertymaps*/
+#include <boost/graph/adjacency_list.hpp>
+
+/* Framework includes */
+#include "mipsISA.hpp"
+#include "cfgHandler.hpp"
 
 
+/* Object class for naive transformations. */
+class naiveHandler{
+    public:
+        /* Constructor */
+        naiveHandler(CFGhandler* cfg);
 
+        /* Function for applying the naive transformation  */
+        void applyTransformation();
+    private:
+        /* Private variables */
+        CFGhandler* cfgContainer;
+        /* maximum number of symbolic registers used */
+        int maximumSymbolicsUsed;
 
-
+        /* Functions */
+        //Hidding default constructor. I want a cfghandler for this object
+        naiveHandler() {};
+        /*  Checks the amount of stack space needed by finding the maximum
+            amount of symbolic register used. */
+        void findSymbolicRegisterUse();
+        /*  Transforms a basic block. Inserts SW/LW instructions and replaces
+            the symbolic registers with real registers. */
+        void naiveBlockTransform(SgAsmBlock*);
+        
+};
 
 #endif
