@@ -16,6 +16,10 @@ VPATH = $(LIBSRCDIR):$(LIBINCDIR):src:include
 
 all: linking 
 
+naiveTransform.lo: naiveTransform.cpp naiveTransform.hpp
+	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I$(LIBINCDIR) -I/home/$(PATHDIFF) -c -o naiveTransform.lo \
+	$(LIBSRCDIR)/naiveTransform.cpp
+
 cfgHandler.lo: cfgHandler.cpp cfgHandler.hpp
 	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I$(LIBINCDIR) -I/home/$(PATHDIFF) -c -o cfgHandler.lo \
 	$(LIBSRCDIR)/cfgHandler.cpp
@@ -40,9 +44,9 @@ userFramework.lo: userFramework.cpp userFramework.hpp
 	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I$(LIBINCDIR) -I./include -I/home/$(PATHDIFF) \
 	-c -o userFramework.lo $(SRCDIR)/userFramework.cpp
 
-linking: framework.lo userFramework.lo symbolicRegisters.lo mipsISA.lo binaryDebug.lo cfgHandler.lo
+linking: framework.lo userFramework.lo symbolicRegisters.lo mipsISA.lo binaryDebug.lo cfgHandler.lo naiveTransform.lo
 	libtool --mode=link g++ $(ROSE_LIBS) -o userRewriter.out userFramework.lo binaryRewriter.lo symbolicRegisters.lo \
-	mipsISA.lo binaryDebug.lo cfgHandler.lo
+	mipsISA.lo binaryDebug.lo cfgHandler.lo naiveTransform.lo
 
 	
 
@@ -60,6 +64,8 @@ clean:
 	rm -f binaryRewriter.o
 	rm -f userFramework.lo
 	rm -f userFramework.o
+	rm -f naiveTransform.lo
+	rm -f naiveTransform.o
 	rm -f userRewriter.out
 
 

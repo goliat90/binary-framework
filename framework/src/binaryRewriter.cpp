@@ -95,6 +95,7 @@ void BinaryRewriter::transformBinary() {
     /* Debug print, print all the blocks and their instructions */
     
     /* Apply naive or optimized transformation */
+    naiveHandler naiveTrans(cfgContainer);
 
     /* Debug print */
 

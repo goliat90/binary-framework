@@ -8,6 +8,7 @@
 #include "cfgHandler.hpp"
 #include "mipsISA.hpp"
 #include "symbolicRegisters.hpp"
+#include "naiveTransform.hpp"
 
 // Boost lib headers
 #include <boost/graph/adjacency_list.hpp>

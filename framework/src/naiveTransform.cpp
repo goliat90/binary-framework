@@ -51,6 +51,7 @@ naiveHandler::naiveHandler(CFGhandler* handler) {
     /* */
     maximumSymbolicsUsed = 0;
     /* check the use of symbolic registers here maybe? */
+    determineStackModification();
 }
 
 /* Function that applies the naive transformation to the binary */
@@ -62,7 +63,10 @@ void naiveHandler::applyTransformation() {
 
 
 /* Find the maximum amount of used symbolic registers used at the same time */
-void naiveHandler::findSymbolicRegisterUse() {
+void naiveHandler::determineStackModification() {
+    /* counter for symbolic registers */
+    int maxSymbolics = 0;
+    std::set<unsigned> symregsCounted;
     /* Go through the cfg and look for the maximum number of used instructions */
     CFG* function = cfgContainer->getFunctionCFG(); 
     /* Get all vertices and their block. */
@@ -75,12 +79,67 @@ void naiveHandler::findSymbolicRegisterUse() {
         /* Go through the instructions and count symbolic registers */
         for(SgAsmStatementPtrList::iterator iter = instList.begin();
             iter != instList.end(); ++iter) {
-            /* Check if the instruction is original or inserted. */
+            /* Check that is is a mips instruction */
+            if ((*iter)->variantT() == V_SgAsmMipsInstruction) {
+                /* Cast it to mips instruction and decode it. */
+                SgAsmMipsInstruction* mips = isSgAsmMipsInstruction(*iter);
+                instructionStruct decodedInst = decodeInstruction(mips);
+                /* Check if the instruction is original or inserted.
+                    Is done by checking the address. */
+                if (decodedInst.address == 0) {
+                    /* The instruction is an inserted one, check use of symbolic
+                        registers. */
+                    for(std::vector<registerStruct>::iterator regIter = 
+                        decodedInst.destinationRegisters.begin();
+                        regIter != decodedInst.destinationRegisters.end(); ++regIter) {
+                        /* reg struct variable */
+                        registerStruct reg = (*regIter);
+                        /* Check each register struct if it is symbolic */ 
+                        if (reg.regName == symbolic_reg &&
+                            symregsCounted.count(reg.symbolicNumber) == 0) {
+                            /*  Check if the instruction uses special registers,
+                                increment according to that case. */
+                                
+                            /* increment the count */
+                            maxSymbolics++;
+                            /* Add it to the counted symbolic registers */
+                            symregsCounted.insert(reg.symbolicNumber);
+                        }
+                    }
+                    for(std::vector<registerStruct>::iterator regIter = 
+                        decodedInst.sourceRegisters.begin();
+                        regIter != decodedInst.sourceRegisters.end(); ++regIter) {
+                        /* reg struct variable */
+                        registerStruct reg = (*regIter); 
+                        /* Check each register struct if it is symbolic */ 
+                        if (reg.regName == symbolic_reg &&
+                            symregsCounted.count(reg.symbolicNumber) == 0) {
+                            /* increment the count */
+                            maxSymbolics++;
+                            /* Add it to the counted symbolic registers */
+                            symregsCounted.insert(reg.symbolicNumber);
+                        }
+                    }
+                } else {
+                    /* save symbolic count if it is the higest. Clear the set. */
+                    if (maximumSymbolicsUsed < maxSymbolics) {
+                        /* save new maximum symbolics used. */
+                        maximumSymbolicsUsed = maxSymbolics;
+                    }
+                    /* Clear the set and reset the counter whenever a original
+                        instruction is encountered again. */
+                    symregsCounted.clear();
+                    maxSymbolics = 0;
+                }
+            }
         }
-
     }
+    std::cout << "maximum symbolcs:" << maximumSymbolicsUsed << std::endl;
+}
 
-
+/* Help function for determining how much the stack needs to be modified */
+void naiveHandler::specialInstructionUse(MipsInstructionKind kind) {
+    
 }
 
 /* Goes through a basic block and transforms it */

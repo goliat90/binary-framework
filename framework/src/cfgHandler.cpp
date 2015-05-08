@@ -150,7 +150,7 @@ void CFGhandler::findAddressRange() {
     rose_addr_t lowestAddr = std::numeric_limits<rose_addr_t>::max();
     rose_addr_t highestAddr = std::numeric_limits<rose_addr_t>::min();
 
-    std::cout << "Higest: " << std::hex << highestAddr  << " Lowest: " << lowestAddr << std::endl;
+    std::cout << "Highest: " << std::hex << highestAddr  << " Lowest: " << lowestAddr << std::endl;
 
     /* Go through the basic blocks and look at the first
         and last address compare to previous values and save */
@@ -184,7 +184,7 @@ void CFGhandler::findAddressRange() {
     /* The highest and lowest address in the function cfg has been found, save it*/
     addressRange.first = highestAddr;
     addressRange.second = lowestAddr;
-    std::cout << "Higest: " << std::hex << addressRange.first << " Lowest: " << addressRange.second << std::endl;
+    std::cout << "Highest: " << std::hex << addressRange.first << " Lowest: " << addressRange.second << std::endl;
 }
 
 /* Makes a cfg for a specific function */

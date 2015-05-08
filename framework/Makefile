@@ -43,7 +43,7 @@ test.lo: test.cpp
 
 linking: framework.lo test.lo symbolicRegisters.lo mipsISA.lo binaryDebug.lo cfgHandler.lo naiveTransform.lo
 	libtool --mode=link g++ $(ROSE_LIBS) -o test.out test.lo binaryRewriter.lo symbolicRegisters.lo \
-	binaryDebug.lo mipsISA.lo cfgHandler.lo
+	binaryDebug.lo mipsISA.lo cfgHandler.lo naiveTransform.lo
 
 	
 

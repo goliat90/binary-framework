@@ -14,6 +14,7 @@
 /* Framework includes */
 #include "mipsISA.hpp"
 #include "cfgHandler.hpp"
+#include "symbolicRegisters.hpp"
 
 
 /* Object class for naive transformations. */
@@ -35,7 +36,9 @@ class naiveHandler{
         naiveHandler() {};
         /*  Checks the amount of stack space needed by finding the maximum
             amount of symbolic register used. */
-        void findSymbolicRegisterUse();
+        void determineStackModification();
+        /*  Help function that increments register use for special registers. */
+        void specialInstructionUse(MipsInstructionKind);
         /*  Transforms a basic block. Inserts SW/LW instructions and replaces
             the symbolic registers with real registers. */
         void naiveBlockTransform(SgAsmBlock*);
