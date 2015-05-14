@@ -38,7 +38,7 @@ class naiveHandler{
             amount of symbolic register used. */
         void determineStackModification();
         /*  Help function that increments register use for special registers. */
-        void specialInstructionUse(MipsInstructionKind);
+        void specialInstructionUse(MipsInstructionKind, int*);
         /*  Transforms a basic block. Inserts SW/LW instructions and replaces
             the symbolic registers with real registers. */
         void naiveBlockTransform(SgAsmBlock*);

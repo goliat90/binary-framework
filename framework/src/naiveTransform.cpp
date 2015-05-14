@@ -27,10 +27,6 @@
         Remember to consider special registers. HI and LO registers, ACC
         as well.
 
-        1.5 Check each instruction block for inserted instructions.
-        If none are found then skip the block. Think it might be a bad
-        assumption that some basic blocks are not transformed.
-
         2. Insert load and stores in regions of inserted instructions.
         Here i could do some kind of mapping between a symbolic register
         and a real register. The instructions need to have correct offests
@@ -56,16 +52,45 @@ naiveHandler::naiveHandler(CFGhandler* handler) {
 
 /* Function that applies the naive transformation to the binary */
 void naiveHandler::applyTransformation() {
+    /* Variables */
+    CFG* function = cfgContainer->getFunctionCFG();
     /* Find the maximum use of symbolic registers. */
-
-    /* Go through each block and transform them */
+    determineStackModification();
+    /* Go through the instructions in a basic block and  */
+    for(std::pair<CFGVIter, CFGVIter> iterPair = vertices(*function);
+        iterPair.first != iterPair.second; ++iterPair.first) {
+        /* Get the basicblock from the vertex.  */
+        SgAsmBlock* bb = get(boost::vertex_name, *function, *iterPair.first);
+        /* Transform the block. */
+        naiveBlockTransform(bb);
+    }
 }
 
+/* Goes applies the naive transformation in a basic block. */
+void naiveHandler::naiveBlockTransform(SgAsmBlock* block) {
+    /*  transformed vector for instructions, will be swaped with the old */
+    SgAsmStatementPtrList transformedInstructionVector;
+    /*  The blocks statement list is vector based. That is not suitable during
+        transforming. Instead move it over to a list. */
+    SgAsmStatementPtrList& instructionVector = block->get_statementList();
+    std::list<SgAsmStatement*> instructionList (instructionVector.begin(), instructionVector.end());
+
+    /*  Iterate over the list and find regions of inserted instructions.
+        Check a region for symbolic registers and exhange them for hard registers. */
+    for(std::list<SgAsmStatement*>::iterator instIter = instructionList.begin();
+        instIter != instructionList.end(); ++instIter) {
+        /*  Go through the instructions until a inserted instruction is found.
+            Then transform that region. */
+        
+    }
+    
+}
 
 /* Find the maximum amount of used symbolic registers used at the same time */
 void naiveHandler::determineStackModification() {
     /* counter for symbolic registers */
     int maxSymbolics = 0;
+    /* Keep track of registers to avoid counted registers. */
     std::set<unsigned> symregsCounted;
     /* Go through the cfg and look for the maximum number of used instructions */
     CFG* function = cfgContainer->getFunctionCFG(); 
@@ -97,9 +122,6 @@ void naiveHandler::determineStackModification() {
                         /* Check each register struct if it is symbolic */ 
                         if (reg.regName == symbolic_reg &&
                             symregsCounted.count(reg.symbolicNumber) == 0) {
-                            /*  Check if the instruction uses special registers,
-                                increment according to that case. */
-                                
                             /* increment the count */
                             maxSymbolics++;
                             /* Add it to the counted symbolic registers */
@@ -120,30 +142,48 @@ void naiveHandler::determineStackModification() {
                             symregsCounted.insert(reg.symbolicNumber);
                         }
                     }
+                    /*  Check if the instruction uses special registers,
+                        increment according to that case. */
+                    specialInstructionUse(decodedInst.kind, &maxSymbolics);
                 } else {
-                    /* save symbolic count if it is the higest. Clear the set. */
-                    if (maximumSymbolicsUsed < maxSymbolics) {
-                        /* save new maximum symbolics used. */
-                        maximumSymbolicsUsed = maxSymbolics;
-                    }
                     /* Clear the set and reset the counter whenever a original
                         instruction is encountered again. */
                     symregsCounted.clear();
                     maxSymbolics = 0;
                 }
+                /* save symbolic count if it is higher than the previously. */
+                if (maximumSymbolicsUsed < maxSymbolics) {
+                    /* save new maximum symbolics used. */
+                    maximumSymbolicsUsed = maxSymbolics;
+                }
             }
         }
     }
-    std::cout << "maximum symbolcs:" << maximumSymbolicsUsed << std::endl;
+    std::cout << "maximum symbolics:" << maximumSymbolicsUsed << std::endl;
 }
 
-/* Help function for determining how much the stack needs to be modified */
-void naiveHandler::specialInstructionUse(MipsInstructionKind kind) {
-    
+/*  Help function for determining how much the stack needs to be modified,
+    The instruction kind will be used to determine how much stack needs to
+    modified. */
+void naiveHandler::specialInstructionUse(MipsInstructionKind kind, int* currentModification) {
+    /* Switch case for instructions */
+    switch(kind) {
+        /* These instructions uses the accumulator register, Hi and low */
+        case mips_madd:
+        case mips_maddu:
+        case mips_msub:
+        case mips_msubu:
+        case mips_mult:
+        case mips_multu:
+        case mips_div:
+        case mips_divu: {
+            *currentModification += 2;
+            break;
+        }
+        default: {
+            /* Default instructions do not need any consideration */
+        }
+    }
 }
 
-/* Goes through a basic block and transforms it */
-void naiveHandler::naiveBlockTransform(SgAsmBlock* basic) {
-
-}
 
