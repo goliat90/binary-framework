@@ -46,8 +46,8 @@ naiveHandler::naiveHandler(CFGhandler* handler) {
     cfgContainer = handler;
     /* */
     maximumSymbolicsUsed = 0;
-    /* check the use of symbolic registers here maybe? */
-    determineStackModification();
+    /* Clear the region list. */
+    //regionList.clear();
 }
 
 /* Function that applies the naive transformation to the binary */
@@ -56,6 +56,7 @@ void naiveHandler::applyTransformation() {
     CFG* function = cfgContainer->getFunctionCFG();
     /* Find the maximum use of symbolic registers. */
     determineStackModification();
+    //TODO do stack modification here?
     /* Go through the instructions in a basic block and  */
     for(std::pair<CFGVIter, CFGVIter> iterPair = vertices(*function);
         iterPair.first != iterPair.second; ++iterPair.first) {
@@ -70,20 +71,60 @@ void naiveHandler::applyTransformation() {
 void naiveHandler::naiveBlockTransform(SgAsmBlock* block) {
     /*  transformed vector for instructions, will be swaped with the old */
     SgAsmStatementPtrList transformedInstructionVector;
+    /*  List used to store a region of inserted instructions. */
+    std::list<SgAsmStatement*> regionList;
     /*  The blocks statement list is vector based. That is not suitable during
         transforming. Instead move it over to a list. */
     SgAsmStatementPtrList& instructionVector = block->get_statementList();
-    std::list<SgAsmStatement*> instructionList (instructionVector.begin(), instructionVector.end());
 
     /*  Iterate over the list and find regions of inserted instructions.
         Check a region for symbolic registers and exhange them for hard registers. */
-    for(std::list<SgAsmStatement*>::iterator instIter = instructionList.begin();
-        instIter != instructionList.end(); ++instIter) {
+    for(SgAsmStatementPtrList::iterator instIter = instructionVector.begin();
+        instIter != instructionVector.end(); ++instIter) {
         /*  Go through the instructions until a inserted instruction is found.
             Then transform that region. */
-        
+        if ((*instIter)->variantT() == V_SgAsmMipsInstruction) {
+            /* Cast to mips instruction pointer */
+            SgAsmMipsInstruction* mips = isSgAsmMipsInstruction(*instIter);
+            instructionStruct decodedMips = decodeInstruction(mips);
+            /* When a inserted instruction is found add it to the region list. */
+            if (decodedMips.address == 0) {
+                regionList.push_back(*instIter);
+            } else {
+                /*  When a original instruction is found it is saved in the vector. */
+                transformedInstructionVector.push_back(*instIter);
+                /* if the region list is not empty then we have a region to perform allocation on. */
+                if (regionList.empty() == false) {
+                    /* There is a region to perform allocation on, since the list is empty. */ 
+                    //TODO call regionAllocation.
+                    //TODO copy over the regionList.
+                    //TODO clear the regionList.
+                }
+            }
+        }
     }
-    
+    /* Check if the instruction block ended with inserted instructions */
+    if (regionList.empty() == false) {
+        /* There is a region to perform allocation on, since the list is empty. */ 
+        //TODO call regionAllocation.
+        //TODO copy over the regionList.
+        //TODO clear the regionList.
+    }
+}
+
+/*  Transforms a region of inserted instructions so they have real registers */
+void naiveHandler::regionAllocation(std::list<SgAsmStatement*>* regionList, SgAsmStatementPtrList* instVector) {
+    /*  For the region conclude how many registers are needed.
+        Replace symbolic registers with real registers.  */
+
+    /*  TODO need some kind of list containing the registers used.
+        TODO calculation and tracking of stack, so i have correct offsets. 
+    */
+
+    //Find out the number of registers needed.
+    //Map each symbolic to a real register.
+    //Replace symbolic registers with real. TODO use std::find?
+    //insert store and load instructions. Make sure offsets are correct.
 }
 
 /* Find the maximum amount of used symbolic registers used at the same time */
@@ -114,8 +155,7 @@ void naiveHandler::determineStackModification() {
                 if (decodedInst.address == 0) {
                     /* The instruction is an inserted one, check use of symbolic
                         registers. */
-                    for(std::vector<registerStruct>::iterator regIter = 
-                        decodedInst.destinationRegisters.begin();
+                    for(std::vector<registerStruct>::iterator regIter = decodedInst.destinationRegisters.begin();
                         regIter != decodedInst.destinationRegisters.end(); ++regIter) {
                         /* reg struct variable */
                         registerStruct reg = (*regIter);
@@ -128,8 +168,7 @@ void naiveHandler::determineStackModification() {
                             symregsCounted.insert(reg.symbolicNumber);
                         }
                     }
-                    for(std::vector<registerStruct>::iterator regIter = 
-                        decodedInst.sourceRegisters.begin();
+                    for(std::vector<registerStruct>::iterator regIter = decodedInst.sourceRegisters.begin();
                         regIter != decodedInst.sourceRegisters.end(); ++regIter) {
                         /* reg struct variable */
                         registerStruct reg = (*regIter); 
@@ -177,11 +216,16 @@ void naiveHandler::specialInstructionUse(MipsInstructionKind kind, int* currentM
         case mips_multu:
         case mips_div:
         case mips_divu: {
+            /*  Check if the counter is zero, then we need to increment it once extra.
+                Special case since we need to an extra register to be used when saving ACC. */
+            if (*currentModification == 0) {
+                *currentModification++;
+            }
             *currentModification += 2;
             break;
         }
         default: {
-            /* Default instructions do not need any consideration */
+            /* Default instructions does not need any consideration */
         }
     }
 }

@@ -30,6 +30,8 @@ class naiveHandler{
         CFGhandler* cfgContainer;
         /* maximum number of symbolic registers used */
         int maximumSymbolicsUsed;
+        /* instruction region list  */
+        //std::list<SgAsmStatement*> regionList;
 
         /* Functions */
         //Hidding default constructor. I want a cfghandler for this object
@@ -43,6 +45,8 @@ class naiveHandler{
             the symbolic registers with real registers. */
         void naiveBlockTransform(SgAsmBlock*);
         
+        /* Transform region. A region of inserted instructions is transformed. */
+        void regionAllocation(std::list<SgAsmStatement*>*, SgAsmStatementPtrList*);
 };
 
 #endif

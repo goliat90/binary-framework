@@ -79,5 +79,4 @@ struct instructionStruct {
     rose_addr_t address; 
 };
 
-
 #endif
