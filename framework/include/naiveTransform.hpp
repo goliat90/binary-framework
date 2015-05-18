@@ -7,6 +7,7 @@
 */
 
 /* Includes */
+#include <queue>
 #include "rose.h"
 /* Boost includes. Adjacency list with propertymaps*/
 #include <boost/graph/adjacency_list.hpp>
@@ -28,6 +29,8 @@ class naiveHandler{
     private:
         /* Private variables */
         CFGhandler* cfgContainer;
+        /*  boolean confirming use of special register acc/hi/lo */
+        bool usesAcc;
         /* maximum number of symbolic registers used */
         int maximumSymbolicsUsed;
         /* instruction region list  */

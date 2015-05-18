@@ -2,6 +2,10 @@
 
 #include "naiveTransform.hpp"
 
+/*  Forward declarations */
+
+/*  Function that creates a queue from which registers can be taken. */
+std::queue<mipsRegisterName> getRegisterQueue();
 
 /*  Check if instructions have been inserted. Between original instruction
     and the next original instruction. Count the number of symbolic registers
@@ -48,6 +52,7 @@ naiveHandler::naiveHandler(CFGhandler* handler) {
     maximumSymbolicsUsed = 0;
     /* Clear the region list. */
     //regionList.clear();
+    usesAcc = false;
 }
 
 /* Function that applies the naive transformation to the binary */
@@ -114,10 +119,21 @@ void naiveHandler::naiveBlockTransform(SgAsmBlock* block) {
 
 /*  Transforms a region of inserted instructions so they have real registers */
 void naiveHandler::regionAllocation(std::list<SgAsmStatement*>* regionList, SgAsmStatementPtrList* instVector) {
-    /*  For the region conclude how many registers are needed.
-        Replace symbolic registers with real registers.  */
+    /*  We know the maximum number of registers that will be used
+        by using the maximum symbolics */
+    std::map<unsigned, mipsRegisterName> symbolicToHard;
+    /*  queue containing registers that can be used for the region. */ 
+    std::queue<mipsRegisterName> regQ = getRegisterQueue();
 
-    /*  TODO need some kind of list containing the registers used.
+    //TODO Go through the instructions and replace the symbolic registers with real.
+    //map unsigned to registernames for correct replacement during traversal. 
+    //this is done by rebuilding the instruction.
+    //TODO consider using desctructor on the old instruction.
+
+    //TODO go through the map and create load and store instructions for the used registers.
+    //insert these at the beginning and end of the region.
+
+    /*  
         TODO calculation and tracking of stack, so i have correct offsets. 
     */
 
@@ -126,6 +142,24 @@ void naiveHandler::regionAllocation(std::list<SgAsmStatement*>* regionList, SgAs
     //Replace symbolic registers with real. TODO use std::find?
     //insert store and load instructions. Make sure offsets are correct.
 }
+
+
+/*  Function that creates a queue from which registers can be taken. */
+std::queue<mipsRegisterName> getRegisterQueue() {
+    std::queue<mipsRegisterName> regQ;
+    /*  Push registers on the stack, starting with t0-t7 registers. */
+    regQ.push(t0);
+    regQ.push(t1);
+    regQ.push(t2);
+    regQ.push(t3);
+    regQ.push(t4);
+    regQ.push(t5);
+    regQ.push(t6);
+    regQ.push(t7);
+    /*  Return the list to be used during a transformation */
+    return regQ;
+}
+
 
 /* Find the maximum amount of used symbolic registers used at the same time */
 void naiveHandler::determineStackModification() {
@@ -222,6 +256,8 @@ void naiveHandler::specialInstructionUse(MipsInstructionKind kind, int* currentM
                 *currentModification++;
             }
             *currentModification += 2;
+            /*  Set that the acc register needs to be saved */
+            usesAcc = true;
             break;
         }
         default: {
