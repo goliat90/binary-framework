@@ -23,7 +23,6 @@ class naiveHandler{
     public:
         /* Constructor */
         naiveHandler(CFGhandler* cfg);
-
         /* Function for applying the naive transformation  */
         void applyTransformation();
     private:
@@ -35,6 +34,8 @@ class naiveHandler{
         int maximumSymbolicsUsed;
         /*  Structure to store the available register names */
         std::set<mipsRegisterName> hardRegisters;
+        /* number of used hard registers in a region */
+        int usedHardRegs;
 
         /* Functions */
         //Hidding default constructor. I want a cfghandler for this object

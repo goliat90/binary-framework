@@ -137,10 +137,17 @@ void naiveHandler::regionAllocation(std::list<SgAsmStatement*>* regionList, SgAs
             regIter != destination->end(); ++regIter) {
             /*  check if a register is symbolic, if so then change it to a real.  */
             if ((*regIter).regName == symbolic_reg) {
-                //TODO check if the register has been replaced.
+                mipsRegisterName newReg;
+                //TODO check if the register has been replaced. If so use that.
+                if (symbolicToHard.count((*regIter).symbolicNumber) == 1) {
+                    /* Use assigned register */
+                    newReg = symbolicToHard.find((*regIter).symbolicNumber)->second;
+                } else {
+                    newReg = getHardRegister(); 
+                } 
                 //TODO need a good way to get a hard register.
                 /*  For each replaced symbolic map it. */
-                //symbolicToHard.insert<unsigned, mipsRegisterName>((*regIter.symbolicNumber), )
+                symbolicToHard.insert(std::pair<unsigned, mipsRegisterName>((*regIter).symbolicNumber, newReg));
             }
         }
         for(std::vector<registerStruct>::iterator regIter = source->begin();
@@ -154,15 +161,17 @@ void naiveHandler::regionAllocation(std::list<SgAsmStatement*>* regionList, SgAs
             }
         }
     }
-
     //TODO go through the map and create load and store instructions for the used registers.
     //insert these at the beginning and end of the region.
-
-
 }
 
 /*  Initalize the register set used during a region allocation */
 void naiveHandler::initHardRegisters() {
+    /*  Set stack offsett count to zero */
+    usedHardRegs = 0;
+    /*  Clear the set */
+    hardRegisters.clear();
+    /*  Add registers to the set */
     hardRegisters.insert(t0);
     hardRegisters.insert(t1);
     hardRegisters.insert(t2);
@@ -176,14 +185,21 @@ void naiveHandler::initHardRegisters() {
 /*  Help function that will return hard registers for exchange.
     It will also create a offset for the load and store instructions. */
 mipsRegisterName naiveHandler::getHardRegister() {
-    //TODO some structure to store the registers in. Which tells me if they are used or not.
-    //probably a queue or stack.
+    /* Variable */
+    mipsRegisterName realReg;
     /*  Check if the set contains registers. */
     if (!hardRegisters.empty()) {
-
+        /*  Get a register from the set */
+        realReg = *hardRegisters.begin();
+        /*  Remove the register since it is now used */
+        hardRegisters.erase(hardRegisters.begin());
+        /* increment the counter */
+        usedHardRegs++;
+    } else {
+        /*  No more registers available. Failure */
+        abort();
     }
-
-    //TODO when a register is used decide a correct offset for it on the stack.
+    return realReg;
 }
 
 
