@@ -2,10 +2,6 @@
 
 #include "naiveTransform.hpp"
 
-/*  Forward declarations */
-
-/*  Function that creates a queue from which registers can be taken. */
-std::queue<mipsRegisterName> getRegisterQueue();
 
 /*  Check if instructions have been inserted. Between original instruction
     and the next original instruction. Count the number of symbolic registers
@@ -48,10 +44,9 @@ std::queue<mipsRegisterName> getRegisterQueue();
 naiveHandler::naiveHandler(CFGhandler* handler) {
     /* save the cfg handler pointer */
     cfgContainer = handler;
-    /* */
+    /*  */
     maximumSymbolicsUsed = 0;
-    /* Clear the region list. */
-    //regionList.clear();
+    /*  */
     usesAcc = false;
 }
 
@@ -61,7 +56,6 @@ void naiveHandler::applyTransformation() {
     CFG* function = cfgContainer->getFunctionCFG();
     /* Find the maximum use of symbolic registers. */
     determineStackModification();
-    //TODO do stack modification here?
     /* Go through the instructions in a basic block and  */
     for(std::pair<CFGVIter, CFGVIter> iterPair = vertices(*function);
         iterPair.first != iterPair.second; ++iterPair.first) {
@@ -70,6 +64,7 @@ void naiveHandler::applyTransformation() {
         /* Transform the block. */
         naiveBlockTransform(bb);
     }
+    //TODO do stack modification here?
 }
 
 /* Goes applies the naive transformation in a basic block. */
@@ -122,42 +117,73 @@ void naiveHandler::regionAllocation(std::list<SgAsmStatement*>* regionList, SgAs
     /*  We know the maximum number of registers that will be used
         by using the maximum symbolics */
     std::map<unsigned, mipsRegisterName> symbolicToHard;
-    /*  queue containing registers that can be used for the region. */ 
-    std::queue<mipsRegisterName> regQ = getRegisterQueue();
+    /*  Initialize the set of registers available for allocation */
+    initHardRegisters();
 
     //TODO Go through the instructions and replace the symbolic registers with real.
     //map unsigned to registernames for correct replacement during traversal. 
     //this is done by rebuilding the instruction.
     //TODO consider using desctructor on the old instruction.
+    for(std::list<SgAsmStatement*>::iterator regionIter = regionList->begin();
+        regionIter != regionList->end(); ++regionIter) {
+        /*  Decode an instruction */
+        SgAsmMipsInstruction* mips = isSgAsmMipsInstruction(*regionIter);
+        instructionStruct inst = decodeInstruction(mips);
+        /*  Find symbolic registers and replace them. */
+        std::vector<registerStruct>* destination = &inst.destinationRegisters;
+        std::vector<registerStruct>* source = &inst.destinationRegisters;
+        /* loop over registers and replace */
+        for(std::vector<registerStruct>::iterator regIter = destination->begin();
+            regIter != destination->end(); ++regIter) {
+            /*  check if a register is symbolic, if so then change it to a real.  */
+            if ((*regIter).regName == symbolic_reg) {
+                //TODO check if the register has been replaced.
+                //TODO need a good way to get a hard register.
+                /*  For each replaced symbolic map it. */
+                //symbolicToHard.insert<unsigned, mipsRegisterName>((*regIter.symbolicNumber), )
+            }
+        }
+        for(std::vector<registerStruct>::iterator regIter = source->begin();
+            regIter != source->end(); ++regIter) {
+            /*  check if a register is symbolic, if so then change it to a real.  */
+            if ((*regIter).regName == symbolic_reg) {
+                //TODO check if the register has been replaced.
+                //TODO need a good way to get a hard register.
+                /*  For each replaced symbolic map it. */
+                //symbolicToHard.insert<unsigned, mipsRegisterName>((*regIter.symbolicNumber), )
+            }
+        }
+    }
 
     //TODO go through the map and create load and store instructions for the used registers.
     //insert these at the beginning and end of the region.
 
-    /*  
-        TODO calculation and tracking of stack, so i have correct offsets. 
-    */
 
-    //Find out the number of registers needed.
-    //Map each symbolic to a real register.
-    //Replace symbolic registers with real. TODO use std::find?
-    //insert store and load instructions. Make sure offsets are correct.
 }
 
+/*  Initalize the register set used during a region allocation */
+void naiveHandler::initHardRegisters() {
+    hardRegisters.insert(t0);
+    hardRegisters.insert(t1);
+    hardRegisters.insert(t2);
+    hardRegisters.insert(t3);
+    hardRegisters.insert(t4);
+    hardRegisters.insert(t5);
+    hardRegisters.insert(t6);
+    hardRegisters.insert(t7);
+}
 
-/*  Function that creates a queue from which registers can be taken. */
-std::queue<mipsRegisterName> getRegisterQueue() {
-    std::queue<mipsRegisterName> regQ;
-    /*  Push registers on the stack, starting with t0-t7 registers. */
-    regQ.push(t0);
-    regQ.push(t1);
-    regQ.push(t2);
-    regQ.push(t3);
-    regQ.push(t4);
-    regQ.push(t5);
-    regQ.push(t6);
-    regQ.push(t7);
-    /*  Return the list to be used during a transformation */
-    return regQ;
+/*  Help function that will return hard registers for exchange.
+    It will also create a offset for the load and store instructions. */
+mipsRegisterName naiveHandler::getHardRegister() {
+    //TODO some structure to store the registers in. Which tells me if they are used or not.
+    //probably a queue or stack.
+    /*  Check if the set contains registers. */
+    if (!hardRegisters.empty()) {
+
+    }
+
+    //TODO when a register is used decide a correct offset for it on the stack.
 }
 
 

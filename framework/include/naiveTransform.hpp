@@ -33,8 +33,8 @@ class naiveHandler{
         bool usesAcc;
         /* maximum number of symbolic registers used */
         int maximumSymbolicsUsed;
-        /* instruction region list  */
-        //std::list<SgAsmStatement*> regionList;
+        /*  Structure to store the available register names */
+        std::set<mipsRegisterName> hardRegisters;
 
         /* Functions */
         //Hidding default constructor. I want a cfghandler for this object
@@ -50,6 +50,11 @@ class naiveHandler{
         
         /* Transform region. A region of inserted instructions is transformed. */
         void regionAllocation(std::list<SgAsmStatement*>*, SgAsmStatementPtrList*);
+        /*  Help function that will return hard registers for exchange.
+            It will also create a offset for the load and store instructions */
+        mipsRegisterName getHardRegister();
+        /* init function for hardRegisters set */
+        void initHardRegisters();
 };
 
 #endif

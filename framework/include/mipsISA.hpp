@@ -78,5 +78,5 @@ struct instructionStruct {
     //address of the instruction, if the instruction is inserted then it is a temporary value.
     rose_addr_t address; 
 };
-
 #endif
+
