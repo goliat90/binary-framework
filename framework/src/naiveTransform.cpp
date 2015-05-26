@@ -144,10 +144,11 @@ void naiveHandler::regionAllocation(std::list<SgAsmStatement*>* regionList, SgAs
                     newReg = symbolicToHard.find((*regIter).symbolicNumber)->second;
                 } else {
                     newReg = getHardRegister(); 
+                    /*  For each replaced symbolic map it. */
+                    symbolicToHard.insert(std::pair<unsigned, mipsRegisterName>
+                    ((*regIter).symbolicNumber, newReg));
                 } 
-                //TODO need a good way to get a hard register.
-                /*  For each replaced symbolic map it. */
-                symbolicToHard.insert(std::pair<unsigned, mipsRegisterName>((*regIter).symbolicNumber, newReg));
+                /* Retrieve the register expression and set it to the given register */
             }
         }
         for(std::vector<registerStruct>::iterator regIter = source->begin();

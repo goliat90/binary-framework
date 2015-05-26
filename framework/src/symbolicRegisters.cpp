@@ -26,7 +26,7 @@ registerStruct generateSymbolicRegister() {
     /* Get a sym register name (number) */
     regStruct.symbolicNumber = generateRegName();
     /* Insert the register to the map with associated register */
-    biRegisterMap.insert(regBiMap::value_type(regStruct.symbolicNumber, regExp));
+    biRegisterMap.left.insert(regBiMap::left_value_type(regStruct.symbolicNumber, regExp));
     /* Return the register number*/ 
     return regStruct;
 }
