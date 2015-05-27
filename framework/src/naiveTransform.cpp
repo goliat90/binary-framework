@@ -126,41 +126,81 @@ void naiveHandler::regionAllocation(std::list<SgAsmStatement*>* regionList, SgAs
     //TODO consider using desctructor on the old instruction.
     for(std::list<SgAsmStatement*>::iterator regionIter = regionList->begin();
         regionIter != regionList->end(); ++regionIter) {
-        /*  Decode an instruction */
+        /*  Cast an instruction to mips */
         SgAsmMipsInstruction* mips = isSgAsmMipsInstruction(*regionIter);
-        instructionStruct inst = decodeInstruction(mips);
-        /*  Find symbolic registers and replace them. */
-        std::vector<registerStruct>* destination = &inst.destinationRegisters;
-        std::vector<registerStruct>* source = &inst.destinationRegisters;
-        /* loop over registers and replace */
-        for(std::vector<registerStruct>::iterator regIter = destination->begin();
-            regIter != destination->end(); ++regIter) {
-            /*  check if a register is symbolic, if so then change it to a real.  */
-            if ((*regIter).regName == symbolic_reg) {
-                mipsRegisterName newReg;
-                //TODO check if the register has been replaced. If so use that.
-                if (symbolicToHard.count((*regIter).symbolicNumber) == 1) {
-                    /* Use assigned register */
-                    newReg = symbolicToHard.find((*regIter).symbolicNumber)->second;
-                } else {
-                    newReg = getHardRegister(); 
-                    /*  For each replaced symbolic map it. */
-                    symbolicToHard.insert(std::pair<unsigned, mipsRegisterName>
-                    ((*regIter).symbolicNumber, newReg));
-                } 
-                /* Retrieve the register expression and set it to the given register */
+        //Get the operand list....
+        SgAsmExpressionPtrList& opList = mips->get_operandList()->get_operands();
+        //Then check if an operand is a register, iterater over the vector.
+        for(SgAsmExpressionPtrList::iterator opIter = opList.begin();
+            opIter != opList.end(); ++opIter) {
+            //Check if the an operand is a register expression, variantT.
+            if ((*opIter)->variantT() == V_SgAsmDirectRegisterExpression) {
+                /* Decode expression and check if it is symbolic */
+                registerStruct rStruct = decodeRegister(*opIter);
+                /* Check if the register is a symbolic. */
+                if (rStruct.regName == symbolic_reg) {
+                    /* Symbolic reg. Does it have a hard register or should it get one? */
+                    if (symbolicToHard.count(rStruct.symbolicNumber) > 0) {
+                        /* It has a hard register. Build a register expression and replace */
+                        rStruct.regName = symbolicToHard.find(rStruct.symbolicNumber)->second;
+                        SgAsmDirectRegisterExpression* hardReg = buildRegister(rStruct);
+                        /* Replace the symbolic register expression */
+                        (*opIter) = hardReg;
+                    } else {
+                        /* The symbolic register has not been given a hard register so do it now. */
+                        rStruct.regName = getHardRegister(); 
+                        /* Create mapping between symbolic and har register */
+                        symbolicToHard.insert(std::pair<unsigned, mipsRegisterName>(rStruct.symbolicNumber, rStruct.regName));
+                        /* build the register expression and replace the temporary symbolic(zero). */
+                        SgAsmDirectRegisterExpression* hardReg = buildRegister(rStruct);
+                        (*opIter) = hardReg;
+                    }
+                }
             }
         }
-        for(std::vector<registerStruct>::iterator regIter = source->begin();
-            regIter != source->end(); ++regIter) {
-            /*  check if a register is symbolic, if so then change it to a real.  */
-            if ((*regIter).regName == symbolic_reg) {
-                //TODO check if the register has been replaced.
-                //TODO need a good way to get a hard register.
-                /*  For each replaced symbolic map it. */
-                //symbolicToHard.insert<unsigned, mipsRegisterName>((*regIter.symbolicNumber), )
-            }
-        }
+        /* The operands for the instruction has been checked */
+        
+        //If it is a register decode it and see if it is symbolic.
+        //if symbolic then check if it has a hard register or allocate.
+        //build register expression and replace the symbolic(zero)
+        //save the mapping of the symbolic number to register name
+
+
+
+
+//        instructionStruct inst = decodeInstruction(mips);
+//        /*  Find symbolic registers and replace them. */
+//        std::vector<registerStruct>* destination = &inst.destinationRegisters;
+//        std::vector<registerStruct>* source = &inst.destinationRegisters;
+//        /* loop over destination registers and replace */
+//        for(std::vector<registerStruct>::iterator regIter = destination->begin();
+//            regIter != destination->end(); ++regIter) {
+//            /*  check if a register is symbolic, if so then change it to a real.  */
+//            if ((*regIter).regName == symbolic_reg) {
+//                mipsRegisterName newReg;
+//                //TODO check if the register has been replaced. If so use that.
+//                if (symbolicToHard.count((*regIter).symbolicNumber) == 1) {
+//                    /* Use assigned register */
+//                    newReg = symbolicToHard.find((*regIter).symbolicNumber)->second;
+//                } else {
+//                    newReg = getHardRegister(); 
+//                } 
+//                //TODO need a good way to get a hard register.
+//                /*  For each replaced symbolic map it. */
+//                symbolicToHard.insert(std::pair<unsigned, mipsRegisterName>((*regIter).symbolicNumber, newReg));
+//            }
+//        }
+//        /* loop over source registers and replace */
+//        for(std::vector<registerStruct>::iterator regIter = source->begin();
+//            regIter != source->end(); ++regIter) {
+//            /*  check if a register is symbolic, if so then change it to a real.  */
+//            if ((*regIter).regName == symbolic_reg) {
+//                //TODO check if the register has been replaced.
+//                //TODO need a good way to get a hard register.
+//                /*  For each replaced symbolic map it. */
+//                //symbolicToHard.insert<unsigned, mipsRegisterName>((*regIter.symbolicNumber), )
+//            }
+//        }
     }
     //TODO go through the map and create load and store instructions for the used registers.
     //insert these at the beginning and end of the region.
