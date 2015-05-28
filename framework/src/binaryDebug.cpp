@@ -66,6 +66,7 @@ void printConstant(std::stringstream* conStream, instructionStruct* instStruct) 
             *conStream << "Constant: 0x" << std::hex << instStruct->instructionConstant << " ";
             *conStream << "SignBits: " << std::dec << instStruct->significantBits << " ";
             *conStream << "DataSize: " << std::dec << instStruct->memoryReferenceSize << " bits ";
+            *conStream << "isSigned: " << instStruct->isSignedMemory;
             break;
         }
         case R_RD_RS_C:

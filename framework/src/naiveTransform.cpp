@@ -97,8 +97,14 @@ void naiveHandler::naiveBlockTransform(SgAsmBlock* block) {
                 if (regionList.empty() == false) {
                     /* There is a region to perform allocation on, since the list is empty. */ 
                     //TODO call regionAllocation.
+                    regionAllocation(&regionList); 
                     //TODO copy over the regionList.
+                    for(std::list<SgAsmStatement*>::iterator listIter = regionList.begin();
+                        listIter != regionList.end(); ++listIter) {
+                        transformedInstructionVector.push_back(*listIter);
+                    }
                     //TODO clear the regionList.
+                    regionList.clear();
                 }
             }
         }
@@ -110,30 +116,31 @@ void naiveHandler::naiveBlockTransform(SgAsmBlock* block) {
         //TODO copy over the regionList.
         //TODO clear the regionList.
     }
+    
 }
 
 /*  Transforms a region of inserted instructions so they have real registers */
-void naiveHandler::regionAllocation(std::list<SgAsmStatement*>* regionList, SgAsmStatementPtrList* instVector) {
+void naiveHandler::regionAllocation(std::list<SgAsmStatement*>* regionList) {//, SgAsmStatementPtrList* instVector) {
     /*  We know the maximum number of registers that will be used
         by using the maximum symbolics */
     std::map<unsigned, mipsRegisterName> symbolicToHard;
+    /*  If the accumulator register is used we need to take special care */
+    bool accUsed = false;
     /*  Initialize the set of registers available for allocation */
     initHardRegisters();
-
-    //TODO Go through the instructions and replace the symbolic registers with real.
-    //map unsigned to registernames for correct replacement during traversal. 
-    //this is done by rebuilding the instruction.
-    //TODO consider using desctructor on the old instruction.
+    /* Go through the instructions and exchange the symbolic registers for hard. */
     for(std::list<SgAsmStatement*>::iterator regionIter = regionList->begin();
         regionIter != regionList->end(); ++regionIter) {
         /*  Cast an instruction to mips */
         SgAsmMipsInstruction* mips = isSgAsmMipsInstruction(*regionIter);
-        //Get the operand list....
+        /*  Check if the instruction is one that affects the accumulator */
+        accUsed = usesAccumulator(mips->get_kind());
+        /*  Get the operand list and go through the operands looking for register expressions. */
         SgAsmExpressionPtrList& opList = mips->get_operandList()->get_operands();
-        //Then check if an operand is a register, iterater over the vector.
+        /* Then check if an operand is a register, iterater over the vector. */
         for(SgAsmExpressionPtrList::iterator opIter = opList.begin();
             opIter != opList.end(); ++opIter) {
-            //Check if the an operand is a register expression, variantT.
+            /* Check if the an operand is a register expression by looking at variantT. */
             if ((*opIter)->variantT() == V_SgAsmDirectRegisterExpression) {
                 /* Decode expression and check if it is symbolic */
                 registerStruct rStruct = decodeRegister(*opIter);
@@ -158,52 +165,77 @@ void naiveHandler::regionAllocation(std::list<SgAsmStatement*>* regionList, SgAs
                 }
             }
         }
-        /* The operands for the instruction has been checked */
-        
-        //If it is a register decode it and see if it is symbolic.
-        //if symbolic then check if it has a hard register or allocate.
-        //build register expression and replace the symbolic(zero)
-        //save the mapping of the symbolic number to register name
-
-
-
-
-//        instructionStruct inst = decodeInstruction(mips);
-//        /*  Find symbolic registers and replace them. */
-//        std::vector<registerStruct>* destination = &inst.destinationRegisters;
-//        std::vector<registerStruct>* source = &inst.destinationRegisters;
-//        /* loop over destination registers and replace */
-//        for(std::vector<registerStruct>::iterator regIter = destination->begin();
-//            regIter != destination->end(); ++regIter) {
-//            /*  check if a register is symbolic, if so then change it to a real.  */
-//            if ((*regIter).regName == symbolic_reg) {
-//                mipsRegisterName newReg;
-//                //TODO check if the register has been replaced. If so use that.
-//                if (symbolicToHard.count((*regIter).symbolicNumber) == 1) {
-//                    /* Use assigned register */
-//                    newReg = symbolicToHard.find((*regIter).symbolicNumber)->second;
-//                } else {
-//                    newReg = getHardRegister(); 
-//                } 
-//                //TODO need a good way to get a hard register.
-//                /*  For each replaced symbolic map it. */
-//                symbolicToHard.insert(std::pair<unsigned, mipsRegisterName>((*regIter).symbolicNumber, newReg));
-//            }
-//        }
-//        /* loop over source registers and replace */
-//        for(std::vector<registerStruct>::iterator regIter = source->begin();
-//            regIter != source->end(); ++regIter) {
-//            /*  check if a register is symbolic, if so then change it to a real.  */
-//            if ((*regIter).regName == symbolic_reg) {
-//                //TODO check if the register has been replaced.
-//                //TODO need a good way to get a hard register.
-//                /*  For each replaced symbolic map it. */
-//                //symbolicToHard.insert<unsigned, mipsRegisterName>((*regIter.symbolicNumber), )
-//            }
-//        }
     }
+    /*  The operands that were symbolic register have now been replaced with
+        hard registers. Now load and store instructions are to be insterted. */
+    /*  Counter for the offset used in store/load */
+    uint64_t offset = 0;
+    /*  Instruction struct with common values for the store instructions. */
+    instructionStruct storeInst;
+    storeInst.kind = mips_sw;
+    storeInst.mnemonic = "store";
+    storeInst.format = getInstructionFormat(mips_sw);
+    
+    //TODO iterate through the symbolic to hard map and push to stack. 
+    for(std::map<unsigned, mipsRegisterName>::iterator symIter = symbolicToHard.begin();
+        symIter != symbolicToHard.end(); ++symIter) {
+        //TODO for each symbolic and its hard register we create a load instruction track an offset.
+        /*  Instruction struct for the store instructions. */
+        instructionStruct storeInst;
+        storeInst.kind = mips_sw;
+        storeInst.mnemonic = "store";
+        storeInst.format = I_RS_MEM_RT_C;
+        // set the source register, which is being saved
+        registerStruct source;
+        source.regName = symIter->second;
+        storeInst.sourceRegisters.push_back(source);
+        // set sp in the source register
+        registerStruct spStruct;
+        spStruct.regName = sp;
+        storeInst.sourceRegisters.push_back(spStruct);
+        // set the data size and signbits.
+        storeInst.memoryReferenceSize = 32;
+        storeInst.significantBits = 32;
+        storeInst.isSignedMemory = true;
+        // set the constant for the instruction. Then increment it.
+        //TODO verify that this offest is correct.
+        storeInst.instructionConstant = offset;
+        offset += 4;
+        /* Build the instruction */
+        SgAsmMipsInstruction* mipsStore = buildInstruction(&storeInst);
+        /* Insert it in the beginning of the region */
+        regionList->push_front(mipsStore);
+    }
+
+
+    //TODO need to handle the accumulator in a special case.
+
+        
     //TODO go through the map and create load and store instructions for the used registers.
     //insert these at the beginning and end of the region.
+}
+
+
+/* Help function to determine if a function affect the accumulator register */
+bool naiveHandler::usesAccumulator(MipsInstructionKind kind) {
+    switch(kind) {
+        case mips_div :
+        case mips_divu:
+        case mips_madd:
+        case mips_maddu:
+        case mips_msub:
+        case mips_msubu:
+        case mips_mult:
+        case mips_multu:
+        case mips_mfhi:
+        case mips_mflo:
+        case mips_mthi:
+        case mips_mtlo: {
+            return true;
+            break;
+        }
+    }
+    return false;
 }
 
 /*  Initalize the register set used during a region allocation */

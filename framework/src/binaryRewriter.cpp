@@ -98,6 +98,17 @@ void BinaryRewriter::transformBinary() {
     naiveHandler naiveTrans(cfgContainer);
 
     /* Debug print */
+    if (debugging) {
+        std::cout << "post framework transformation." << std::endl;
+        for(std::pair<CFGVIter, CFGVIter> vPair = vertices(*functionGraph);
+            vPair.first != vPair.second; ++vPair.first) {
+            /* get the basic block from the property map */
+            SgAsmBlock* currentBB = get(boost::vertex_name, *functionGraph, *vPair.first);
+            /* Print the block */
+            std::cout << std::endl;
+            printBasicBlockInstructions(currentBB);
+        }
+    }
 
     /* Correct addresses */
 

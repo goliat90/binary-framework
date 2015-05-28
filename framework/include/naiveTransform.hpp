@@ -16,7 +16,7 @@
 #include "mipsISA.hpp"
 #include "cfgHandler.hpp"
 #include "symbolicRegisters.hpp"
-
+#include "binaryDebug.hpp"
 
 /* Object class for naive transformations. */
 class naiveHandler{
@@ -50,12 +50,14 @@ class naiveHandler{
         void naiveBlockTransform(SgAsmBlock*);
         
         /* Transform region. A region of inserted instructions is transformed. */
-        void regionAllocation(std::list<SgAsmStatement*>*, SgAsmStatementPtrList*);
+        void regionAllocation(std::list<SgAsmStatement*>*); //, SgAsmStatementPtrList*);
         /*  Help function that will return hard registers for exchange.
             It will also create a offset for the load and store instructions */
         mipsRegisterName getHardRegister();
         /* init function for hardRegisters set */
         void initHardRegisters();
+        /* Function to check if a function uses accumulator register */
+        bool usesAccumulator(MipsInstructionKind);
 };
 
 #endif

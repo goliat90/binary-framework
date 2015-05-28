@@ -119,6 +119,8 @@ void CFGhandler::findActivationRecords() {
             if (destination.regName == sp && source.regName == sp) {
                 /* the registers are correct, add the instruction to the forbidden list. */
                 forbiddenInstruction.push_back(mipsInst);
+                /* Add the instruction to the activation instruction vector */
+                activationInstruction.push_back(mipsInst);
                 std::cout << "forbidden instruction found: " << std::hex << currentInst.address << std::endl;
             }
         }
@@ -137,6 +139,8 @@ void CFGhandler::findActivationRecords() {
             if (destination.regName == sp && source.regName == sp) {
                 /* the registers are correct, add the instruction to the forbidden list. */
                 forbiddenInstruction.push_back(mipsInst);
+                /* Add the instruction to the activation instruction vector */
+                activationInstruction.push_back(mipsInst);
                 std::cout << "forbidden instruction found: " << std::hex << currentInst.address << std::endl;
             }
         }
