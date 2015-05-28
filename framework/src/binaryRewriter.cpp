@@ -91,11 +91,11 @@ void BinaryRewriter::transformBinary() {
             printBasicBlockInstructions(currentBB);
         }
     }
-
-    /* Debug print, print all the blocks and their instructions */
     
-    /* Apply naive or optimized transformation */
-    naiveHandler naiveTrans(cfgContainer);
+    /* Apply naive or optimized transformation. Currently just naive. */
+    naiveHandler naiveObject(cfgContainer);
+    /* Start naive framework transformation */
+    naiveObject.applyTransformation();
 
     /* Debug print */
     if (debugging) {

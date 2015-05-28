@@ -89,18 +89,22 @@ void naiveHandler::naiveBlockTransform(SgAsmBlock* block) {
             instructionStruct decodedMips = decodeInstruction(mips);
             /* When a inserted instruction is found add it to the region list. */
             if (decodedMips.address == 0) {
+                std::cout << "inserted instruction saved in regionlist" << std::endl;
                 regionList.push_back(*instIter);
             } else {
                 /*  When a original instruction is found it is saved in the vector. */
+                std::cout << "original instruction saved in regionlist" << std::endl;
                 transformedInstructionVector.push_back(*instIter);
                 /* if the region list is not empty then we have a region to perform allocation on. */
                 if (regionList.empty() == false) {
+                    std::cout << "regionlist transformed" << std::endl;
                     /* There is a region to perform allocation on, since the list is empty. */ 
                     //TODO call regionAllocation.
                     regionAllocation(&regionList); 
                     //TODO copy over the regionList.
                     for(std::list<SgAsmStatement*>::iterator listIter = regionList.begin();
                         listIter != regionList.end(); ++listIter) {
+                        std::cout << "copying regionlist" << std::endl;
                         transformedInstructionVector.push_back(*listIter);
                     }
                     //TODO clear the regionList.
@@ -116,7 +120,8 @@ void naiveHandler::naiveBlockTransform(SgAsmBlock* block) {
         //TODO copy over the regionList.
         //TODO clear the regionList.
     }
-    
+    /* Swap the transformedinstructionvector with the one in the basic block */
+    instructionVector.swap(transformedInstructionVector);
 }
 
 /*  Transforms a region of inserted instructions so they have real registers */
@@ -169,43 +174,43 @@ void naiveHandler::regionAllocation(std::list<SgAsmStatement*>* regionList) {//,
     /*  The operands that were symbolic register have now been replaced with
         hard registers. Now load and store instructions are to be insterted. */
     /*  Counter for the offset used in store/load */
-    uint64_t offset = 0;
-    /*  Instruction struct with common values for the store instructions. */
-    instructionStruct storeInst;
-    storeInst.kind = mips_sw;
-    storeInst.mnemonic = "store";
-    storeInst.format = getInstructionFormat(mips_sw);
-    
-    //TODO iterate through the symbolic to hard map and push to stack. 
-    for(std::map<unsigned, mipsRegisterName>::iterator symIter = symbolicToHard.begin();
-        symIter != symbolicToHard.end(); ++symIter) {
-        //TODO for each symbolic and its hard register we create a load instruction track an offset.
-        /*  Instruction struct for the store instructions. */
-        instructionStruct storeInst;
-        storeInst.kind = mips_sw;
-        storeInst.mnemonic = "store";
-        storeInst.format = I_RS_MEM_RT_C;
-        // set the source register, which is being saved
-        registerStruct source;
-        source.regName = symIter->second;
-        storeInst.sourceRegisters.push_back(source);
-        // set sp in the source register
-        registerStruct spStruct;
-        spStruct.regName = sp;
-        storeInst.sourceRegisters.push_back(spStruct);
-        // set the data size and signbits.
-        storeInst.memoryReferenceSize = 32;
-        storeInst.significantBits = 32;
-        storeInst.isSignedMemory = true;
-        // set the constant for the instruction. Then increment it.
-        //TODO verify that this offest is correct.
-        storeInst.instructionConstant = offset;
-        offset += 4;
-        /* Build the instruction */
-        SgAsmMipsInstruction* mipsStore = buildInstruction(&storeInst);
-        /* Insert it in the beginning of the region */
-        regionList->push_front(mipsStore);
-    }
+//    uint64_t offset = 0;
+//    /*  Instruction struct with common values for the store instructions. */
+//    instructionStruct storeInst;
+//    storeInst.kind = mips_sw;
+//    storeInst.mnemonic = "store";
+//    storeInst.format = getInstructionFormat(mips_sw);
+//    
+//    //TODO iterate through the symbolic to hard map and push to stack. 
+//    for(std::map<unsigned, mipsRegisterName>::iterator symIter = symbolicToHard.begin();
+//        symIter != symbolicToHard.end(); ++symIter) {
+//        //TODO for each symbolic and its hard register we create a load instruction track an offset.
+//        /*  Instruction struct for the store instructions. */
+//        instructionStruct storeInst;
+//        storeInst.kind = mips_sw;
+//        storeInst.mnemonic = "store";
+//        storeInst.format = I_RS_MEM_RT_C;
+//        // set the source register, which is being saved
+//        registerStruct source;
+//        source.regName = symIter->second;
+//        storeInst.sourceRegisters.push_back(source);
+//        // set sp in the source register
+//        registerStruct spStruct;
+//        spStruct.regName = sp;
+//        storeInst.sourceRegisters.push_back(spStruct);
+//        // set the data size and signbits.
+//        storeInst.memoryReferenceSize = 32;
+//        storeInst.significantBits = 32;
+//        storeInst.isSignedMemory = true;
+//        // set the constant for the instruction. Then increment it.
+//        //TODO verify that this offest is correct.
+//        storeInst.instructionConstant = offset;
+//        offset += 4;
+//        /* Build the instruction */
+//        SgAsmMipsInstruction* mipsStore = buildInstruction(&storeInst);
+//        /* Insert it in the beginning of the region */
+//        regionList->push_front(mipsStore);
+//    }
 
 
     //TODO need to handle the accumulator in a special case.
