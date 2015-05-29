@@ -226,7 +226,6 @@ SgAsmOperandList* buildOperandList(instructionStruct* inst,
     /* Get the expression list that we can insert expressions into */
     SgAsmExpressionPtrList& exprList = asmOpListPtr->get_operands();    
     //TODO consider not poping the registers and instead indexing */
-
     if (true == hasRD) {
         /* Build RD register expression */
         SgAsmDirectRegisterExpression* regRD = buildRegister(inst->destinationRegisters.back());
@@ -274,7 +273,7 @@ instructionStruct decodeOpList(SgAsmExpressionPtrList* operandList,
     int opIndex = 0;
     instructionStruct instruction;
     /* Fill the struct with information. Check if for each type of value if it
-       is present in the instruction by checking the booleans. */ 
+       is present in the instruction by checking the booleans. */
     if (true == hasRD) {
         /* Has a destination register, extract it. */
         registerStruct RDstruct = decodeRegister((*operandList)[opIndex]);       
