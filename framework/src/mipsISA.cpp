@@ -405,12 +405,14 @@ SgAsmMemoryReferenceExpression* buildMemoryReference(instructionStruct* containe
     /* Create a binary expression with the lhs and rhs expressions. */
     SgAsmBinaryAdd* binAdd = new SgAsmBinaryAdd(lhs_reg, rhs_valexpr);
 
-    /* Create a sgasmintegertype with the correct value */
-    SgAsmIntegerType* integerType = new 
-        SgAsmIntegerType(ByteOrder::ORDER_LSB, container->memoryReferenceSize, container->isSignedMemory);
     /* Create the memoryexpression and set the type */
     //TODO consider adding segment expression 
     SgAsmMemoryReferenceExpression* memRef = new SgAsmMemoryReferenceExpression(binAdd, NULL);
+    /* Create a sgasmintegertype with the correct value */
+    SgAsmIntegerType* integerType = new 
+        SgAsmIntegerType(ByteOrder::ORDER_LSB, container->memoryReferenceSize, container->isSignedMemory);
+    /* Set the type in the memoryreference */
+    memRef->set_type(integerType);
     
     return memRef;
 }
