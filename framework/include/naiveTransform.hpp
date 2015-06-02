@@ -30,6 +30,8 @@ class naiveHandler{
         CFGhandler* cfgContainer;
         /*  boolean confirming use of special register acc/hi/lo */
         bool usesAcc;
+        /*  Counter for the offset used in store/load */
+        uint64_t offset = 0;
         /* maximum number of symbolic registers used */
         int maximumSymbolicsUsed;
         /*  Structure to store the available register names */
@@ -58,6 +60,8 @@ class naiveHandler{
         void initHardRegisters();
         /* Function to check if a function uses accumulator register */
         bool usesAccumulator(MipsInstructionKind);
+        /* Adds specific instructions to handle saving and restoring the accumulator register */
+        void saveAccumulator(std::list<SgAsmStatement*>*, mipsRegisterName);
 };
 
 #endif
