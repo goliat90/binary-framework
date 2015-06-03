@@ -31,7 +31,7 @@ class naiveHandler{
         /*  boolean confirming use of special register acc/hi/lo */
         bool usesAcc;
         /*  Counter for the offset used in store/load */
-        uint64_t offset = 0;
+        uint64_t offset;
         /* maximum number of symbolic registers used */
         int maximumSymbolicsUsed;
         /*  Structure to store the available register names */

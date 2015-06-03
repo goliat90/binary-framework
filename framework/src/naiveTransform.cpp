@@ -36,6 +36,8 @@ naiveHandler::naiveHandler(CFGhandler* handler) {
     maximumSymbolicsUsed = 0;
     /*  */
     usesAcc = false;
+    /*  */
+    offset = 0;
 }
 
 /* Function that applies the naive transformation to the binary */
@@ -155,6 +157,8 @@ void naiveHandler::regionAllocation(std::list<SgAsmStatement*>* regionList) {//,
     }
     /*  The operands that were symbolic register have now been replaced with
         hard registers. Now load and store instructions are to be insterted. */
+    /* reset the offset counter for the naive stack */
+    offset = 0;
 
     if (usesAcc) {
         /* Save the accumulator register */
@@ -223,79 +227,6 @@ void naiveHandler::regionAllocation(std::list<SgAsmStatement*>* regionList) {//,
     }
 
 
-    //TODO make it a function of its own.
-    //TODO need to handle the accumulator in a special case.
-//    //Use one of the saved registers to save acc before entering the code region.
-//    instructionStruct mflo;
-//    mflo.kind = mips_mflo;
-//    mflo.mnemonic = "mflo";
-//    mflo.format = getInstructionFormat(mips_mflo);
-//    //set the destination register which is one from symbolicToHard, can be used with both instructions.
-//    registerStruct moveReg;
-//    moveReg.regName = symbolicToHard.begin()->second;
-//    //set the register as a destination register.
-//    mflo.destinationRegisters.push_back(moveReg);
-//    //build instruction and insert.
-//    SgAsmMipsInstruction* mipsMflo = buildInstruction(&mflo);
-//    regionList->insert(storeBoundary, mipsMflo);
-//
-//    /*  Instruction struct for the store instructions of the low register. */
-//    instructionStruct storeLo;
-//    storeLo.kind = mips_sw;
-//    storeLo.mnemonic = "sw";
-//    storeLo.format = getInstructionFormat(mips_sw);;
-//    // set sp in the source register
-//    //TODO make one that can be reused for loop and here?
-//    registerStruct spStruct;
-//    spStruct.regName = sp;
-//    storeLo.sourceRegisters.push_back(spStruct);
-//    // set the source register, which is being saved
-//    storeLo.sourceRegisters.push_back(moveReg);
-//    // set the data size and signbits.
-//    storeLo.memoryReferenceSize = 32;
-//    storeLo.significantBits = 32;
-//    storeLo.isSignedMemory = true;
-//    // set the constant for the instruction. Then increment it.
-//    //TODO verify that this offest is correct.
-//    storeLo.instructionConstant = offset;
-//    /* Build the instruction */
-//    SgAsmMipsInstruction* mipsStoreLo = buildInstruction(&storeLo);
-//    /* Insert it in the beginning of the region */
-//    regionList->insert(storeBoundary, mipsStoreLo);
-//
-//    //mfhi instruction struct.
-//    instructionStruct mfhi;
-//    mfhi.kind = mips_mfhi;
-//    mfhi.mnemonic = "mfhi";
-//    mfhi.format = getInstructionFormat(mips_mfhi);
-//    //reuse the register from the mflo instruction.
-//    mfhi.destinationRegisters.push_back(moveReg);
-//    //build instruction and insert
-//    SgAsmMipsInstruction* mipsMfhi = buildInstruction(&mfhi);
-//    regionList->insert(storeBoundary, mipsMfhi);
-//
-//    /*  Instruction struct for the store instructions of the low register. */
-//    instructionStruct storeHi;
-//    storeHi.kind = mips_sw;
-//    storeHi.mnemonic = "sw";
-//    storeHi.format = getInstructionFormat(mips_sw);;
-//    // set sp in the source register
-//    //TODO make one that can be reused for loop and here?
-//    storeHi.sourceRegisters.push_back(spStruct);
-//    // set the source register, which is being saved
-//    storeHi.sourceRegisters.push_back(moveReg);
-//    // set the data size and signbits.
-//    storeHi.memoryReferenceSize = 32;
-//    storeHi.significantBits = 32;
-//    storeHi.isSignedMemory = true;
-//    // set the constant for the instruction. Then increment it.
-//    //TODO verify that this offest is correct.
-//    storeHi.instructionConstant = offset + 4;
-//    /* Build the instruction */
-//    SgAsmMipsInstruction* mipsStoreHi = buildInstruction(&storeHi);
-//    /* Insert it in the beginning of the region */
-//    regionList->insert(storeBoundary, mipsStoreHi);
-
     //Afterward the register can be used to restore the accumulator
     //before that register is restored.
 
@@ -305,18 +236,6 @@ void naiveHandler::regionAllocation(std::list<SgAsmStatement*>* regionList) {//,
     accumulator register */
 void naiveHandler::saveAccumulator(std::list<SgAsmStatement*>* regionList, mipsRegisterName tempReg) {
     //Use one of the saved registers to save acc before entering the code region.
-    instructionStruct mflo;
-    mflo.kind = mips_mflo;
-    mflo.mnemonic = "mflo";
-    mflo.format = getInstructionFormat(mips_mflo);
-    //set the destination register which is one from symbolicToHard, can be used with both instructions.
-    registerStruct moveReg;
-    moveReg.regName = tempReg;
-    //set the register as a destination register.
-    mflo.destinationRegisters.push_back(moveReg);
-    //build instruction and insert.
-    SgAsmMipsInstruction* mipsMflo = buildInstruction(&mflo);
-    regionList->push_front(mipsMflo);
 
     /*  Instruction struct for the store instructions of the low register. */
     instructionStruct storeLo;
@@ -328,6 +247,9 @@ void naiveHandler::saveAccumulator(std::list<SgAsmStatement*>* regionList, mipsR
     registerStruct spStruct;
     spStruct.regName = sp;
     storeLo.sourceRegisters.push_back(spStruct);
+    //set the destination register which is one from symbolicToHard, can be used with both instructions.
+    registerStruct moveReg;
+    moveReg.regName = tempReg;
     // set the source register, which is being saved
     storeLo.sourceRegisters.push_back(moveReg);
     // set the data size and signbits.
@@ -342,16 +264,36 @@ void naiveHandler::saveAccumulator(std::list<SgAsmStatement*>* regionList, mipsR
     /* Insert it in the beginning of the region */
     regionList->push_front(mipsStoreLo);
 
-    //mfhi instruction struct.
-    instructionStruct mfhi;
-    mfhi.kind = mips_mfhi;
-    mfhi.mnemonic = "mfhi";
-    mfhi.format = getInstructionFormat(mips_mfhi);
-    //reuse the register from the mflo instruction.
-    mfhi.destinationRegisters.push_back(moveReg);
-    //build instruction and insert
-    SgAsmMipsInstruction* mipsMfhi = buildInstruction(&mfhi);
-    regionList->push_front(mipsMfhi);
+    /* move from low instruction */
+    instructionStruct mflo;
+    mflo.kind = mips_mflo;
+    mflo.mnemonic = "mflo";
+    mflo.format = getInstructionFormat(mips_mflo);
+    //set the register as a destination register.
+    mflo.destinationRegisters.push_back(moveReg);
+    //build instruction and insert.
+    SgAsmMipsInstruction* mipsMflo = buildInstruction(&mflo);
+    regionList->push_front(mipsMflo);
+
+    /* load instruction for low register */
+    instructionStruct loadLow;
+    loadLow.kind = mips_lw;
+    loadLow.mnemonic = "lw";
+    loadLow.format = getInstructionFormat(mips_lw);
+    /* register to put memory value into */
+    loadLow.destinationRegisters.push_back(moveReg);
+    /* set the sp as the source register */
+    loadLow.sourceRegisters.push_back(spStruct);
+    loadLow.memoryReferenceSize = 32;
+    loadLow.significantBits = 32;
+    loadLow.isSignedMemory = true;
+    //set the constant of the instruction. then increment it.
+    loadLow.instructionConstant = offset;
+    offset =+ 4;
+    //build and insert the instruction.
+    SgAsmMipsInstruction* lwLow = buildInstruction(&loadLow);
+    regionList->push_back(lwLow);
+
 
     /*  Instruction struct for the store instructions of the low register. */
     instructionStruct storeHi;
@@ -369,11 +311,25 @@ void naiveHandler::saveAccumulator(std::list<SgAsmStatement*>* regionList, mipsR
     storeHi.isSignedMemory = true;
     // set the constant for the instruction. Then increment it.
     //TODO verify that this offest is correct.
-    storeHi.instructionConstant = offset + 4;
+    storeHi.instructionConstant = offset;
+    offset =+ 4;
     /* Build the instruction */
     SgAsmMipsInstruction* mipsStoreHi = buildInstruction(&storeHi);
     /* Insert it in the beginning of the region */
     regionList->push_front(mipsStoreHi);
+
+    //mfhi instruction struct.
+    instructionStruct mfhi;
+    mfhi.kind = mips_mfhi;
+    mfhi.mnemonic = "mfhi";
+    mfhi.format = getInstructionFormat(mips_mfhi);
+    //reuse the register from the mflo instruction.
+    mfhi.destinationRegisters.push_back(moveReg);
+    //build instruction and insert
+    SgAsmMipsInstruction* mipsMfhi = buildInstruction(&mfhi);
+    regionList->push_front(mipsMfhi);
+
+    /* saving accumulator instructions added. Now for restoring it. */
 }
 
 
