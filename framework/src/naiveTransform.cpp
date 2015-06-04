@@ -81,9 +81,8 @@ void naiveHandler::naiveBlockTransform(SgAsmBlock* block) {
             if (decodedMips.address == 0) {
                 regionList.push_back(*instIter);
             } else {
-                /*  When a original instruction is found it is saved in the vector. */
-                transformedInstructionVector.push_back(*instIter);
-                /* if the region list is not empty then we have a region to perform allocation on. */
+                /* A original instruction was encountered, transform region if ther is one then save
+                    the original instruction. */
                 if (regionList.empty() == false) {
                     /* There is a region to perform allocation on, since the list is not empty. */ 
                     regionAllocation(&regionList); 
@@ -95,6 +94,8 @@ void naiveHandler::naiveBlockTransform(SgAsmBlock* block) {
                     /* clear the regionList. */
                     regionList.clear();
                 }
+                /*  save the original instruction. */
+                transformedInstructionVector.push_back(*instIter);
             }
         }
     }
@@ -165,11 +166,6 @@ void naiveHandler::regionAllocation(std::list<SgAsmStatement*>* regionList) {//,
         mipsRegisterName moveReg = symbolicToHard.begin()->second;
         saveAccumulator(regionList, moveReg);
     }
-
-    //TODO try saving the begining and end iterator before inserting load and stores.
-    //this is for when fixing store and save for the accumulator.
-//    std::list<SgAsmStatement*>::iterator storeBoundary = regionList->begin();
-//    std::list<SgAsmStatement*>::reverse_iterator loadBoundary = regionList->rbegin();
     
     //TODO iterate through the symbolic to hard map and push to stack.
     for(std::map<unsigned, mipsRegisterName>::reverse_iterator symIter = symbolicToHard.rbegin();
@@ -235,8 +231,8 @@ void naiveHandler::regionAllocation(std::list<SgAsmStatement*>* regionList) {//,
 /*  This function adds the necessary instructions to save and restore the
     accumulator register */
 void naiveHandler::saveAccumulator(std::list<SgAsmStatement*>* regionList, mipsRegisterName tempReg) {
-    //Use one of the saved registers to save acc before entering the code region.
-
+    /* Low register load and store instructions */
+    
     /*  Instruction struct for the store instructions of the low register. */
     instructionStruct storeLo;
     storeLo.kind = mips_sw;
@@ -289,13 +285,25 @@ void naiveHandler::saveAccumulator(std::list<SgAsmStatement*>* regionList, mipsR
     loadLow.isSignedMemory = true;
     //set the constant of the instruction. then increment it.
     loadLow.instructionConstant = offset;
-    offset =+ 4;
+    offset += 4;
     //build and insert the instruction.
     SgAsmMipsInstruction* lwLow = buildInstruction(&loadLow);
     regionList->push_back(lwLow);
 
+    /* move to low instruction */
+    instructionStruct mtlo;
+    mtlo.kind = mips_mtlo;
+    mtlo.mnemonic = "mtlo";
+    mtlo.format = getInstructionFormat(mips_mtlo);
+    //set the register as a destination register.
+    mtlo.sourceRegisters.push_back(moveReg);
+    //build instruction and insert.
+    SgAsmMipsInstruction* mipsMtlo = buildInstruction(&mtlo);
+    regionList->push_back(mipsMtlo);
 
-    /*  Instruction struct for the store instructions of the low register. */
+
+    /* High register load and store instructions */
+    /*  Instruction struct for the store instructions of the high register. */
     instructionStruct storeHi;
     storeHi.kind = mips_sw;
     storeHi.mnemonic = "sw";
@@ -312,7 +320,6 @@ void naiveHandler::saveAccumulator(std::list<SgAsmStatement*>* regionList, mipsR
     // set the constant for the instruction. Then increment it.
     //TODO verify that this offest is correct.
     storeHi.instructionConstant = offset;
-    offset =+ 4;
     /* Build the instruction */
     SgAsmMipsInstruction* mipsStoreHi = buildInstruction(&storeHi);
     /* Insert it in the beginning of the region */
@@ -329,7 +336,35 @@ void naiveHandler::saveAccumulator(std::list<SgAsmStatement*>* regionList, mipsR
     SgAsmMipsInstruction* mipsMfhi = buildInstruction(&mfhi);
     regionList->push_front(mipsMfhi);
 
-    /* saving accumulator instructions added. Now for restoring it. */
+    /* load instruction for high register */
+    instructionStruct loadHi;
+    loadHi.kind = mips_lw;
+    loadHi.mnemonic = "lw";
+    loadHi.format = getInstructionFormat(mips_lw);
+    /* register to put memory value into */
+    loadHi.destinationRegisters.push_back(moveReg);
+    /* set the sp as the source register */
+    loadHi.sourceRegisters.push_back(spStruct);
+    loadHi.memoryReferenceSize = 32;
+    loadHi.significantBits = 32;
+    loadHi.isSignedMemory = true;
+    //set the constant of the instruction. then increment it.
+    loadHi.instructionConstant = offset;
+    offset += 4;
+    //build and insert the instruction.
+    SgAsmMipsInstruction* lwHigh = buildInstruction(&loadHi);
+    regionList->push_back(lwHigh);
+    
+    /* move instruction for high register */
+    instructionStruct mthi;
+    mthi.kind = mips_mthi;
+    mthi.mnemonic = "mthi";
+    mthi.format = getInstructionFormat(mips_mthi);
+    //set the register as a destination register.
+    mthi.sourceRegisters.push_back(moveReg);
+    //build instruction and insert.
+    SgAsmMipsInstruction* mipsMthi = buildInstruction(&mthi);
+    regionList->push_back(mipsMthi);
 }
 
 

@@ -374,12 +374,14 @@ SgAsmIntegerValueExpression* buildValueExpression(uint64_t constantVal) {
     SgAsmIntegerValueExpression* intValExpr = new SgAsmIntegerValueExpression();
     /* set the absolute value(constant) from the struct */
     //TODO find the significance of the significant bits size i can't set them.
+    //TODO done by adding creating a fitting SgAsmIntegerType for the constant, use with constructor.
     intValExpr->set_absoluteValue(constantVal);
     /* return the pointer */
     return intValExpr;
 }
 
 /* decode value expression, a constant. Save values in the struct */
+//TODO consider getting the SgAsmType here to extract information instead?
 void decodeValueExpression(SgAsmExpression* inst, instructionStruct* instStruct) {
     /* cast the SgAsmExpression */
     SgAsmIntegerValueExpression* ve = isSgAsmIntegerValueExpression(inst); 

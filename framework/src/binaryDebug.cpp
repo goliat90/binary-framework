@@ -64,7 +64,7 @@ void printConstant(std::stringstream* conStream, instructionStruct* instStruct) 
             /* instructions that work with memory and has constant 
                has instructionConstatn, significantBits, memoryreferencesize */
             *conStream << "Constant: 0x" << std::hex << instStruct->instructionConstant << " ";
-            *conStream << "SignBits: " << std::dec << instStruct->significantBits << " ";
+            *conStream << "SignificantBits: " << std::dec << instStruct->significantBits << " ";
             *conStream << "DataSize: " << std::dec << instStruct->memoryReferenceSize << " bits ";
             *conStream << "isSigned: " << instStruct->isSignedMemory;
             break;
@@ -76,7 +76,7 @@ void printConstant(std::stringstream* conStream, instructionStruct* instStruct) 
             /* instructions with regular constant
                has instructionConstant, significantBits */
             *conStream << "Constant: 0x" << std::hex << instStruct->instructionConstant << " ";
-            *conStream << "SignBits: " << std::dec << instStruct->significantBits << " ";
+            *conStream << "SignificantBits: " << std::dec << instStruct->significantBits << " ";
         break;
         }
         default: {

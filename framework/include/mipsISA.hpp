@@ -71,6 +71,7 @@ struct instructionStruct {
     //if the instruction uses a constant then save it and significant bits.
     uint64_t instructionConstant;
     size_t significantBits;
+    bool isSignedConstant;
    
     /* Information related to information */ 
     //The number of bits/size of the memory reference, 8,16,32,64
