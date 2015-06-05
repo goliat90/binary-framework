@@ -62,6 +62,8 @@ class naiveHandler{
         bool usesAccumulator(MipsInstructionKind);
         /* Adds specific instructions to handle saving and restoring the accumulator register */
         void saveAccumulator(std::list<SgAsmStatement*>*, mipsRegisterName);
+        /* help functions to build load/store instructions */
+        SgAsmMipsInstruction* buildLoadOrStoreInstruction(MipsInstructionKind,mipsRegisterName);
 };
 
 #endif

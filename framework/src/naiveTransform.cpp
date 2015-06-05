@@ -170,95 +170,77 @@ void naiveHandler::regionAllocation(std::list<SgAsmStatement*>* regionList) {//,
     //TODO iterate through the symbolic to hard map and push to stack.
     for(std::map<unsigned, mipsRegisterName>::reverse_iterator symIter = symbolicToHard.rbegin();
         symIter != symbolicToHard.rend(); ++symIter) {
-        //TODO for each symbolic and its hard register we create a load instruction track an offset.
-        /*  Instruction struct for the store instructions. */
-        instructionStruct storeInst;
-        storeInst.kind = mips_sw;
-        storeInst.mnemonic = "sw";
-        storeInst.format = getInstructionFormat(mips_sw);;
-        // set sp in the source register
-        registerStruct spStruct;
-        spStruct.regName = sp;
-        storeInst.sourceRegisters.push_back(spStruct);
-        // set the source register, which is being saved
-        registerStruct source;
-        source.regName = symIter->second;
-        storeInst.sourceRegisters.push_back(source);
-        // set the data size and signbits.
-        storeInst.memoryReferenceSize = 32;
-        storeInst.significantBits = 32;
-        storeInst.isSignedMemory = true;
-        // set the constant for the instruction. Then increment it.
-        //TODO verify that this offest is correct.
-        storeInst.instructionConstant = offset;
-        /* Build the instruction */
-        SgAsmMipsInstruction* mipsStore = buildInstruction(&storeInst);
-        /* Insert it in the beginning of the region */
+        /* Store instruction */
+        SgAsmMipsInstruction* mipsStore = buildLoadOrStoreInstruction(mips_sw, symIter->second);
+        /* insert the instruction */
         regionList->push_front(mipsStore);
 
-        /* Instruction struct for load instructions */
-        instructionStruct loadInst;
-        loadInst.kind = mips_lw;
-        loadInst.mnemonic = "lw";
-        loadInst.format = getInstructionFormat(mips_lw);
-        // set the destination register that is being restored.
-        registerStruct destination;
-        destination.regName = symIter->second;
-        loadInst.destinationRegisters.push_back(destination);
-        // set the sp in the source register
-        loadInst.sourceRegisters.push_back(spStruct);
-        // set the data size and sign bits.
-        loadInst.memoryReferenceSize = 32;
-        loadInst.significantBits = 32;
-        loadInst.isSignedMemory = true;
-        //set the constant of the instruction. then increment it.
-        loadInst.instructionConstant = offset;
+        /* Load instruction */
+        SgAsmMipsInstruction* mipsLoad = buildLoadOrStoreInstruction(mips_lw, symIter->second); 
+        /* increment the offset */
         offset += 4;
-        //build load instruction
-        SgAsmMipsInstruction* mipsLoad = buildInstruction(&loadInst);
-        //std::cout << "test decode" << std::endl;
-        //instructionStruct test = decodeInstruction(mipsLoad);
-        // insert it in the end of the region
+        /* insert the instruction */
         regionList->push_back(mipsLoad);
     }
+}
 
+/* help functions to build load/store instructions */
+//args needed, kind, a source/destination register, 
+SgAsmMipsInstruction* naiveHandler::buildLoadOrStoreInstruction(MipsInstructionKind kind, mipsRegisterName regname) {
+        /* Stack pointer register that can be used */
+        registerStruct spStruct;
+        spStruct.regName = sp;
+        /* a destination register or source register */
+        registerStruct destinationOrSource;
+        destinationOrSource.regName = regname;
+        /* Create instruction struct accordingly then build instruction */
+        instructionStruct loadstoreStruct;
 
-    //Afterward the register can be used to restore the accumulator
-    //before that register is restored.
-
+        if (mips_lw == kind) {
+            /* Specific setting for load instructions */
+            loadstoreStruct.kind = mips_lw;
+            loadstoreStruct.mnemonic = "lw";
+            loadstoreStruct.format = getInstructionFormat(mips_lw);
+            // set the destination register that is being restored.
+            loadstoreStruct.destinationRegisters.push_back(destinationOrSource);
+            // set the sp in the source register
+            loadstoreStruct.sourceRegisters.push_back(spStruct);
+        } else if (mips_sw == kind) {
+            /*  specific settings for the store instructions. */
+            loadstoreStruct.kind = mips_sw;
+            loadstoreStruct.mnemonic = "sw";
+            loadstoreStruct.format = getInstructionFormat(mips_sw);;
+            // set sp in the source register
+            loadstoreStruct.sourceRegisters.push_back(spStruct);
+            // set the source register, which is being saved
+            loadstoreStruct.sourceRegisters.push_back(destinationOrSource);
+        } else {
+            /* fail if a incorrect kind is supplied */
+            ASSERT_not_reachable("Invalid kind supplied for load/store build function");
+        }
+        // set the data size and sign bits.
+        loadstoreStruct.memoryReferenceSize = 32;
+        loadstoreStruct.significantBits = 32;
+        loadstoreStruct.isSignedMemory = true;
+        //set the constant of the instruction. then increment it.
+        loadstoreStruct.instructionConstant = offset;
+        //build load instruction
+        SgAsmMipsInstruction* mipsLoadOrStore = buildInstruction(&loadstoreStruct);
+        //return the pointe to the mips instruction
+        return mipsLoadOrStore;
 }
 
 /*  This function adds the necessary instructions to save and restore the
     accumulator register */
 void naiveHandler::saveAccumulator(std::list<SgAsmStatement*>* regionList, mipsRegisterName tempReg) {
-    /* Low register load and store instructions */
-    
-    /*  Instruction struct for the store instructions of the low register. */
-    instructionStruct storeLo;
-    storeLo.kind = mips_sw;
-    storeLo.mnemonic = "sw";
-    storeLo.format = getInstructionFormat(mips_sw);;
-    // set sp in the source register
-    //TODO make one that can be reused for loop and here?
-    registerStruct spStruct;
-    spStruct.regName = sp;
-    storeLo.sourceRegisters.push_back(spStruct);
     //set the destination register which is one from symbolicToHard, can be used with both instructions.
     registerStruct moveReg;
     moveReg.regName = tempReg;
-    // set the source register, which is being saved
-    storeLo.sourceRegisters.push_back(moveReg);
-    // set the data size and signbits.
-    storeLo.memoryReferenceSize = 32;
-    storeLo.significantBits = 32;
-    storeLo.isSignedMemory = true;
-    // set the constant for the instruction. Then increment it.
-    //TODO verify that this offest is correct.
-    storeLo.instructionConstant = offset;
-    /* Build the instruction */
-    SgAsmMipsInstruction* mipsStoreLo = buildInstruction(&storeLo);
-    /* Insert it in the beginning of the region */
-    regionList->push_front(mipsStoreLo);
+    
+    /* low register store instruction */
+    SgAsmMipsInstruction* mipsStoreLow = buildLoadOrStoreInstruction(mips_sw, tempReg);
+    /* insert the instruction in the beginning of the region */
+    regionList->push_front(mipsStoreLow);
 
     /* move from low instruction */
     instructionStruct mflo;
@@ -272,23 +254,11 @@ void naiveHandler::saveAccumulator(std::list<SgAsmStatement*>* regionList, mipsR
     regionList->push_front(mipsMflo);
 
     /* load instruction for low register */
-    instructionStruct loadLow;
-    loadLow.kind = mips_lw;
-    loadLow.mnemonic = "lw";
-    loadLow.format = getInstructionFormat(mips_lw);
-    /* register to put memory value into */
-    loadLow.destinationRegisters.push_back(moveReg);
-    /* set the sp as the source register */
-    loadLow.sourceRegisters.push_back(spStruct);
-    loadLow.memoryReferenceSize = 32;
-    loadLow.significantBits = 32;
-    loadLow.isSignedMemory = true;
-    //set the constant of the instruction. then increment it.
-    loadLow.instructionConstant = offset;
+    SgAsmMipsInstruction* mipsLoadLow = buildLoadOrStoreInstruction(mips_lw, tempReg);
+    /* increase the offset */
     offset += 4;
-    //build and insert the instruction.
-    SgAsmMipsInstruction* lwLow = buildInstruction(&loadLow);
-    regionList->push_back(lwLow);
+    /* insert the instruction in the beginning of the region */
+    regionList->push_back(mipsLoadLow);
 
     /* move to low instruction */
     instructionStruct mtlo;
@@ -303,27 +273,10 @@ void naiveHandler::saveAccumulator(std::list<SgAsmStatement*>* regionList, mipsR
 
 
     /* High register load and store instructions */
-    /*  Instruction struct for the store instructions of the high register. */
-    instructionStruct storeHi;
-    storeHi.kind = mips_sw;
-    storeHi.mnemonic = "sw";
-    storeHi.format = getInstructionFormat(mips_sw);;
-    // set sp in the source register
-    //TODO make one that can be reused for loop and here?
-    storeHi.sourceRegisters.push_back(spStruct);
-    // set the source register, which is being saved
-    storeHi.sourceRegisters.push_back(moveReg);
-    // set the data size and signbits.
-    storeHi.memoryReferenceSize = 32;
-    storeHi.significantBits = 32;
-    storeHi.isSignedMemory = true;
-    // set the constant for the instruction. Then increment it.
-    //TODO verify that this offest is correct.
-    storeHi.instructionConstant = offset;
-    /* Build the instruction */
-    SgAsmMipsInstruction* mipsStoreHi = buildInstruction(&storeHi);
-    /* Insert it in the beginning of the region */
-    regionList->push_front(mipsStoreHi);
+    /* store instruction for high register */
+    SgAsmMipsInstruction* mipsStoreHigh = buildLoadOrStoreInstruction(mips_sw, tempReg);
+    /* insert the instruction in the beginning of the region */
+    regionList->push_front(mipsStoreHigh);
 
     //mfhi instruction struct.
     instructionStruct mfhi;
@@ -337,23 +290,11 @@ void naiveHandler::saveAccumulator(std::list<SgAsmStatement*>* regionList, mipsR
     regionList->push_front(mipsMfhi);
 
     /* load instruction for high register */
-    instructionStruct loadHi;
-    loadHi.kind = mips_lw;
-    loadHi.mnemonic = "lw";
-    loadHi.format = getInstructionFormat(mips_lw);
-    /* register to put memory value into */
-    loadHi.destinationRegisters.push_back(moveReg);
-    /* set the sp as the source register */
-    loadHi.sourceRegisters.push_back(spStruct);
-    loadHi.memoryReferenceSize = 32;
-    loadHi.significantBits = 32;
-    loadHi.isSignedMemory = true;
-    //set the constant of the instruction. then increment it.
-    loadHi.instructionConstant = offset;
+    SgAsmMipsInstruction* mipsLoadHigh = buildLoadOrStoreInstruction(mips_lw, tempReg);
+    /* increment the offset */
     offset += 4;
-    //build and insert the instruction.
-    SgAsmMipsInstruction* lwHigh = buildInstruction(&loadHi);
-    regionList->push_back(lwHigh);
+    /* insert the instruction in the beginning of the region */
+    regionList->push_back(mipsLoadHigh);
     
     /* move instruction for high register */
     instructionStruct mthi;
