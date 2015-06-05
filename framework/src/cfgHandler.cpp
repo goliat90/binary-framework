@@ -42,6 +42,12 @@ bool CFGhandler::hasNewAddress(rose_addr_t instructionAddress) {
 }
 
 
+/* return the activation record pair */
+std::pair<SgAsmInstruction*, SgAsmInstruction*> CFGhandler::getActivationRecord() {
+    return activationPair;
+}
+
+
 /* Is the instruction allowed to be transformed? */
 bool CFGhandler::isForbiddenInstruction(SgAsmMipsInstruction* inst) {
     /* Search through the vector for the instruction, return true if found. */
@@ -105,7 +111,7 @@ void CFGhandler::findActivationRecords() {
 
     /* Go through the blocks and find the activation records.
         The instruction in question is an addiu instruction with
-        sp as RD as well as RS and constant  */
+        sp as RD and as RS and constant  */
     for(SgAsmStatementPtrList::iterator iter = firstStatementList->begin();
         iter != firstStatementList->end(); ++iter) {
         /* decode instruction */
@@ -119,6 +125,8 @@ void CFGhandler::findActivationRecords() {
             if (destination.regName == sp && source.regName == sp) {
                 /* the registers are correct, add the instruction to the forbidden list. */
                 forbiddenInstruction.push_back(mipsInst);
+                /* Add the acivation record to the pair */
+                activationPair.first = mipsInst;
                 /* Add the instruction to the activation instruction vector */
                 activationInstruction.push_back(mipsInst);
                 std::cout << "forbidden instruction found: " << std::hex << currentInst.address << std::endl;
@@ -139,6 +147,8 @@ void CFGhandler::findActivationRecords() {
             if (destination.regName == sp && source.regName == sp) {
                 /* the registers are correct, add the instruction to the forbidden list. */
                 forbiddenInstruction.push_back(mipsInst);
+                /* Add the acivation record to the pair */
+                activationPair.second = mipsInst;
                 /* Add the instruction to the activation instruction vector */
                 activationInstruction.push_back(mipsInst);
                 std::cout << "forbidden instruction found: " << std::hex << currentInst.address << std::endl;

@@ -46,6 +46,8 @@ void naiveHandler::applyTransformation() {
     CFG* function = cfgContainer->getFunctionCFG();
     /* Find the maximum use of symbolic registers. */
     determineStackModification();
+    //TODO perform stack modification
+    
     /* Go through the instructions in a basic block and  */
     for(std::pair<CFGVIter, CFGVIter> iterPair = vertices(*function);
         iterPair.first != iterPair.second; ++iterPair.first) {
@@ -54,7 +56,6 @@ void naiveHandler::applyTransformation() {
         /* Transform the block. */
         naiveBlockTransform(bb);
     }
-    //TODO do stack modification here?
 }
 
 /* Goes applies the naive transformation in a basic block. */
@@ -160,14 +161,15 @@ void naiveHandler::regionAllocation(std::list<SgAsmStatement*>* regionList) {//,
         hard registers. Now load and store instructions are to be insterted. */
     /* reset the offset counter for the naive stack */
     offset = 0;
-
+    
+    /* if the accumulator register is used then add save and load instructions */
     if (usesAcc) {
         /* Save the accumulator register */
         mipsRegisterName moveReg = symbolicToHard.begin()->second;
         saveAccumulator(regionList, moveReg);
     }
     
-    //TODO iterate through the symbolic to hard map and push to stack.
+    // iterate through the symbolic to hard map and push to stack.
     for(std::map<unsigned, mipsRegisterName>::reverse_iterator symIter = symbolicToHard.rbegin();
         symIter != symbolicToHard.rend(); ++symIter) {
         /* Store instruction */
@@ -185,7 +187,6 @@ void naiveHandler::regionAllocation(std::list<SgAsmStatement*>* regionList) {//,
 }
 
 /* help functions to build load/store instructions */
-//args needed, kind, a source/destination register, 
 SgAsmMipsInstruction* naiveHandler::buildLoadOrStoreInstruction(MipsInstructionKind kind, mipsRegisterName regname) {
         /* Stack pointer register that can be used */
         registerStruct spStruct;
@@ -341,11 +342,32 @@ mipsRegisterName naiveHandler::getHardRegister() {
         usedHardRegs++;
     } else {
         /*  No more registers available. Failure */
-        abort();
+        ASSERT_not_reachable("Naivetransformer: Out of registers for transformation.");
     }
     return realReg;
 }
 
+/* Adjust the size of the stack */
+void naiveHandler::modifyStack() {
+    /*  From the cfgHandler retrieve the activation records
+        that adjusts the stack and modify them to include
+        naivetransformers stack */ 
+    std::pair<SgAsmInstruction*, SgAsmInstruction*> activationRecordPair;
+    activationRecordPair = cfgContainer->getActivationRecord();
+    /* Take the instructions and change the constants, increasing
+        the stack allocation and deallocation */
+    SgAsmMipsInstruction* allocMips = isSgAsmMipsInstruction(activationRecordPair.first);
+    //get the instructions operand list
+    SgAsmExpressionPtrList& allocOperands = allocMips->get_operandList()->get_operands();
+    //find the constant in the instruction.
+    for(SgAsmexpressionPtrList::iterator iter = allocOperands.begin();
+        iter != allocOperands.end(); ++iter) {
+
+    }
+    //adjust the constant (increase the subtraction value);
+    
+    //do the same for the second instruction.
+}
 
 /* Find the maximum amount of used symbolic registers used at the same time */
 void naiveHandler::determineStackModification() {

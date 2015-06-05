@@ -45,6 +45,8 @@ class naiveHandler{
         /*  Checks the amount of stack space needed by finding the maximum
             amount of symbolic register used. */
         void determineStackModification();
+        /*  Adjusts the stack size */
+        void modifyStack();
         /*  Help function that increments register use for special registers. */
         void specialInstructionUse(MipsInstructionKind, int*);
         /*  Transforms a basic block. Inserts SW/LW instructions and replaces

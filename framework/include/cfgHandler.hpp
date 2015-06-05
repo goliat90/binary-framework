@@ -53,6 +53,9 @@ class CFGhandler {
         CFG* getFunctionCFG();
         /* return pointer to program CFG */
         CFG* getProgramCFG();
+        /* Get the activation record pair*/
+        std::pair<SgAsmInstruction*, SgAsmInstruction*> getActivationRecord();
+        
     private:
 /**********************************************************************
 * Private Variables.
