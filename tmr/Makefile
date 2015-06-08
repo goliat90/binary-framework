@@ -48,7 +48,8 @@ linking: framework.lo userFramework.lo symbolicRegisters.lo mipsISA.lo binaryDeb
 	libtool --mode=link g++ $(ROSE_LIBS) -o userRewriter.out userFramework.lo binaryRewriter.lo symbolicRegisters.lo \
 	mipsISA.lo binaryDebug.lo cfgHandler.lo naiveTransform.lo
 
-	
+debug:
+	libtool --mode=execute gdb --args ./userRewriter.out littleend.out
 
 clean:
 	rm -rf .libs

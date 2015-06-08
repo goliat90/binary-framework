@@ -106,6 +106,7 @@ void userFramework::transformDecision(SgAsmMipsInstruction* inst) {
             denomInst.mnemonic = "addiu";
             denomInst.format = getInstructionFormat(mips_addiu);
             denomInst.instructionConstant = 0x3;
+            denomInst.significantBits = 32;
             /* Set the source register, needs to be zero */
             registerStruct zeroReg;
             zeroReg.regName = zero;

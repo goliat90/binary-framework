@@ -19,7 +19,7 @@ SgAsmOperandList* buildOperandList(instructionStruct*, bool, bool, bool, bool, b
 /* Creates a register expression */
 SgAsmDirectRegisterExpression* buildRegister(registerStruct);
 /* Create a value expression, constant */
-SgAsmIntegerValueExpression* buildValueExpression(uint64_t);
+SgAsmIntegerValueExpression* buildValueExpression(instructionStruct*);
 /* Create a memory expression */
 SgAsmMemoryReferenceExpression* buildMemoryReference(instructionStruct*);
 
@@ -252,7 +252,7 @@ SgAsmOperandList* buildOperandList(instructionStruct* inst,
     }
     if (true == hasC) {
         /* Build constant expression */
-        SgAsmIntegerValueExpression* constExpr = buildValueExpression(inst->instructionConstant);
+        SgAsmIntegerValueExpression* constExpr = buildValueExpression(inst);
         /* Add the constant expression to the operand list */
         exprList.push_back(constExpr);
     }
@@ -369,13 +369,20 @@ registerStruct decodeRegister(SgAsmExpression* expr) {
 * Build/decode value expression functions.
 ******************************************************************************/
 /* Builds value expressions for instructions */
-SgAsmIntegerValueExpression* buildValueExpression(uint64_t constantVal) {
+SgAsmIntegerValueExpression* buildValueExpression(instructionStruct* container) {
     /* Create the expression  */
-    SgAsmIntegerValueExpression* intValExpr = new SgAsmIntegerValueExpression();
+    //SgAsmIntegerValueExpression* intValExpr = new SgAsmIntegerValueExpression();
     /* set the absolute value(constant) from the struct */
     //TODO find the significance of the significant bits size i can't set them.
     //TODO done by adding and creating a fitting SgAsmIntegerType for the constant, use with constructor.
-    intValExpr->set_absoluteValue(constantVal);
+    //std::cout << "build: " << container->significantBits << std::endl;
+    SgAsmIntegerType* integerType = new 
+        SgAsmIntegerType(ByteOrder::ORDER_LSB, container->significantBits, container->isSignedConstant);
+    //
+    SgAsmIntegerValueExpression* intValExpr = new SgAsmIntegerValueExpression(container->instructionConstant, integerType);
+
+    //TODO This could be set by passing this value and an integertype with the constructor....fixes the size of the significant bits.
+    //intValExpr->set_absoluteValue(constantVal);
     /* return the pointer */
     return intValExpr;
 }
@@ -385,10 +392,19 @@ SgAsmIntegerValueExpression* buildValueExpression(uint64_t constantVal) {
 void decodeValueExpression(SgAsmExpression* inst, instructionStruct* instStruct) {
     /* cast the SgAsmExpression */
     SgAsmIntegerValueExpression* ve = isSgAsmIntegerValueExpression(inst); 
+    //TODO extract values from the type instead?
+    SgAsmIntegerType* integerType = isSgAsmIntegerType(ve->get_type());
+    //get the type, get_bits (size); can be use set bits when constructing
+    
+    //get retrieve if the value is signed or not.
+    instStruct->isSignedConstant = integerType->get_isSigned();
+    //TODO this pvector.size(), should be available in the type, possibly as get_bits?
+    //instStruct->significantBits = ve->get_significantBits();
+    instStruct->significantBits = integerType->get_nBits();
+    //std::cout << "decode: " << instStruct->significantBits << std::endl;
     /* save the constant  */
     instStruct->instructionConstant = ve->get_absoluteValue();
     /* save the significant bits, needed? */
-    instStruct->significantBits = ve->get_significantBits();
 }
 
 /******************************************************************************
@@ -401,7 +417,7 @@ SgAsmMemoryReferenceExpression* buildMemoryReference(instructionStruct* containe
     registerStruct reg = container->sourceRegisters.back();
     SgAsmDirectRegisterExpression* lhs_reg = buildRegister(reg); 
     /* Constant */
-    SgAsmIntegerValueExpression* rhs_valexpr = buildValueExpression(container->instructionConstant);
+    SgAsmIntegerValueExpression* rhs_valexpr = buildValueExpression(container);
 
     /* Create a binary expression with the lhs and rhs expressions. */
     SgAsmBinaryAdd* binAdd = new SgAsmBinaryAdd(lhs_reg, rhs_valexpr);

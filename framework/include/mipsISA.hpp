@@ -68,15 +68,20 @@ struct instructionStruct {
     std::vector<registerStruct> destinationRegisters;
     //output registers
     std::vector<registerStruct> sourceRegisters;
+
     //if the instruction uses a constant then save it and significant bits.
+    //The constant value
     uint64_t instructionConstant;
-    size_t significantBits;
+    //How many of the bits in the constant value are significant
+    int significantBits;
+    //if the value is signed.
     bool isSignedConstant;
    
     /* Information related to information */ 
-    //The number of bits/size of the memory reference, 8,16,32,64
     //TODO consider adding segment to saved information.
+    //The number of bits/size of the memory reference, 8,16,32,64
     int memoryReferenceSize;
+    //is the memory value signed.
     bool isSignedMemory;
     
     //It is relevant to memory expressions.
