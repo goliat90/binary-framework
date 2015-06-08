@@ -374,7 +374,7 @@ SgAsmIntegerValueExpression* buildValueExpression(uint64_t constantVal) {
     SgAsmIntegerValueExpression* intValExpr = new SgAsmIntegerValueExpression();
     /* set the absolute value(constant) from the struct */
     //TODO find the significance of the significant bits size i can't set them.
-    //TODO done by adding creating a fitting SgAsmIntegerType for the constant, use with constructor.
+    //TODO done by adding and creating a fitting SgAsmIntegerType for the constant, use with constructor.
     intValExpr->set_absoluteValue(constantVal);
     /* return the pointer */
     return intValExpr;

@@ -32,7 +32,8 @@ class naiveHandler{
         bool usesAcc;
         /*  Counter for the offset used in store/load */
         uint64_t offset;
-        /* maximum number of symbolic registers used */
+        /*  Maximum number of symbolic registers used, this is the amount
+            the stack needs to be increased.    */
         int maximumSymbolicsUsed;
         /*  Structure to store the available register names */
         std::set<mipsRegisterName> hardRegisters;

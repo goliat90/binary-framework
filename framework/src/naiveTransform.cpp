@@ -47,6 +47,7 @@ void naiveHandler::applyTransformation() {
     /* Find the maximum use of symbolic registers. */
     determineStackModification();
     //TODO perform stack modification
+    modifyStack();
     
     /* Go through the instructions in a basic block and  */
     for(std::pair<CFGVIter, CFGVIter> iterPair = vertices(*function);
@@ -357,16 +358,42 @@ void naiveHandler::modifyStack() {
     /* Take the instructions and change the constants, increasing
         the stack allocation and deallocation */
     SgAsmMipsInstruction* allocMips = isSgAsmMipsInstruction(activationRecordPair.first);
+    SgAsmMipsInstruction* deallocMips = isSgAsmMipsInstruction(activationRecordPair.second);
     //get the instructions operand list
     SgAsmExpressionPtrList& allocOperands = allocMips->get_operandList()->get_operands();
+    SgAsmExpressionPtrList& deallocOperands = deallocMips->get_operandList()->get_operands();
     //find the constant in the instruction.
-    for(SgAsmexpressionPtrList::iterator iter = allocOperands.begin();
+    for(SgAsmExpressionPtrList::iterator iter = allocOperands.begin();
         iter != allocOperands.end(); ++iter) {
-
+        /*  Find the constant in the instruction */
+        if (V_SgAsmIntegerValueExpression == (*iter)->variantT()) {
+            /*  Get the value of it and adjust it for the new stack */
+            SgAsmIntegerValueExpression* valConst = isSgAsmIntegerValueExpression(*iter);
+            /* Get the current constant value */
+            uint64_t  constant = valConst->get_absoluteValue();
+            /*  adjust the value to reflect the new stack size, increase the
+                subtraction stack value.    */
+            constant -= (maximumSymbolicsUsed * 4);
+            /* set the new value */
+            valConst->set_absoluteValue(constant);
+        }
     }
     //adjust the constant (increase the subtraction value);
-    
-    //do the same for the second instruction.
+    for(SgAsmExpressionPtrList::iterator iter = deallocOperands.begin();
+        iter != deallocOperands.end(); ++iter) {
+        /*  Find the constant in the instruction */
+        if (V_SgAsmIntegerValueExpression == (*iter)->variantT()) {
+            /*  Get the value of it and adjust it for the new stack */
+            SgAsmIntegerValueExpression* valConst = isSgAsmIntegerValueExpression(*iter);
+            /* Get the current constant value */
+            uint64_t  constant = valConst->get_absoluteValue();
+            /*  adjust the value to reflect the new stack size, increase the
+                added value stack value.    */
+            constant += (maximumSymbolicsUsed * 4);
+            /* set the new value */
+            valConst->set_absoluteValue(constant);
+        }
+    }
 }
 
 /* Find the maximum amount of used symbolic registers used at the same time */
