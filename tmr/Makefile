@@ -16,6 +16,10 @@ VPATH = $(LIBSRCDIR):$(LIBINCDIR):src:include
 
 all: linking 
 
+linearScan.lo: linearScan.cpp linearScan.hpp
+	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I$(LIBINCDIR) -I/home/$(PATHDIFF) -c -o linearScan.lo \
+	$(LIBSRCDIR)/linearScan.cpp
+
 naiveTransform.lo: naiveTransform.cpp naiveTransform.hpp
 	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I$(LIBINCDIR) -I/home/$(PATHDIFF) -c -o naiveTransform.lo \
 	$(LIBSRCDIR)/naiveTransform.cpp
@@ -44,7 +48,8 @@ userFramework.lo: userFramework.cpp userFramework.hpp
 	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I$(LIBINCDIR) -I./include -I/home/$(PATHDIFF) \
 	-c -o userFramework.lo $(SRCDIR)/userFramework.cpp
 
-linking: framework.lo userFramework.lo symbolicRegisters.lo mipsISA.lo binaryDebug.lo cfgHandler.lo naiveTransform.lo
+linking: framework.lo userFramework.lo symbolicRegisters.lo mipsISA.lo binaryDebug.lo cfgHandler.lo naiveTransform.lo \
+			linearScan.lo
 	libtool --mode=link g++ $(ROSE_LIBS) -o userRewriter.out userFramework.lo binaryRewriter.lo symbolicRegisters.lo \
 	mipsISA.lo binaryDebug.lo cfgHandler.lo naiveTransform.lo
 
@@ -70,6 +75,8 @@ clean:
 	rm -f userFramework.o
 	rm -f naiveTransform.lo
 	rm -f naiveTransform.o
+	rm -f linearScan.lo
+	rm -f linearScan.o
 	rm -f userRewriter.out
 
 
