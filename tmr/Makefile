@@ -51,6 +51,9 @@ linking: framework.lo userFramework.lo symbolicRegisters.lo mipsISA.lo binaryDeb
 debug:
 	libtool --mode=execute gdb --args ./userRewriter.out littleend.out
 
+test:
+	./userRewriter.out littleend.out
+
 clean:
 	rm -rf .libs
 	rm -f cfgHandler.lo
