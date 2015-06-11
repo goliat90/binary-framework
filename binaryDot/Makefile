@@ -6,15 +6,15 @@ else
 	PATHDIFF = almd/Github/edg4x-rose/Compiletree
 endif
 
-
-# this could be conditional as well. 
+# adding src and include folders so make finds files.
+VPATH = src : include
 
 # Default make rule to use
 all: CFGdot
 
 
 # Compile the CFGdot using the file CFGdot.C
-CFGdot.lo: CFGdot.C
+CFGdot.lo: CFGdot.C binaryDotGraph.h
 	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF)  -c -o CFGdot.lo ./src/CFGdot.C
 
 
