@@ -11,47 +11,24 @@ else
 endif
 
 SRCDIR = ./src
+FRAMEWORKLIBDIR = ../framework
+OBJDIR = ./objectfiles
 
-VPATH = $(LIBSRCDIR):$(LIBINCDIR):src:include
+VPATH = $(LIBSRCDIR):$(LIBINCDIR):src:include:objectfiles
 
-all: linking 
+#phony rules
+.PHONY: all buildLibrary linkingExecutable debug test clean
 
-linearScan.lo: linearScan.cpp linearScan.hpp
-	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I$(LIBINCDIR) -I/home/$(PATHDIFF) -c -o linearScan.lo \
-	$(LIBSRCDIR)/linearScan.cpp
+all: userRewriter.out
 
-naiveTransform.lo: naiveTransform.cpp naiveTransform.hpp
-	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I$(LIBINCDIR) -I/home/$(PATHDIFF) -c -o naiveTransform.lo \
-	$(LIBSRCDIR)/naiveTransform.cpp
+# rule to include framework in compilation.
+buildLibrary:
+	$(MAKE) -C $(FRAMEWORKLIBDIR)
 
-cfgHandler.lo: cfgHandler.cpp cfgHandler.hpp
-	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I$(LIBINCDIR) -I/home/$(PATHDIFF) -c -o cfgHandler.lo \
-	$(LIBSRCDIR)/cfgHandler.cpp
+# compile executable by using the library object file
+userRewriter.out: buildLibrary userFramework.lo
+	libtool --mode=link g++ $(ROSE_LIBS) -o userRewriter.out $(OBJDIR)/*.lo $(FRAMEWORKLIBDIR)/libConvenience.la
 
-binaryDebug.lo: binaryDebug.cpp binaryDebug.hpp
-	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I$(LIBINCDIR) -I/home/$(PATHDIFF) -c -o binaryDebug.lo \
-	$(LIBSRCDIR)/binaryDebug.cpp
-
-mipsISA.lo: mipsISA.cpp mipsISA.hpp
-	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I$(LIBINCDIR) -I/home/$(PATHDIFF) -c -o mipsISA.lo \
-	$(LIBSRCDIR)/mipsISA.cpp
-
-symbolicRegisters.lo: symbolicRegisters.cpp symbolicRegisters.hpp
-	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I$(LIBINCDIR) -I/home/$(PATHDIFF) -c -o symbolicRegisters.lo \
-	$(LIBSRCDIR)/symbolicRegisters.cpp
-
-framework.lo: binaryRewriter.cpp binaryRewriter.hpp
-	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I$(LIBINCDIR) -I/home/$(PATHDIFF) -c -o binaryRewriter.lo \
-	$(LIBSRCDIR)/binaryRewriter.cpp
-
-userFramework.lo: userFramework.cpp userFramework.hpp
-	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I$(LIBINCDIR) -I./include -I/home/$(PATHDIFF) \
-	-c -o userFramework.lo $(SRCDIR)/userFramework.cpp
-
-linking: framework.lo userFramework.lo symbolicRegisters.lo mipsISA.lo binaryDebug.lo cfgHandler.lo naiveTransform.lo \
-			linearScan.lo
-	libtool --mode=link g++ $(ROSE_LIBS) -o userRewriter.out userFramework.lo binaryRewriter.lo symbolicRegisters.lo \
-	mipsISA.lo binaryDebug.lo cfgHandler.lo naiveTransform.lo
 
 debug:
 	libtool --mode=execute gdb --args ./userRewriter.out littleend.out
@@ -61,22 +38,8 @@ test:
 
 clean:
 	rm -rf .libs
-	rm -f cfgHandler.lo
-	rm -f cfgHandler.o
-	rm -f binaryDebug.lo
-	rm -f binaryDebug.o
-	rm -f mipsISA.lo
-	rm -f mipsISA.o
-	rm -f symbolicRegisters.lo
-	rm -f symbolicRegisters.o
-	rm -f binaryRewriter.lo
-	rm -f binaryRewriter.o
-	rm -f userFramework.lo
-	rm -f userFramework.o
-	rm -f naiveTransform.lo
-	rm -f naiveTransform.o
-	rm -f linearScan.lo
-	rm -f linearScan.o
+	rm -f $(OBJDIR)/*
 	rm -f userRewriter.out
+	$(MAKE) -C $(FRAMEWORKLIBDIR) clean
 
 

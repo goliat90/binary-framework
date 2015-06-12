@@ -7,69 +7,63 @@ else
 endif
 
 SRCDIR = ./src
+OBJDIR = ./objectfiles
 
 # testing adding more folders to vpath
-VPATH = src:include
+VPATH = src:include:objectfiles
 
-all: linking 
+# Rules that do not depend on a file.
+.PHONY: clean all linkExecutable
+
+all: libConvenience.la
 
 linearScan.lo: linearScan.cpp linearScan.hpp
-	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o linearScan.lo \
+	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o $(OBJDIR)/linearScan.lo \
 	$(SRCDIR)/linearScan.cpp
 
 naiveTransform.lo: naiveTransform.cpp naiveTransform.hpp
-	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o naiveTransform.lo \
+	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o $(OBJDIR)/naiveTransform.lo \
 	$(SRCDIR)/naiveTransform.cpp
 
 cfgHandler.lo: cfgHandler.cpp cfgHandler.hpp
-	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o cfgHandler.lo \
+	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o $(OBJDIR)/cfgHandler.lo \
 	$(SRCDIR)/cfgHandler.cpp
 
 binaryDebug.lo: binaryDebug.cpp binaryDebug.hpp
-	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o binaryDebug.lo \
+	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o $(OBJDIR)/binaryDebug.lo \
 	$(SRCDIR)/binaryDebug.cpp
 
 mipsISA.lo: mipsISA.cpp mipsISA.hpp
-	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o mipsISA.lo \
+	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o $(OBJDIR)/mipsISA.lo \
 	$(SRCDIR)/mipsISA.cpp
 
 symbolicRegisters.lo: symbolicRegisters.cpp symbolicRegisters.hpp
-	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o symbolicRegisters.lo \
+	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o $(OBJDIR)/symbolicRegisters.lo \
 	$(SRCDIR)/symbolicRegisters.cpp
 
-framework.lo: binaryRewriter.cpp binaryRewriter.hpp
-	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o binaryRewriter.lo \
+binaryRewriter.lo: binaryRewriter.cpp binaryRewriter.hpp
+	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o $(OBJDIR)/binaryRewriter.lo \
 	$(SRCDIR)/binaryRewriter.cpp
 
 test.lo: test.cpp
-	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o test.lo \
+	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o $(OBJDIR)/test.lo \
 	$(SRCDIR)/test.cpp
 
-linking: framework.lo test.lo symbolicRegisters.lo mipsISA.lo binaryDebug.lo cfgHandler.lo naiveTransform.lo \
-		linearScan.lo
-	libtool --mode=link g++ $(ROSE_LIBS) -o test.out test.lo binaryRewriter.lo symbolicRegisters.lo \
-	binaryDebug.lo mipsISA.lo cfgHandler.lo naiveTransform.lo linearScan.lo
 
-	
+# Compile a library object file
+libConvenience.la: binaryRewriter.lo symbolicRegisters.lo mipsISA.lo binaryDebug.lo cfgHandler.lo naiveTransform.lo \
+		linearScan.lo
+	libtool --mode=link g++ $(ROSE_LIBS) -o libConvenience.la $(OBJDIR)/*.lo
+
+# Executable rule that can be used in case
+linkExecutable: binaryRewriter.lo test.lo symbolicRegisters.lo mipsISA.lo binaryDebug.lo cfgHandler.lo naiveTransform.lo \
+		linearScan.lo
+	libtool --mode=link g++ $(ROSE_LIBS) -o test.out $(OBJDIR)/*.lo
+
 
 clean:
 	rm -rf .libs
+	rm -f $(OBJDIR)/*
 	rm -f test.out
-	rm -f binaryDebug.lo
-	rm -f test.lo
-	rm -f binaryRewriter.lo
-	rm -f symbolicRegisters.lo
-	rm -f mipsISA.lo
-	rm -f cfgHandler.lo
-	rm -f naiveTransform.lo
-	rm -f linearScan.lo
-	rm -f binaryDebug.o
-	rm -f test.o
-	rm -f binaryRewriter.o
-	rm -f symbolicRegisters.o
-	rm -f mipsISA.o
-	rm -f cfgHandler.o
-	rm -f naiveTransform.o
-	rm -f linearScan.o
-
+	rm -f libConvenience.la
 
