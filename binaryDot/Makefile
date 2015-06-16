@@ -7,23 +7,23 @@ else
 endif
 
 # adding src and include folders so make finds files.
-VPATH = src : include : objectdir
+VPATH = src : include : objectfiles
 
 # Default make rule to use
 all: CFGdot
 
 # Compile the CFGdot using the file CFGdot.C
 CFGdot.lo: CFGdot.C binaryDotGraph.h
-	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF)  -c -o ./objectdir/CFGdot.lo ./src/CFGdot.C
+	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF)  -c -o ./objectfiles/CFGdot.lo ./src/CFGdot.C
 
 
 CFGdot: CFGdot.lo
-	libtool --mode=link g++ $(ROSE_LIBS) -o CFGdot.out ./objectdir/CFGdot.lo 
+	libtool --mode=link g++ $(ROSE_LIBS) -o CFGdot.out ./objectfiles/CFGdot.lo 
 
 clean:
 	rm -rf .libs
 	rm -f CFGdot.out
-	rm -f ./objectdir/CFGdot.lo
-	rm -f ./objectdir/CFGdot.o
+	rm -f ./objectfiles/CFGdot.lo
+	rm -f ./objectfiles/CFGdot.o
 
 

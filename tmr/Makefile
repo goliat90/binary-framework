@@ -21,6 +21,10 @@ VPATH = $(LIBSRCDIR):$(LIBINCDIR):src:include:objectfiles
 
 all: userRewriter.out
 
+userFramework.lo: userFramework.cpp userFramework.hpp
+	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I$(LIBINCDIR) -I./include -I/home/$(PATHDIFF) \
+	-c -o $(OBJDIR)/userFramework.lo $(SRCDIR)/userFramework.cpp
+
 # rule to include framework in compilation.
 buildLibrary:
 	$(MAKE) -C $(FRAMEWORKLIBDIR)
