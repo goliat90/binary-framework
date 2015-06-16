@@ -19,6 +19,8 @@ class userFramework : public BinaryRewriter {
     private:
         //Hide default constructor again.
         userFramework();
+        /*  Function that applies transformation    */
+        void applyTMR();
 };
 
 #endif

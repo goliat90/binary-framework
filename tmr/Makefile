@@ -14,7 +14,7 @@ SRCDIR = ./src
 FRAMEWORKLIBDIR = ../framework
 OBJDIR = ./objectfiles
 
-VPATH = $(LIBSRCDIR):$(LIBINCDIR):src:include:objectfiles
+VPATH = $(LIBSRCDIR):$(LIBINCDIR):$(FRAMEWORKLIBDIR):src:include:objectfiles
 
 #phony rules
 .PHONY: all buildLibrary linkingExecutable debug test clean
@@ -27,10 +27,12 @@ userFramework.lo: userFramework.cpp userFramework.hpp
 
 # rule to include framework in compilation.
 buildLibrary:
+	@echo -e "\n Compiling framework library file. \n"
 	$(MAKE) -C $(FRAMEWORKLIBDIR)
+	@echo -e "\n Framework library file compiled. \n"
 
 # compile executable by using the library object file
-userRewriter.out: buildLibrary userFramework.lo
+userRewriter.out: buildLibrary userFramework.lo 
 	libtool --mode=link g++ $(ROSE_LIBS) -o userRewriter.out $(OBJDIR)/*.lo $(FRAMEWORKLIBDIR)/libConvenience.la
 
 
