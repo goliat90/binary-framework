@@ -26,11 +26,11 @@ int main( int argc, char * argv[] )
 
     // The cfg i have is to big, i want a subset of it. More specific i want
     // a graph only over main.
-    subCFG(*bigcfg, *subcfg, "main");
+    subCFG(*bigcfg, *subcfg, "simpleAdditionTMR");
 
     //call the graph maker function when i have a cfg.
     //BinaryDotGenerator(*bigcfg, "main" , "main.dot", true);
-    BinaryDotGenerator(*subcfg, "main with neighbours" , "main_neighbours.dot", true);
+    BinaryDotGenerator(*subcfg, "SimpleAdditionTMR" , "simpleAdditionTMR.dot", true);
 
     //
     return 0;
@@ -87,7 +87,7 @@ void subCFG (CFG &largecfg, CFG &subcfg, string function)
     // been added. Now we add all neighbouring vertices that have edges that
     // jump into or out of the function. Were getting one degree of neighbours.
 
-    for(int i=0; i < 2; i++) {
+    for(int i=0; i < 1; i++) {
         // Before finding the neighbours add all the current copied vertexes
         // to the copiedNeighbour map to avoid duplicate vertice copies.
         map<CFG::vertex_descriptor, bool> copiedNeighbourV (copiedVertex);

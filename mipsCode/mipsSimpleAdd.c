@@ -10,12 +10,12 @@ int simpleAdditionTMR(int a, int b) {
 /* Main sets two integer values. */
 int main(int argc, char** argv) {
     /* values to be added */
-    int a = 21;
-    int b = 42;
+    int a = argc;
+    int b = 4;
     /* call the add function */
     int c = simpleAdditionTMR(a, b);
 
-    if (63 == c) {
+    if (8 <= c) {
         /* The result is correct */
         return 0;
     } else {
