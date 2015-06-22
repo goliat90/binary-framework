@@ -17,6 +17,10 @@ VPATH = src:include:objectfiles
 
 all: libConvenience.la
 
+liveVariableAnalysis.lo: liveVariableAnalysis.cpp liveVariableAnalysis.hpp
+	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o $(OBJDIR)/liveVariableAnalysis.lo \
+	$(SRCDIR)/liveVariableAnalysis.cpp
+
 linearScan.lo: linearScan.cpp linearScan.hpp
 	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o $(OBJDIR)/linearScan.lo \
 	$(SRCDIR)/linearScan.cpp
@@ -52,12 +56,12 @@ test.lo: test.cpp
 
 # Compile a library object file
 libConvenience.la: binaryRewriter.lo symbolicRegisters.lo mipsISA.lo binaryDebug.lo cfgHandler.lo naiveTransform.lo \
-		linearScan.lo
+		linearScan.lo liveVariableAnalysis.lo
 	libtool --mode=link g++ $(ROSE_LIBS) -o libConvenience.la $(OBJDIR)/*.lo
 
 # Executable rule that can be used in case
 linkExecutable: binaryRewriter.lo test.lo symbolicRegisters.lo mipsISA.lo binaryDebug.lo cfgHandler.lo naiveTransform.lo \
-		linearScan.lo
+		linearScan.lo liveVariableAnalysis.lo
 	libtool --mode=link g++ $(ROSE_LIBS) -o test.out $(OBJDIR)/*.lo
 
 
