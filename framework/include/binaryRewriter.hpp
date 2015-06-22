@@ -9,6 +9,7 @@
 #include "mipsISA.hpp"
 #include "symbolicRegisters.hpp"
 #include "naiveTransform.hpp"
+#include "linearScan.hpp"
 
 // Boost lib headers
 #include <boost/graph/adjacency_list.hpp>
