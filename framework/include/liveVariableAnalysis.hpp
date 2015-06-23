@@ -12,10 +12,14 @@
 
 /*  Boost includes  */
 //TODO consider using boost dynamic bitset for variable representation
+#include "boost/dynamic_bitset.hpp"
 //TODO this would make it possible to use bit operators for computations.
 
 /*  Typedefs    */
-typedef std::pair<std::set<registerStruct>, std::set<registerStruct> > inoutPair;
+/*  pair containing the definition and usage of variables in a block, order
+    is first = definition, second = usage. */
+typedef std::pair<std::set<unsigned>, std::set<unsigned> > defusePair;
+typedef std::pair<boost::dynamic_bitset<>, boost::dynamic_bitset<> > defuseBits;
 
 class liveVariableAnalysisHandler {
     public:
@@ -24,12 +28,18 @@ class liveVariableAnalysisHandler {
     /*  Returns some kind of structure with live intervals
         or is a query function perhaps  */
     //TODO add function head.
+    /*   enable debuging    */
+    void setDebug(bool);
 
     private:
     /*  Hide default constructor    */
     liveVariableAnalysisHandler();
     /*  Definition and use function */
     void computeDefAndUse();
+    /*  Checks source registers for use */
+    void instructionUsageAndDefinition(instructionStruct*, defusePair*);
+    /*  Count the symbolic registers present */
+    int countSymbolicRegisters();
     /*  Live variable analysis function */
     void computeLiveAnalysis();
     /*  Live interval function, finds the intervals,
@@ -37,16 +47,25 @@ class liveVariableAnalysisHandler {
     void findLiveIntervals();
 
     /*  Variables   */
+    /*  Switch debuging on and off. */
+    bool debuging;
+    /*  Pointer to function cfg */
     CFG* functioncfg;
-    /*  Storage for def and use of basic blocks. */
-    std::map<rose_addr_t, inoutPair*> inoutMap;
+
+    /*  Storage for def and use of basic blocks, block address is used as key. */
+    std::map<SgAsmBlock*, defusePair> defuseMap;
+    /*  map between the symbolic register and their bit */
+    std::map<unsigned, int> symbolicToBit;
+
+    /*  map to which symbolic register is represented by what bit */
+    //boost::dynamic_bitset<> 
 
     /*  Storage for IN and OUT of basic blocks. */
 
+    /*  Storage representation for live intervals.  */
+
     /*  Map to track visited blocks when determining depth first search
         order.  */
-
-    /*  Storage representation for live intervals.  */
 
 };
 
