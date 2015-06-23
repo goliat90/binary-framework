@@ -32,13 +32,10 @@ void liveVariableAnalysisHandler::computeDefAndUse() {
         /*  Extract the basic block for the vertex then its statementlist  */
         SgAsmBlock* basic = get(boost::vertex_name, *functioncfg, *iterPair.first);
         SgAsmStatementPtrList& blockStmtList = basic->get_statementList();
-        /*  Fresh definition and use set to use for the block   */
-        defusePair currentDefUse;
         /*  Bit pair */
-        defuseBits currentBit;
-        currentBit.first.resize(bitSetSize);
-        currentBit.second.resize(bitSetSize);
-
+        defuseBits currentBits;
+        currentBits.first.resize(bitSetSize);
+        currentBits.second.resize(bitSetSize);
         /*  Debug code */
         if (debuging) {
             /* print block limiter */
@@ -53,7 +50,7 @@ void liveVariableAnalysisHandler::computeDefAndUse() {
                 SgAsmMipsInstruction* mips = isSgAsmMipsInstruction(*stmtIter);
                 instructionStruct decodedMips = decodeInstruction(mips);
                 /* Check the registers in the instruction. */
-                instructionUsageAndDefinition(&decodedMips, &currentDefUse);
+                instructionUsageAndDefinition(&decodedMips, &currentBits);
             }
         }
         /*  Debug code */
@@ -62,16 +59,16 @@ void liveVariableAnalysisHandler::computeDefAndUse() {
             std::cout << "-------------------- block end --------------------" << std::endl;
         }
         /*  Insert the definition and use pair into the map */
-        defuseMap.insert(std::pair<SgAsmBlock*, defusePair>(basic, currentDefUse));
+        defuseBlockMap.insert(std::pair<SgAsmBlock*, defuseBits>(basic, currentBits));
     }
     /* All blocks have had their def and use computed. */
 }
 
 /*  Help function to find usage and definition in an instruction   */
-void liveVariableAnalysisHandler::instructionUsageAndDefinition(instructionStruct* inst, defusePair* duPair) {
+void liveVariableAnalysisHandler::instructionUsageAndDefinition(instructionStruct* inst, defuseBits* duPair) {
     /*  Temporary sets for defs and use found. */
-    std::set<unsigned> newUse;
-    std::set<unsigned> newDef;
+    std::set<int> newUse;
+    std::set<int> newDef;
     /*  Definition of Use: Set of variables whose values may
         be used in Block prior to any definition of the variable. */
     for(std::vector<registerStruct>::iterator regiter = inst->sourceRegisters.begin();
@@ -80,10 +77,13 @@ void liveVariableAnalysisHandler::instructionUsageAndDefinition(instructionStruc
         if (symbolic_reg == (*regiter).regName) {
             /*  A register is symbolic, should it be added to use or not?
                 Check if the register has been defined before. */
-            if (1 != duPair->second.count((*regiter).symbolicNumber)) {
+            int symBit = symbolicToBit.find((*regiter).symbolicNumber)->second;
+            /*  Check if the bit is set in the defined bitset */
+            if (!duPair->first[symBit]) {
                 /*  The symbolic register has not been defined yet. So it should
                     be added to the use set. */
-                newUse.insert((*regiter).symbolicNumber);
+                //duPair->second[symBit] = true;
+                newUse.insert(symBit);
                 /*  Debug code */
                 if (debuging) {
                     std::cout << "use: sym_" << (*regiter).symbolicNumber << " ";
@@ -99,10 +99,12 @@ void liveVariableAnalysisHandler::instructionUsageAndDefinition(instructionStruc
         if (symbolic_reg == (*regiter).regName) {
             /*  A register is symbolic, should it be added to use or not?
                 Check if the register has been used before. */
-            if (1 != duPair->first.count((*regiter).symbolicNumber)) {
+            int symBit = symbolicToBit.find((*regiter).symbolicNumber)->second;
+            /*  Check if the bit is set in the use bitset */
+            if (!duPair->second[symBit]) {
                 /*  The symbolic register has not been used yet. So it should
-                    be added to the use set. */
-                newDef.insert((*regiter).symbolicNumber);
+                    be set to true in the defined set. */
+                newDef.insert(symBit);
                 /*  Debug code */
                 if (debuging) {
                     std::cout << "def: sym_" << (*regiter).symbolicNumber << " ";
@@ -116,13 +118,22 @@ void liveVariableAnalysisHandler::instructionUsageAndDefinition(instructionStruc
     }
     /*  The registers have been checked for def and use. If any have
         been found add them to the defusemap. */
-    if (!newUse.empty()) {
-        duPair->first.insert(newUse.begin(), newUse.end());
+    for(std::set<int>::iterator iter = newUse.begin();
+        iter != newUse.end(); ++iter) {
+        /* Set the specified bits to true in the use bitset. */
+        duPair->second[*iter] = true;
     }
-    if (!newDef.empty()) {
-        duPair->second.insert(newDef.begin(), newDef.end());
+    for(std::set<int>::iterator iter = newDef.begin();
+        iter != newDef.end(); ++iter) {
+        /*  Set the specified bits to true in the define bitset. */
+        duPair->first[*iter] = true;
     }
-    //TODO add to bitvector at the same time?
+    
+    /*  debug printout of def and use */
+    if(debuging) {
+        std::cout << "def: " << duPair->first << std::endl;
+        std::cout << "use: " << duPair->second << std::endl;
+    }
 }
 
 /*  Help function to count symbolic registers, also creates a mapping between symbolic

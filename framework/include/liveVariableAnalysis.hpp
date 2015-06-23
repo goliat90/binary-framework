@@ -18,7 +18,6 @@
 /*  Typedefs    */
 /*  pair containing the definition and usage of variables in a block, order
     is first = definition, second = usage. */
-typedef std::pair<std::set<unsigned>, std::set<unsigned> > defusePair;
 typedef std::pair<boost::dynamic_bitset<>, boost::dynamic_bitset<> > defuseBits;
 
 class liveVariableAnalysisHandler {
@@ -37,7 +36,7 @@ class liveVariableAnalysisHandler {
     /*  Definition and use function */
     void computeDefAndUse();
     /*  Checks source registers for use */
-    void instructionUsageAndDefinition(instructionStruct*, defusePair*);
+    void instructionUsageAndDefinition(instructionStruct*, defuseBits*);
     /*  Count the symbolic registers present */
     int countSymbolicRegisters();
     /*  Live variable analysis function */
@@ -53,7 +52,7 @@ class liveVariableAnalysisHandler {
     CFG* functioncfg;
 
     /*  Storage for def and use of basic blocks, block address is used as key. */
-    std::map<SgAsmBlock*, defusePair> defuseMap;
+    std::map<SgAsmBlock*, defuseBits> defuseBlockMap;
     /*  map between the symbolic register and their bit */
     std::map<unsigned, int> symbolicToBit;
 
