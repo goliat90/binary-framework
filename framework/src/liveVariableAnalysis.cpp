@@ -9,7 +9,9 @@
 /*  Constructor */
 liveVariableAnalysisHandler::liveVariableAnalysisHandler(CFG* subroutine) {
     /* Save the cfg */
-    functioncfg = subroutine;
+    functionCFG = subroutine;
+    /* Debug printout as default */
+    debuging = false;
 }
 
 /*  Set if debuging information should be printed   */
@@ -17,25 +19,38 @@ void liveVariableAnalysisHandler::setDebug(bool mode) {
     debuging = mode;
 }
 
+/*  Performs the live-range analysis, all the steps. */
+void liveVariableAnalysisHandler::performLiveRangeAnalysis() {
+    /*  Compute def and use for basic blocks */
+    //TODO perhaps i can compute def and use for instructions at the same time?
+    computeDefAndUseOnBlocks();
+
+    /*  Compute in and out of basic blocks  */
+
+    /*  Compute in and out of each instruction in blocks */
+
+    /*  Build a live-analysis representation. */
+}
+
 /*  Function computes the def and use for each basic block. Iterates through
     each basic block and finds the def and use for the block.   */
-void liveVariableAnalysisHandler::computeDefAndUse() {
+void liveVariableAnalysisHandler::computeDefAndUseOnBlocks() {
     /*  First count the number of symbolics and create a mapping between
         symbolics and a bit in the bitsets */
-        int bitSetSize = countSymbolicRegisters();
+        countSymbolicRegisters();
 
     /*  Iterate through the vertices and all the basic blocks, inspect each
         instruction for def and use of symbolic registers. Save the defs
         and uses for the block. */
-    for(std::pair<CFGVIter, CFGVIter> iterPair = vertices(*functioncfg);
+    for(std::pair<CFGVIter, CFGVIter> iterPair = vertices(*functionCFG);
         iterPair.first != iterPair.second; ++iterPair.first) {
         /*  Extract the basic block for the vertex then its statementlist  */
-        SgAsmBlock* basic = get(boost::vertex_name, *functioncfg, *iterPair.first);
+        SgAsmBlock* basic = get(boost::vertex_name, *functionCFG, *iterPair.first);
         SgAsmStatementPtrList& blockStmtList = basic->get_statementList();
         /*  Bit pair */
-        defuseBits currentBits;
-        currentBits.first.resize(bitSetSize);
-        currentBits.second.resize(bitSetSize);
+        boost::dynamic_bitset<> first (numberOfVariables);
+        boost::dynamic_bitset<> second (numberOfVariables);
+        bitPair currentBits (first, second);
         /*  Debug code */
         if (debuging) {
             /* print block limiter */
@@ -59,13 +74,13 @@ void liveVariableAnalysisHandler::computeDefAndUse() {
             std::cout << "-------------------- block end --------------------" << std::endl;
         }
         /*  Insert the definition and use pair into the map */
-        defuseBlockMap.insert(std::pair<SgAsmBlock*, defuseBits>(basic, currentBits));
+        defuseBlockMap.insert(std::pair<SgAsmBlock*, bitPair>(basic, currentBits));
     }
     /* All blocks have had their def and use computed. */
 }
 
 /*  Help function to find usage and definition in an instruction   */
-void liveVariableAnalysisHandler::instructionUsageAndDefinition(instructionStruct* inst, defuseBits* duPair) {
+void liveVariableAnalysisHandler::instructionUsageAndDefinition(instructionStruct* inst, bitPair* duPair) {
     /*  Temporary sets for defs and use found. */
     std::set<int> newUse;
     std::set<int> newDef;
@@ -138,17 +153,17 @@ void liveVariableAnalysisHandler::instructionUsageAndDefinition(instructionStruc
 
 /*  Help function to count symbolic registers, also creates a mapping between symbolic
     registers and their corresponding bit in the dynamic bitset. */
-int liveVariableAnalysisHandler::countSymbolicRegisters() {
+void liveVariableAnalysisHandler::countSymbolicRegisters() {
     /* set to track symbolic registers found */
     std::set<unsigned> foundRegs;
     /* Counter for the bit number */
     int bitNum = 0;
 
     /*  Go through all blocks instructions and registers. */
-    for(std::pair<CFGVIter, CFGVIter> iterPair = vertices(*functioncfg);
+    for(std::pair<CFGVIter, CFGVIter> iterPair = vertices(*functionCFG);
         iterPair.first != iterPair.second; ++iterPair.first) {
         /*  Extract the basic block for the vertex then its statementlist  */
-        SgAsmBlock* basic = get(boost::vertex_name, *functioncfg, *iterPair.first);
+        SgAsmBlock* basic = get(boost::vertex_name, *functionCFG, *iterPair.first);
         SgAsmStatementPtrList& blockStmtList = basic->get_statementList();
         /*  Iterate through the statements and check the registers used */
         for(SgAsmStatementPtrList::iterator stmtIter = blockStmtList.begin();
@@ -202,8 +217,122 @@ int liveVariableAnalysisHandler::countSymbolicRegisters() {
     if (debuging) {
         std::cout << "unique symbolics found: " << bitNum << std::endl;
     }
-    /* return the number of registers found. */
-    return bitNum; 
+    /*  Save the number of variables found */
+    numberOfVariables = bitNum;
+}
+
+
+/*  Compute In and Out on basic blocks. */
+/* Using the algorithm from the Dragons book on live variable analysis. */
+void liveVariableAnalysisHandler::computeInOutOnBlocks() {
+    /*  Add ENTRY and EXIT vertices to the cfg */
+    addEntryExit();
+    /*  Initialize the in and out bitsets, set to zero */
+    initializeInOutOnBlocks();
+    
+    bool modifiedIN = true;
+    /*  Continue as long as any changes in an IN occurs. */
+    while (modifiedIN) {
+        /*  For each block except EXIT. Compute OUT then IN. */
+        for(std::map<SgAsmBlock*, bitPair>::iterator iter = inoutBlockMap.begin();
+            iter != inoutBlockMap.end(); ++iter) {
+            /* Check so we do not compute on the exit block */
+            if ((*iter).first != blockEXIT) {
+                /*  Retrieve the block inout pair */
+                bitPair inoutPair = (*iter).second;
+                /*  Retrieve the def and use pair of the block */
+                bitPair defusePair = defuseBlockMap.find((*iter).first)->second;
+                /*  OUT computation, union of all the successor blocks IN. */
+                //TODO need to union all the successor blocks 
+                /*  IN computation, block use unioned (OUT from block - block def) */
+                inoutPair.first =  defusePair.second | (inoutPair.second - defusePair.first);
+            }
+        }
+    }
+    /*  Remove ENTRY and EXIT from the cfg */
+    removeEntryExit();
+}
+
+/*  Initializes the parameters before computations of IN and OUT on blocks */
+void liveVariableAnalysisHandler::initializeInOutOnBlocks() {
+    /*  Go through all vertices and their block inialize the bitsets */
+    for(std::pair<CFGVIter, CFGVIter> itPair = vertices(*functionCFG);
+        itPair.first != itPair.second; ++itPair.first) {
+        /*  Initialize the in out bitset */
+        boost::dynamic_bitset<> first (numberOfVariables);
+        boost::dynamic_bitset<> second (numberOfVariables);
+        bitPair inoutPair (first, second);
+        /*  Get the basic block pointer and add it to the map. */
+        SgAsmBlock* block = get(boost::vertex_name, *functionCFG, *itPair.first);
+        inoutBlockMap.insert(std::pair<SgAsmBlock*, bitPair>(block, inoutPair));
+    } 
+}
+
+/*  add ENTRY and EXIT vertices to the cfg */
+void liveVariableAnalysisHandler::addEntryExit() {
+    /* find the first and last block in the cfg. */
+    std::set<CFG::vertex_descriptor> targetVertices;
+    std::set<CFG::vertex_descriptor> sourceVertices;
+
+    /* retrieve each edges target and source and save */
+    for(std::pair<CFGEIter, CFGEIter> edgeIter = edges(*functionCFG);
+        edgeIter.first != edgeIter.second; ++edgeIter.first) {
+        targetVertices.insert(target(*edgeIter.first, *functionCFG));
+        sourceVertices.insert(source(*edgeIter.first, *functionCFG));
+    }
+
+    /* At this point all vertices that are either a target or a source
+        for a edge is saved. The first and last block will only be
+        present as a target or source. */
+    for(std::set<CFG::vertex_descriptor>::iterator iter = sourceVertices.begin();
+        iter != sourceVertices.end(); ++iter) {
+        /* Find the source vertex that is not among the target vertices.
+            That vertex is the entry vertex */
+        if (targetVertices.count(*iter) == 0) {
+            /*  The current vertex is the first block in the cfg,
+                add ENTRY vertex and connect it to this block. */
+            ENTRY = add_vertex(*functionCFG);
+            /*  Create an empty SgAsmBlock to be used as key, save it. */
+            blockENTRY = new SgAsmBlock();
+            /*  Add the block to the property map. */
+            put(boost::vertex_name, *functionCFG, ENTRY, blockENTRY);
+            /*  Add an edge between ENTRY and the first block */
+            add_edge(ENTRY, (*iter), *functionCFG);
+        }
+    }
+    for(std::set<CFG::vertex_descriptor>::iterator iter = targetVertices.begin();
+        iter != targetVertices.end(); ++iter) {
+        /* Find the target vertex that is not among the source vertices.
+            That vertex is the exit vertex */
+        if (sourceVertices.count(*iter) == 0) {
+            /*  The current vertex is the last block in the cfg,
+                add EXIT vertex and connect it to this block. */
+            EXIT = add_vertex(*functionCFG);
+            /*  Create an empty SgAsmBlock to be used */
+            blockEXIT = new SgAsmBlock();
+            /*  Add the block to the property map. */
+            put(boost::vertex_name, *functionCFG, EXIT, blockEXIT);
+            /*  Add an edge between ENTRY and the first block */
+            add_edge(EXIT, (*iter), *functionCFG);
+        }
+    }
+    /*  I need def and use on the ENTRY block, adding it here to the defuseblockmap. */
+    boost::dynamic_bitset<> first(numberOfVariables);
+    boost::dynamic_bitset<> second(numberOfVariables);
+    bitPair entryPair (first, second);
+    defuseBlockMap.insert(std::pair<SgAsmBlock*, bitPair>(blockENTRY, entryPair));
+}
+
+/*  remove ENTRY and EXIT vertices, restoring the cfg. */
+void liveVariableAnalysisHandler::removeEntryExit() {
+    //TODO perhaps remove the blocks in the property map?
+    /* Clear the edges from the vertices and then remove the vertices */
+    clear_vertex(ENTRY, *functionCFG);
+    clear_vertex(EXIT, *functionCFG);
+    remove_vertex(ENTRY, *functionCFG);
+    remove_vertex(EXIT, *functionCFG);
+    /*  Remove the defuse block entry for the ENTRY block */
+    defuseBlockMap.erase(blockENTRY);
 }
 
 /*  Function performs live-analysis */

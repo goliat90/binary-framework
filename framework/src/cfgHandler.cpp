@@ -91,7 +91,7 @@ void CFGhandler::findActivationRecords() {
         /* Find the source vertex that is not among the target vertices.
             That vertex is the entry vertex */
         if (targetVertices.count(*iter) == 0) {
-            /* The current vertex is the first block in the instruction,
+            /* The current vertex is the first block in the cfg,
                 save the vertex block as firstBlock */
             SgAsmBlock* firstBlock = get(boost::vertex_name, *functionCFG, (*iter));
             firstStatementList = &firstBlock->get_statementList();
@@ -102,7 +102,7 @@ void CFGhandler::findActivationRecords() {
         /* Find the target vertex that is not among the source vertices.
             That vertex is the exit vertex */
         if (sourceVertices.count(*iter) == 0) {
-            /* The current vertex is the last block in the instruction,
+            /* The current vertex is the last block in the cfg,
                 save the vertex block as lastBlock */
             SgAsmBlock* lastBlock = get(boost::vertex_name, *functionCFG, (*iter));
             lastStatementList = &lastBlock->get_statementList();
@@ -232,13 +232,11 @@ void CFGhandler::createFunctionCFG(std::string newFunctionName) {
             SgAsmFunction* blockFunction = basicBlock->get_enclosing_function();
             /* Check the functions name with the passed name */
             if (functionName.compare(blockFunction->get_name()) == 0) {
-                /*  The block belongs to the desired function add it to
-                    the function CFG. */
+                /*  The block belongs to the desired function add it to the function CFG. */
                 CFG::vertex_descriptor newVertex = add_vertex(*functionCFG);
                 /* set the values of the property map in the new CFG */
                 put(functionPropMap, newVertex, basicBlock);
-                /*  Save the vertex descriptor so i know which vertexes
-                    have been copies */
+                /*  Save the vertex descriptor so i know which vertexes have been copies */
                 copiedVertex.insert(std::pair<CFG::vertex_descriptor, bool>(*verticePair.first , true));
                 /* Add both vertices to the vertexmap */
                 vertexMap.insert(std::pair<CFG::vertex_descriptor, CFG::vertex_descriptor>

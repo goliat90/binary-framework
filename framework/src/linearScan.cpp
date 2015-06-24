@@ -37,4 +37,8 @@ else
 #include "linearScan.hpp"
 
 
+/*  Constructor */
+linearScanHandler::linearScanHandler(){
+
+}
 

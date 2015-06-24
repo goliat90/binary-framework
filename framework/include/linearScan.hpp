@@ -5,4 +5,12 @@
 /*  Includes    */
 #include "liveVariableAnalysis.hpp"
 
+class linearScanHandler {
+    public:
+    linearScanHandler();
+    private:
+    
+
+};
+
 #endif
