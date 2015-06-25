@@ -22,6 +22,8 @@
 typedef rose::BinaryAnalysis::ControlFlow::Graph CFG;
 typedef boost::graph_traits<CFG>::vertex_iterator CFGVIter;
 typedef boost::graph_traits<CFG>::edge_iterator CFGEIter;
+typedef boost::graph_traits<CFG>::out_edge_iterator CFGOEIter;
+typedef boost::graph_traits<CFG>::in_edge_iterator CFGIEIter;
 //map type for the property map in the cfg that contains the basic blocks.
 typedef boost::property_map<CFG, boost::vertex_name_t>::type basicBlockPropertyMap;
 

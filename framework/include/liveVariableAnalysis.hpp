@@ -40,6 +40,8 @@ class liveVariableAnalysisHandler {
     void computeDefAndUseOnBlocks();
     /*  Function to determine in and out on basic blocks. */
     void computeInOutOnBlocks();
+    /*  Function to compute OUT on live-range analysis on block level */
+    boost::dynamic_bitset<> computeOutOnBlock(SgAsmBlock*);
     /*  Help functions to add and remove ENTRY and EXIT blocks */
     void addEntryExit();
     void removeEntryExit();

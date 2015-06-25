@@ -21,6 +21,9 @@ void liveVariableAnalysisHandler::setDebug(bool mode) {
 
 /*  Performs the live-range analysis, all the steps. */
 void liveVariableAnalysisHandler::performLiveRangeAnalysis() {
+    /*  First count the number of symbolics and create a mapping between
+        symbolics and a bit in the bitsets */
+    countSymbolicRegisters();
     /*  Compute def and use for basic blocks */
     //TODO perhaps i can compute def and use for instructions at the same time?
     computeDefAndUseOnBlocks();
@@ -35,9 +38,6 @@ void liveVariableAnalysisHandler::performLiveRangeAnalysis() {
 /*  Function computes the def and use for each basic block. Iterates through
     each basic block and finds the def and use for the block.   */
 void liveVariableAnalysisHandler::computeDefAndUseOnBlocks() {
-    /*  First count the number of symbolics and create a mapping between
-        symbolics and a bit in the bitsets */
-        countSymbolicRegisters();
 
     /*  Iterate through the vertices and all the basic blocks, inspect each
         instruction for def and use of symbolic registers. Save the defs
@@ -243,7 +243,7 @@ void liveVariableAnalysisHandler::computeInOutOnBlocks() {
                 /*  Retrieve the def and use pair of the block */
                 bitPair defusePair = defuseBlockMap.find((*iter).first)->second;
                 /*  OUT computation, union of all the successor blocks IN. */
-                //TODO need to union all the successor blocks 
+                inoutPair.second = computeOutOnBlock((*iter).first);
                 /*  IN computation, block use unioned (OUT from block - block def) */
                 inoutPair.first =  defusePair.second | (inoutPair.second - defusePair.first);
             }
@@ -252,6 +252,44 @@ void liveVariableAnalysisHandler::computeInOutOnBlocks() {
     /*  Remove ENTRY and EXIT from the cfg */
     removeEntryExit();
 }
+
+
+/*  Function to compute OUT for the live-range analysis on blocks */
+boost::dynamic_bitset<> liveVariableAnalysisHandler::computeOutOnBlock(SgAsmBlock* rootBlock) {
+    /*  Variables */
+    CFG::vertex_descriptor rootVertex;
+    /*  Temporary bitset to calculate the OUT into */
+    boost::dynamic_bitset<> outBits(numberOfVariables);
+
+    /*  Find the vertex that we want the successors of, search all vertices
+        and check the sgasmblock pointer. Save it, then revtireve the successors. */
+    for(std::pair<CFGVIter, CFGVIter> iterPair = vertices(*functionCFG);
+        iterPair.first != iterPair.second; ++iterPair.first) {
+        /* Get the rootBlock. */
+        SgAsmBlock* currentBlock = get(boost::vertex_name, *functionCFG, *iterPair.first);
+        /*  Compare the pointers */
+        if (currentBlock == rootBlock) {
+            /* Save the vertex */
+            rootVertex = *iterPair.first;
+            break;
+        }
+    }
+    /*  Iterate over all the successors and perform the OR operations. */
+    for(std::pair<CFGOEIter, CFGOEIter> edgePair = out_edges(rootVertex, *functionCFG);
+        edgePair.first != edgePair.second; ++edgePair.first) {
+        /*  Get the vertex descriptor for the target vertice, i.e a successor vertice */
+        CFG::vertex_descriptor successorVertex = target(*edgePair.first, *functionCFG);
+        /*  Retrieve the block pointer and with it the in IN bitset */
+        SgAsmBlock* edgeBlock = get(boost::vertex_name, *functionCFG, successorVertex);
+        /*  Get the successor bitset */
+        bitPair successorPair = inoutBlockMap.find(edgeBlock)->second;
+        /*  perform union operation and compute the OUT bits */
+        outBits = outBits | successorPair.first;
+    }
+    /*  Return the out bits. */
+    return outBits;
+}
+
 
 /*  Initializes the parameters before computations of IN and OUT on blocks */
 void liveVariableAnalysisHandler::initializeInOutOnBlocks() {
