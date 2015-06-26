@@ -91,7 +91,9 @@ void BinaryRewriter::transformBinary() {
             printBasicBlockInstructions(currentBB);
         }
     }
-    
+
+
+
     /* Apply naive or optimized transformation. Currently just naive. */
     naiveHandler naiveObject(cfgContainer);
     /* Start naive framework transformation */

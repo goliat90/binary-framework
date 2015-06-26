@@ -47,8 +47,10 @@ class liveVariableAnalysisHandler {
     void removeEntryExit();
     /*  Initializes the IN and OUT before computation */
     void initializeInOutOnBlocks();
+    /*  Calculate IN and OUT on for instructions */
+    void computeInstructionInOut();
     /*  Checks source registers for use */
-    void instructionUsageAndDefinition(instructionStruct*, bitPair*);
+    void instructionUsageAndDefinition(SgAsmStatement*, bitPair*);
     /*  Count the symbolic registers present */
     void countSymbolicRegisters();
     /*  Live variable analysis function */

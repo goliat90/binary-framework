@@ -29,6 +29,7 @@ void liveVariableAnalysisHandler::performLiveRangeAnalysis() {
     computeDefAndUseOnBlocks();
 
     /*  Compute in and out of basic blocks  */
+    computeInOutOnBlocks();
 
     /*  Compute in and out of each instruction in blocks */
 
@@ -61,15 +62,15 @@ void liveVariableAnalysisHandler::computeDefAndUseOnBlocks() {
             stmtIter != blockStmtList.end(); ++stmtIter) {
             /*  Decode the instructions and check the registers for symbolic ones.  */
             if (V_SgAsmMipsInstruction == (*stmtIter)->variantT()) {
-                /* Cast pointer and decode. */
-                SgAsmMipsInstruction* mips = isSgAsmMipsInstruction(*stmtIter);
-                instructionStruct decodedMips = decodeInstruction(mips);
                 /* Check the registers in the instruction. */
-                instructionUsageAndDefinition(&decodedMips, &currentBits);
+                instructionUsageAndDefinition((*stmtIter), &currentBits);
             }
         }
         /*  Debug code */
         if (debuging) {
+            /*  Print the block def and use. */
+            std::cout << "block def: " << currentBits.first;
+            std::cout << "block use: " << currentBits.second;
             /* print block limiter */
             std::cout << "-------------------- block end --------------------" << std::endl;
         }
@@ -79,15 +80,24 @@ void liveVariableAnalysisHandler::computeDefAndUseOnBlocks() {
     /* All blocks have had their def and use computed. */
 }
 
-/*  Help function to find usage and definition in an instruction   */
-void liveVariableAnalysisHandler::instructionUsageAndDefinition(instructionStruct* inst, bitPair* duPair) {
-    /*  Temporary sets for defs and use found. */
+/*  Help function to find usage and definition in an instruction, which is
+    added to the def use bits of the block. At the same time the def and use
+    of for the instruction is set. */
+void liveVariableAnalysisHandler::instructionUsageAndDefinition(SgAsmStatement* asmInst, bitPair* duPair) {
+    /* Cast pointer and decode. */
+    SgAsmMipsInstruction* mipsInst = isSgAsmMipsInstruction(asmInst);
+    instructionStruct inst = decodeInstruction(mipsInst);
+    /*  Temporary sets for defs and use found in the inspected instruction. */
     std::set<int> newUse;
     std::set<int> newDef;
+    /*  Bitset pair for the instruction being inspected. */
+    boost::dynamic_bitset<> first (numberOfVariables);
+    boost::dynamic_bitset<> second (numberOfVariables);
+    bitPair instructionPair (first, second);
     /*  Definition of Use: Set of variables whose values may
         be used in Block prior to any definition of the variable. */
-    for(std::vector<registerStruct>::iterator regiter = inst->sourceRegisters.begin();
-        regiter != inst->sourceRegisters.end(); ++regiter) {
+    for(std::vector<registerStruct>::iterator regiter = inst.sourceRegisters.begin();
+        regiter != inst.sourceRegisters.end(); ++regiter) {
         /* Check if any symbolic registers are used and apply to the def and use rules  */
         if (symbolic_reg == (*regiter).regName) {
             /*  A register is symbolic, should it be added to use or not?
@@ -97,7 +107,6 @@ void liveVariableAnalysisHandler::instructionUsageAndDefinition(instructionStruc
             if (!duPair->first[symBit]) {
                 /*  The symbolic register has not been defined yet. So it should
                     be added to the use set. */
-                //duPair->second[symBit] = true;
                 newUse.insert(symBit);
                 /*  Debug code */
                 if (debuging) {
@@ -108,8 +117,8 @@ void liveVariableAnalysisHandler::instructionUsageAndDefinition(instructionStruc
     }
     /*  Definition of Definition: Set of variables defined in
         block prior to any use of that variable in block. */
-    for(std::vector<registerStruct>::iterator regiter = inst->destinationRegisters.begin();
-        regiter != inst->destinationRegisters.end(); ++regiter) {
+    for(std::vector<registerStruct>::iterator regiter = inst.destinationRegisters.begin();
+        regiter != inst.destinationRegisters.end(); ++regiter) {
         /* Check if any symbolic registers are used and apply to the def and use rules  */
         if (symbolic_reg == (*regiter).regName) {
             /*  A register is symbolic, should it be added to use or not?
@@ -132,22 +141,29 @@ void liveVariableAnalysisHandler::instructionUsageAndDefinition(instructionStruc
         std::cout << std::endl;
     }
     /*  The registers have been checked for def and use. If any have
-        been found add them to the defusemap. */
+        been found add them to the defusemap. At the same time the 
+        def and use of the current instruction can be set and saved. */
     for(std::set<int>::iterator iter = newUse.begin();
         iter != newUse.end(); ++iter) {
         /* Set the specified bits to true in the use bitset. */
         duPair->second[*iter] = true;
+        /*  Set the same bits in the instruction def and use. */
+        instructionPair.second[*iter] = true;
     }
     for(std::set<int>::iterator iter = newDef.begin();
         iter != newDef.end(); ++iter) {
         /*  Set the specified bits to true in the define bitset. */
         duPair->first[*iter] = true;
+        /*  Set the same bits in the instruction def and use. */
+        instructionPair.first[*iter] = true;
     }
+    /*  Save the instruction pair */
+    defuseInstructionMap.insert(std::pair<SgAsmMipsInstruction*, bitPair>(mipsInst, instructionPair));
     
     /*  debug printout of def and use */
     if(debuging) {
-        std::cout << "def: " << duPair->first << std::endl;
-        std::cout << "use: " << duPair->second << std::endl;
+        std::cout << "inst def: " << instructionPair.first << std::endl;
+        std::cout << "inst use: " << instructionPair.second << std::endl;
     }
 }
 
@@ -221,6 +237,11 @@ void liveVariableAnalysisHandler::countSymbolicRegisters() {
     numberOfVariables = bitNum;
 }
 
+/*  Compute IN and OUT on individual instructions, computed by going through
+    instructions in a block, from last to first. */
+void liveVariableAnalysisHandler::computeInstructionInOut() {
+    
+}
 
 /*  Compute In and Out on basic blocks. */
 /* Using the algorithm from the Dragons book on live variable analysis. */

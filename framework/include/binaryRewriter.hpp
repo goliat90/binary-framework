@@ -18,6 +18,13 @@
 // Rose headers
 #include "rose.h"
 
+/*  Enum for selecting options  */
+enum rewriterOptions {
+    naiveTransform,
+    naiveTransformDebug,
+    optimizedTransform,
+    optimizedTransformDebug
+};
 
 /* Class declaration */
 class BinaryRewriter {
