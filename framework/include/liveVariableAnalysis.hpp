@@ -53,6 +53,9 @@ class liveVariableAnalysisHandler {
     void instructionUsageAndDefinition(SgAsmStatement*, bitPair*);
     /*  Count the symbolic registers present */
     void countSymbolicRegisters();
+    /*  Function that determines a correct DFS order that will be used in
+        the live-range analysis */
+    void determineOrderOfDFS();
     /*  Live variable analysis function */
     void computeLiveAnalysis();
     /*  Live interval function, finds the intervals,
@@ -64,6 +67,8 @@ class liveVariableAnalysisHandler {
     bool debuging;
     /*  Pointer to function cfg */
     CFG* functionCFG;
+    /*  Block pointer for the basic block that is the entry block */
+    SgAsmBlock* cfgRootBlock;
     /*  ENTRY and EXIT vertices and their blocks. */
     CFG::vertex_descriptor ENTRY;
     SgAsmBlock* blockENTRY;
@@ -82,7 +87,7 @@ class liveVariableAnalysisHandler {
     /*  Storage for IN and OUT of basic blocks. */
     std::map<SgAsmBlock*, bitPair> inoutBlockMap;
     /*  Storage for IN and OUT for individual instructions. */
-    std::map<SgAsmInstruction*, bitPair> inoutIntructionMap;
+    std::map<SgAsmMipsInstruction*, bitPair> inoutInstructionMap;
 
     /*  Storage representation for live intervals.  */
 

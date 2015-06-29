@@ -25,14 +25,13 @@ void liveVariableAnalysisHandler::performLiveRangeAnalysis() {
         symbolics and a bit in the bitsets */
     countSymbolicRegisters();
     /*  Compute def and use for basic blocks */
-    //TODO perhaps i can compute def and use for instructions at the same time?
     computeDefAndUseOnBlocks();
-
     /*  Compute in and out of basic blocks  */
     computeInOutOnBlocks();
-
     /*  Compute in and out of each instruction in blocks */
-
+    computeInstructionInOut();
+    /*  Determine a traversal order of the blocks and their instructions */
+    
     /*  Build a live-analysis representation. */
 }
 
@@ -157,7 +156,7 @@ void liveVariableAnalysisHandler::instructionUsageAndDefinition(SgAsmStatement* 
         /*  Set the same bits in the instruction def and use. */
         instructionPair.first[*iter] = true;
     }
-    /*  Save the instruction pair */
+    /*  Save the instruction pair to the instruction defuse map */
     defuseInstructionMap.insert(std::pair<SgAsmMipsInstruction*, bitPair>(mipsInst, instructionPair));
     
     /*  debug printout of def and use */
@@ -240,7 +239,57 @@ void liveVariableAnalysisHandler::countSymbolicRegisters() {
 /*  Compute IN and OUT on individual instructions, computed by going through
     instructions in a block, from last to first. */
 void liveVariableAnalysisHandler::computeInstructionInOut() {
-    
+    /*  Go through all the vertices, extract their block, get the statementlist */
+    for(std::pair<CFGVIter, CFGVIter> vertPair = vertices(*functionCFG);
+            vertPair.first != vertPair.second; ++vertPair.first) {
+        /*  Boolean to track if the first instruction has been calculated */
+        bool firstInstruction = true;
+        /*  Get the basic block from the vertex */
+        SgAsmBlock* basic = get(boost::vertex_name, *functionCFG, *vertPair.first);
+        /*  extract the statementlist so it can be iterated */
+        SgAsmStatementPtrList& stmtList = basic->get_statementList();
+        /*  Iterate the backward through each blocks instruction */
+        for(SgAsmStatementPtrList::reverse_iterator stmtIter = stmtList.rbegin();
+            stmtIter != stmtList.rend(); ++stmtIter) {
+            /* calculate IN and OUT for each instruction */
+            if (V_SgAsmMipsInstruction == (*stmtIter)->variantT()) {
+                /*  Cast the to mips instruction. */
+                SgAsmMipsInstruction* mips = isSgAsmMipsInstruction(*stmtIter);
+                /*  Get the def use bits for the instruction. */
+                bitPair defuseBits = defuseInstructionMap.find(mips)->second;
+                /*  Set up the inout bits */
+                boost::dynamic_bitset<> first(numberOfVariables);
+                boost::dynamic_bitset<> second(numberOfVariables);
+                bitPair inoutBits (first, second);
+
+                if (firstInstruction) {
+                    //Special case, the first(last) instruction calculated uses
+                    //the OUT is calculated with the IN of the block
+                    /*  Get the IN and OUT for the block */
+                    bitPair inoutBlockBits = inoutBlockMap.find(basic)->second;
+                    /*  Calculate OUT, is done by using the OUT bitset from
+                        the current block as IN. It is basically just copying it.  */
+                    inoutBits.second = inoutBlockBits.first;
+                    /*  Calculate IN */
+                    inoutBits.first = defuseBits.second | (inoutBits.second - inoutBits.first);
+                    /*  Set the bool to false since the special case has been handled */
+                    firstInstruction = false;
+                } else {
+                    /*  Other instructions in the block. */
+                    /*  Retrieve the previous instruction pointer, i need previous IN */
+                    SgAsmMipsInstruction* prevMips = isSgAsmMipsInstruction(*(stmtIter - 1));
+                    /*  Calculate OUT, requires the IN of the previous instruction. */
+                    boost::dynamic_bitset<> prevIN = inoutInstructionMap.find(prevMips)->second.first;
+                    inoutBits.second = prevIN;
+                    /*  Calculate IN */
+                    inoutBits.first = defuseBits.second | (inoutBits.second - inoutBits.first);
+                }
+                /*  Save the bits in the inoutInstructionmap */
+                inoutInstructionMap.insert(std::pair<SgAsmMipsInstruction*, bitPair>(mips, inoutBits));
+            }
+        }
+    }
+    /* All blocks have been visited and the instructions have their IN and OUT calculated */
 }
 
 /*  Compute In and Out on basic blocks. */
@@ -254,6 +303,8 @@ void liveVariableAnalysisHandler::computeInOutOnBlocks() {
     bool modifiedIN = true;
     /*  Continue as long as any changes in an IN occurs. */
     while (modifiedIN) {
+        /*  Set modifiedIN to false, if an IN gets updated it is set to true */
+        modifiedIN = false;
         /*  For each block except EXIT. Compute OUT then IN. */
         for(std::map<SgAsmBlock*, bitPair>::iterator iter = inoutBlockMap.begin();
             iter != inoutBlockMap.end(); ++iter) {
@@ -261,14 +312,24 @@ void liveVariableAnalysisHandler::computeInOutOnBlocks() {
             if ((*iter).first != blockEXIT) {
                 /*  Retrieve the block inout pair */
                 bitPair inoutPair = (*iter).second;
+                /*  Save the the old IN to check if it has been updated later */
+                boost::dynamic_bitset<> oldIN = inoutPair.first;
                 /*  Retrieve the def and use pair of the block */
                 bitPair defusePair = defuseBlockMap.find((*iter).first)->second;
                 /*  OUT computation, union of all the successor blocks IN. */
                 inoutPair.second = computeOutOnBlock((*iter).first);
                 /*  IN computation, block use unioned (OUT from block - block def) */
                 inoutPair.first =  defusePair.second | (inoutPair.second - defusePair.first);
+                /*  Compare latest computed IN with previous IN. If they differ
+                    then set modifiedIN to true */
+                if (inoutPair.first == oldIN) {
+                    modifiedIN = true;
+                }
             }
         }
+    }
+    if (debuging) {
+        std::cout << "IN/OUT computation on block level finished." << std::endl;
     }
     /*  Remove ENTRY and EXIT from the cfg */
     removeEntryExit();
@@ -357,6 +418,9 @@ void liveVariableAnalysisHandler::addEntryExit() {
             put(boost::vertex_name, *functionCFG, ENTRY, blockENTRY);
             /*  Add an edge between ENTRY and the first block */
             add_edge(ENTRY, (*iter), *functionCFG);
+            /*  Additionally, save the block pointer to the entry block
+                of the CFG. I need it later in DFS traversal */
+            cfgRootBlock = get(boost::vertex_name, *functionCFG, (*iter));
         }
     }
     for(std::set<CFG::vertex_descriptor>::iterator iter = targetVertices.begin();
@@ -382,9 +446,9 @@ void liveVariableAnalysisHandler::addEntryExit() {
     defuseBlockMap.insert(std::pair<SgAsmBlock*, bitPair>(blockENTRY, entryPair));
 }
 
+
 /*  remove ENTRY and EXIT vertices, restoring the cfg. */
 void liveVariableAnalysisHandler::removeEntryExit() {
-    //TODO perhaps remove the blocks in the property map?
     /* Clear the edges from the vertices and then remove the vertices */
     clear_vertex(ENTRY, *functionCFG);
     clear_vertex(EXIT, *functionCFG);
@@ -393,6 +457,18 @@ void liveVariableAnalysisHandler::removeEntryExit() {
     /*  Remove the defuse block entry for the ENTRY block */
     defuseBlockMap.erase(blockENTRY);
 }
+
+
+/*  Function that determines a DFS order that will be used in the live-range
+    analysis. */
+void liveVariableAnalysisHandler::determineOrderOfDFS() {
+    /* Set to track visited blocks */
+
+    /* List that is in the order of which the blocks have been visited. */
+
+    
+}
+
 
 /*  Function performs live-analysis */
 void liveVariableAnalysisHandler::computeLiveAnalysis() {
