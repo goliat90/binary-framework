@@ -31,7 +31,7 @@ void liveVariableAnalysisHandler::performLiveRangeAnalysis() {
     /*  Compute in and out of each instruction in blocks */
     computeInstructionInOut();
     /*  Determine a traversal order of the blocks and their instructions */
-    
+    determineOrderOfDFS();
     /*  Build a live-analysis representation. */
 }
 
@@ -420,6 +420,7 @@ void liveVariableAnalysisHandler::addEntryExit() {
             add_edge(ENTRY, (*iter), *functionCFG);
             /*  Additionally, save the block pointer to the entry block
                 of the CFG. I need it later in DFS traversal */
+            rootVertex = (*iter);
             cfgRootBlock = get(boost::vertex_name, *functionCFG, (*iter));
         }
     }
@@ -462,11 +463,34 @@ void liveVariableAnalysisHandler::removeEntryExit() {
 /*  Function that determines a DFS order that will be used in the live-range
     analysis. */
 void liveVariableAnalysisHandler::determineOrderOfDFS() {
-    /* Set to track visited blocks */
+    /*  Create a list that will contain block pointers in the orders visited */
+    std::list<SgAsmBlock*> blockOrder;
+    /*  Create a dfs visitor object */
+    liveDFSVisitor dfsObject;
+    /*  Pass the reference to the object */
+    dfsObject.passListReference(&blockOrder);
+    /*  Call of the depth-first search function, second and third argument is through
+        boost bgl named parameters. */
+    depth_first_search(*functionCFG,
+        boost::visitor(dfsObject).
+        root_vertex(rootVertex));
+}
 
-    /* List that is in the order of which the blocks have been visited. */
 
-    
+/*  Custom discover_vertex function for the dfs search. It will set save the
+    block pointers extracted from the vertices */
+void liveDFSVisitor::discover_vertex(CFGVertex newVertex, const CFG& g) const {
+    /* From the vertex extract the SgAsmBlock pointer and save it. */
+    SgAsmBlock* vertexBlock = get(boost::vertex_name, g, newVertex);
+    /* Insert the block pointer at the end of the list */
+    dfsBlockOrder->push_back(vertexBlock);
+}
+
+
+/*  Function that sets a reference to a list that store the visit order */
+void liveDFSVisitor::passListReference(std::list<SgAsmBlock*>* reference) {
+    /*  Save the pointer */
+    dfsBlockOrder = reference;
 }
 
 

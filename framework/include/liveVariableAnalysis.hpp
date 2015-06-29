@@ -11,15 +11,25 @@
 #include "mipsISA.hpp"
 
 /*  Boost includes  */
-//TODO consider using boost dynamic bitset for variable representation
 #include "boost/dynamic_bitset.hpp"
-//TODO this would make it possible to use bit operators for computations.
+#include "boost/graph/depth_first_search.hpp"
 
 /*  Typedefs    */
 /*  pair containing the definition and usage of variables in a block, order
     is first = definition, second = usage.
     When used for IN and OUT calculations, first = IN, second = OUT. */
 typedef std::pair<boost::dynamic_bitset<>, boost::dynamic_bitset<> > bitPair;
+
+//testing dfs visitor
+class liveDFSVisitor : public boost::default_dfs_visitor {
+    public:
+        /* Custom function on discovery of vertex */
+        void discover_vertex(CFGVertex, const CFG& g) const;
+        /* Pointer to store a list of the visited order */
+        std::list<SgAsmBlock*>* dfsBlockOrder;
+        /*  Function to pass a reference to the list */
+        void passListReference(std::list<SgAsmBlock*>*);
+};
 
 class liveVariableAnalysisHandler {
     public:
@@ -69,6 +79,7 @@ class liveVariableAnalysisHandler {
     CFG* functionCFG;
     /*  Block pointer for the basic block that is the entry block */
     SgAsmBlock* cfgRootBlock;
+    CFGVertex rootVertex;
     /*  ENTRY and EXIT vertices and their blocks. */
     CFG::vertex_descriptor ENTRY;
     SgAsmBlock* blockENTRY;
