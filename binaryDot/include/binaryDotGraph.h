@@ -107,7 +107,7 @@ class BinaryDotGenerator {
            << "<table border=\"0\" cellborder=\"0\" cellpadding=\"3\" bgcolor=\"white\">"
            << "<tr>"
            << "<td bgcolor=\"black\" align=\"center\" colspan=\"2\">"
-           << "<font color=\"white\">" << "BB #" << bb->get_id() << "</font>"
+           << "<font color=\"white\">" << "BB #" << std::hex << bb->get_id() << "</font>"
            << "</td>"
            << "</tr>";
          int Iindex = 0, Dindex = 0;
