@@ -4,8 +4,7 @@
 int simpleAdditionTMR(int a, int b) {
     /* add the numbers together and return them */
     int result = 0;
-    int ivar;
-    int i,j;
+    int j;
 
     for (j = 0; j < a; j++) {
         result++;

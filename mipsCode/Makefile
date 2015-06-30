@@ -7,7 +7,7 @@ all: numCounter.out simpleAdd.out
 
 #Simple add compile
 simpleAdd.out: mipsSimpleAdd.c
-	mips-linux-gcc -static -O2 mipsSimpleAdd.c -o simpleAdd.out
+	mips-linux-gcc -static -O1 mipsSimpleAdd.c -o simpleAdd.out
 
 #ascii counter
 numCounter.out: mipsNumCounter.c
