@@ -16,9 +16,11 @@ int main(int argc, char** argv) {
     userFramework* ut = new userFramework(argc, argv);
 
     /* set which function is to be transformed */
-    ut->functionSelect("main");
+    ut->functionSelect("simpleAdditionTMR");
     /* enable printing */
     ut->setDebug(true);
+    /* use optimized transform */
+    ut->useOptimizedTransform();
     /* transform the function */
     ut->transformBinary();
 

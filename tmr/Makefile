@@ -40,7 +40,7 @@ debug:
 	libtool --mode=execute gdb --args ./userRewriter.out littleend.out
 
 test:
-	./userRewriter.out littleend.out
+	./userRewriter.out ../mipsCode/simpleAdd.out
 
 clean:
 	rm -rf .libs
