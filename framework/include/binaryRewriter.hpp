@@ -18,13 +18,6 @@
 // Rose headers
 #include "rose.h"
 
-/*  Enum for selecting options  */
-enum rewriterOptions {
-    naiveTransform,
-    naiveTransformDebug,
-    optimizedTransform,
-    optimizedTransformDebug
-};
 
 /* Class declaration */
 class BinaryRewriter {
@@ -39,6 +32,9 @@ class BinaryRewriter {
         /**********************************************************************
         * Configuration functions
         **********************************************************************/
+        //Selects naive or optimized transform.
+        void useNaiveTransform();
+        void useOptimizedTransform();
         //Configure register allocation
         void selectRegisterAllocation();
         //Configure instruction scheduling
@@ -95,6 +91,8 @@ class BinaryRewriter {
         int decisionsMade;
         /* Is debugging enabled */
         bool debugging;
+        /* boolean to determine if to use naive or optimized transform */
+        bool useOptimized;
 
         /**********************************************************************
         * Private Functions. 

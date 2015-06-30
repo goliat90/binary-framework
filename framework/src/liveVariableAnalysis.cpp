@@ -23,14 +23,29 @@ void liveVariableAnalysisHandler::setDebug(bool mode) {
 void liveVariableAnalysisHandler::performLiveRangeAnalysis() {
     /*  First count the number of symbolics and create a mapping between
         symbolics and a bit in the bitsets */
+    if (debuging) {
+        std::cout << "Counting registers." << std::endl;
+    }
     countSymbolicRegisters();
     /*  Compute def and use for basic blocks */
+    if (debuging) {
+        std::cout << "Computing def and register use." << std::endl;
+    }
     computeDefAndUseOnBlocks();
     /*  Compute in and out of basic blocks  */
+    if (debuging) {
+        std::cout << "Computing in and out on blocks." << std::endl;
+    }
     computeInOutOnBlocks();
     /*  Compute in and out of each instruction in blocks */
+    if (debuging) {
+        std::cout << "Computing in and out on instructions." << std::endl;
+    }
     computeInstructionInOut();
     /*  Determine a traversal order of the blocks and their instructions */
+    if (debuging) {
+        std::cout << "Determining DFS order." << std::endl;
+    }
     determineOrderOfDFS();
     /*  Build a live-analysis representation. */
 }
@@ -68,8 +83,8 @@ void liveVariableAnalysisHandler::computeDefAndUseOnBlocks() {
         /*  Debug code */
         if (debuging) {
             /*  Print the block def and use. */
-            std::cout << "block def: " << currentBits.first;
-            std::cout << "block use: " << currentBits.second;
+            std::cout << "block def: " << currentBits.first << std::endl;
+            std::cout << "block use: " << currentBits.second << std::endl;
             /* print block limiter */
             std::cout << "-------------------- block end --------------------" << std::endl;
         }
@@ -199,7 +214,7 @@ void liveVariableAnalysisHandler::countSymbolicRegisters() {
                             /*  debuging code */
                             if (debuging) {
                                 std::cout << "mapping sym_" << (*regiter).symbolicNumber 
-                                << "to bit " << bitNum << std::endl;
+                                << " to bit " << bitNum << std::endl;
                             }
                             /*  Map the symbolic register to a bit  */
                             symbolicToBit.insert(std::make_pair((*regiter).symbolicNumber, bitNum));
@@ -322,7 +337,7 @@ void liveVariableAnalysisHandler::computeInOutOnBlocks() {
                 inoutPair.first =  defusePair.second | (inoutPair.second - defusePair.first);
                 /*  Compare latest computed IN with previous IN. If they differ
                     then set modifiedIN to true */
-                if (inoutPair.first == oldIN) {
+                if (inoutPair.first != oldIN) {
                     modifiedIN = true;
                 }
             }
@@ -474,6 +489,61 @@ void liveVariableAnalysisHandler::determineOrderOfDFS() {
     depth_first_search(*functionCFG,
         boost::visitor(dfsObject).
         root_vertex(rootVertex));
+    /*  If debuging is set then print the block order. */
+    if (debuging) {
+        std::cout << "Block order determined by DFS." << std::endl;
+        /*  Print the list with block pointers */
+        for(std::list<SgAsmBlock*>::iterator bpIter = blockOrder.begin();
+            bpIter != blockOrder.end(); ++bpIter) {
+            /*  Print the block address */
+            std::cout << "Block: " << std::hex << (*bpIter)->get_id() << std::endl;
+        }
+    }
+
+    /*  The blockOrder list should now be in a order that is acceptable
+        Go through it and create a list of instructions. Consisting of the
+        order the blocks have been sorted. */
+    for(std::list<SgAsmBlock*>::iterator iter = blockOrder.begin();
+        iter != blockOrder.end(); ++iter) {
+        /*  Get the statement list and copy it to the list. */
+        SgAsmStatementPtrList& blockList = (*iter)->get_statementList();
+        /*  Iterate through the statement list and cast to mips instructions.
+            I do this since all information related to instructions are mapped
+            to Mips instruction pointers. */
+        for(SgAsmStatementPtrList::iterator  stmtIter = blockList.begin();
+            stmtIter != blockList.end(); ++stmtIter) {
+            /*  Verify that it is a mips instruction */
+            if (V_SgAsmMipsInstruction == (*stmtIter)->variantT()) {
+                /*  Cast to mips instruction pointer. */
+                SgAsmMipsInstruction* mips = isSgAsmMipsInstruction(*stmtIter);
+                /*  Save the pointer, push to back. */
+                DFSInstructionOrder.push_back(mips);
+            }
+        }
+    }
+    /* Print the instruction list if debuging is set */
+    if (debuging) {
+        std::cout << "DFS Instruction order." << std::endl;
+        for(std::list<SgAsmMipsInstruction*>::iterator iter = DFSInstructionOrder.begin();
+            iter != DFSInstructionOrder.end(); ++iter) {
+            /*  Decode the instruction */
+            instructionStruct inst = decodeInstruction(*iter);
+            /*  Print instructions */
+            printInstruction(&inst);
+        }
+        std::cout << "-------------------" << std::endl;
+    }
+}
+
+/*  Function performs live-analysis */
+void liveVariableAnalysisHandler::computeLiveAnalysis() {
+
+}
+
+
+/*  Uses the live-variable analysis to find the live intervals  */
+void liveVariableAnalysisHandler::findLiveIntervals() {
+
 }
 
 
@@ -492,16 +562,3 @@ void liveDFSVisitor::passListReference(std::list<SgAsmBlock*>* reference) {
     /*  Save the pointer */
     dfsBlockOrder = reference;
 }
-
-
-/*  Function performs live-analysis */
-void liveVariableAnalysisHandler::computeLiveAnalysis() {
-
-}
-
-
-/*  Uses the live-variable analysis to find the live intervals  */
-void liveVariableAnalysisHandler::findLiveIntervals() {
-
-}
-

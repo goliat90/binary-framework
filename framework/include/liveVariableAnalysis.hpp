@@ -9,6 +9,7 @@
 /*  Includes    */
 #include "cfgHandler.hpp"
 #include "mipsISA.hpp"
+#include "binaryDebug.hpp"
 
 /*  Boost includes  */
 #include "boost/dynamic_bitset.hpp"
@@ -38,6 +39,9 @@ class liveVariableAnalysisHandler {
     /*  Returns some kind of structure with live intervals
         or is a query function perhaps  */
     //TODO add function head.
+    /*  Query function to to get information if variables are live
+        at a certain instruction. */
+    void livenessAtInstruction();
     /*  Execute the live range analysis */
     void performLiveRangeAnalysis();
     /*  enable debuging    */
@@ -99,6 +103,8 @@ class liveVariableAnalysisHandler {
     std::map<SgAsmBlock*, bitPair> inoutBlockMap;
     /*  Storage for IN and OUT for individual instructions. */
     std::map<SgAsmMipsInstruction*, bitPair> inoutInstructionMap;
+    /*  The DFS order of the instructions in a list */
+    std::list<SgAsmMipsInstruction*> DFSInstructionOrder;
 
     /*  Storage representation for live intervals.  */
 

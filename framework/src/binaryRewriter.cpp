@@ -9,6 +9,7 @@ BinaryRewriter::BinaryRewriter(int argc, char **binaryFile) {
     initialize(argc, binaryFile);
     /* Set default values on some of the variables  */
     debugging = false;
+    useOptimized = false;
     decisionsMade = 0;
 }
 
@@ -92,12 +93,21 @@ void BinaryRewriter::transformBinary() {
         }
     }
 
+    /*  Apply naivetransform or optimized. */
+    if (true == useOptimized) {
+        /* Optimized, linear scan and list scheduling. */
+        linearScanHandler linearObject(cfgContainer);
+        /* if debuging is set pass it on. */
+        linearObject.selectDebuging(debugging);
+        /* Call optimized transform */
+        linearObject.applyLinearScan();
 
-
-    /* Apply naive or optimized transformation. Currently just naive. */
-    naiveHandler naiveObject(cfgContainer);
-    /* Start naive framework transformation */
-    naiveObject.applyTransformation();
+    } else {
+        /* Apply naive or optimized transformation. Currently just naive. */
+        naiveHandler naiveObject(cfgContainer);
+        /* Start naive framework transformation */
+        naiveObject.applyTransformation();
+    }
 
     /* Debug print */
     if (debugging) {
@@ -171,6 +181,15 @@ void BinaryRewriter::saveInstruction() {
 /******************************************************************************
 * Configuration functions.
 ******************************************************************************/
+
+/*  Select if to use the naivetransform or the optimized. */
+void BinaryRewriter::useNaiveTransform() {
+    useOptimized = false;
+}
+void BinaryRewriter::useOptimizedTransform() {
+    useOptimized = true;
+}
+
 
 //Select method allocation method
 void BinaryRewriter::selectRegisterAllocation() {

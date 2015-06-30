@@ -38,7 +38,31 @@ else
 
 
 /*  Constructor */
-linearScanHandler::linearScanHandler(){
+linearScanHandler::linearScanHandler(CFGhandler* passedCfgObject){
+    /*  Set Default values */
+    debuging = false;
+    /*  Save the pointer to the cfg handler */
+    cfgHandlerPtr = passedCfgObject;
+    /*  Create the live variable analysis object */
+    liveRangeHandler = new liveVariableAnalysisHandler(cfgHandlerPtr->getFunctionCFG());
+}
+
+
+/*  Activate or deactivate debuging printout*/
+void linearScanHandler::selectDebuging(bool mode) {
+    debuging = mode;
+    /*  pass it to the liverange analysis */
+    liveRangeHandler->setDebug(mode);
+    
+}
+
+/*  Applies the linear scan */
+void linearScanHandler::applyLinearScan() {
+    //TODO Might have to add here some kind of funciton to
+    //TODO free up the physical registers before live range analysis
+
+    /*  Get live-range analysis done before performing register allocation. */
+    liveRangeHandler->performLiveRangeAnalysis();
 
 }
 
