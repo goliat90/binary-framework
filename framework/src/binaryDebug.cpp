@@ -4,7 +4,6 @@
 #include "binaryDebug.hpp"
 
 /* Forward declaration */
-void printInstruction(instructionStruct*);
 /* initfunction for register enum to string map.  */
 std::map<mipsRegisterName, std::string> initRegStringMap();
 /* adds registers to the stringstream object */

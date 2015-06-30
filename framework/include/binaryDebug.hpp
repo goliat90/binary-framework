@@ -13,8 +13,10 @@
 
 
 /* function declarations  */
+/*  Prints the content i.e. the instructions of a basic block. */
 void printBasicBlockInstructions(SgAsmBlock*);
-
+/*  Prints a specific instruction */
+void printInstruction(instructionStruct*);
 
 #endif
 
