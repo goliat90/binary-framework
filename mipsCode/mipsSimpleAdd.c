@@ -8,9 +8,14 @@ int simpleAdditionTMR(int a, int b) {
 
     for (j = 0; j < a; j++) {
         result++;
+        if (result < b) {
+            result++;
+        }
     }
-    result += a * b;
 
+    if (a < b) {
+        result += a * b;
+    }
     return result;
 }
 
