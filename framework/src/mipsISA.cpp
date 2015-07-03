@@ -121,7 +121,9 @@ SgAsmMipsInstruction* buildInstruction(instructionStruct* instInfo) {
             break;
         }
         default: {
-            //The instruction is unknown.
+            //The instruction is unknown. cast fail.
+            ASSERT_not_reachable("Unknown instruction format for instruction " + instInfo->mnemonic + 
+                                    ". Unable to build instruction."); 
         }
     }
     /* Set the general values of the instruction. */
@@ -200,7 +202,9 @@ instructionStruct decodeInstruction(SgAsmMipsInstruction* inst) {
             break;
         }
         default: {
-            //The instruction is unknown.
+            //The instruction is unknown. cast fail.
+            ASSERT_not_reachable("Unknown instruction format for instruction " + inst->get_mnemonic() +
+                                    " unable to decode."); 
         }
     }
     /* Save the address of the instruction, consider other
@@ -480,6 +484,9 @@ instructionType getInstructionFormat(MipsInstructionKind mipsKind) {
         //condition, testing
         case mips_slt   :
         case mips_sltu  :
+
+        //conditional move
+        case mips_movn  :
 
         //multiply and div
         case mips_mul   : return R_RD_RS_RT;

@@ -16,7 +16,7 @@ struct instructionStruct;
 //RS,RT = Source operand registers
 enum instructionType {
     //decode R 
-    R_RD_RS_RT,     //add, addu, and, mul, nor, or, slt, sltu, sub, subu, xor, sllv, srav, srlv
+    R_RD_RS_RT,     //add, addu, and, mul, nor, or, slt, sltu, sub, subu, xor, sllv, srav, srlv, movn
     R_RD_RS_C,      //sll, sra, srl,
     R_RD,           //mflo, mfhi,
     R_RS_RT,        //div, divu, madd, maddu, msub, msubu, mult, multu, 
