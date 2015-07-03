@@ -7,6 +7,7 @@
 #include "mipsISA.hpp"
 #include "symbolicRegisters.hpp"
 #include "cfgHandler.hpp"
+#include "binaryDebug.hpp"
 
 /*  Class for the linear scan algorithm. It does not use
     all registers available, it uses t0-t7, t8,t9. To use them

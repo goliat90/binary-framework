@@ -27,21 +27,25 @@ void liveVariableAnalysisHandler::performLiveRangeAnalysis() {
         std::cout << "Counting registers." << std::endl;
     }
     countSymbolicRegisters();
+
     /*  Compute def and use for basic blocks */
     if (debuging) {
         std::cout << "Computing def and register use." << std::endl;
     }
     computeDefAndUseOnBlocks();
+
     /*  Compute in and out of basic blocks  */
     if (debuging) {
         std::cout << "Computing in and out on blocks." << std::endl;
     }
     computeInOutOnBlocks();
+
     /*  Compute in and out of each instruction in blocks */
     if (debuging) {
         std::cout << "Computing in and out on instructions." << std::endl;
     }
     computeInstructionInOut();
+
     /*  Determine a traversal order of the blocks and their instructions */
     if (debuging) {
         std::cout << "Determining DFS order." << std::endl;
@@ -53,7 +57,6 @@ void liveVariableAnalysisHandler::performLiveRangeAnalysis() {
 /*  Function computes the def and use for each basic block. Iterates through
     each basic block and finds the def and use for the block.   */
 void liveVariableAnalysisHandler::computeDefAndUseOnBlocks() {
-
     /*  Iterate through the vertices and all the basic blocks, inspect each
         instruction for def and use of symbolic registers. Save the defs
         and uses for the block. */
@@ -69,7 +72,7 @@ void liveVariableAnalysisHandler::computeDefAndUseOnBlocks() {
         /*  Debug code */
         if (debuging) {
             /* print block limiter */
-            std::cout << "-------------------- block start --------------------" << std::endl;
+            std::cout << "-------------------- block:" << std::hex << basic->get_id() << " start --------------------" << std::endl;
         }
         /*  Iterate through the statements and check the registers used */
         for(SgAsmStatementPtrList::iterator stmtIter = blockStmtList.begin();
@@ -86,7 +89,7 @@ void liveVariableAnalysisHandler::computeDefAndUseOnBlocks() {
             std::cout << "block def: " << currentBits.first << std::endl;
             std::cout << "block use: " << currentBits.second << std::endl;
             /* print block limiter */
-            std::cout << "-------------------- block end --------------------" << std::endl;
+            std::cout << "-------------------- block:" << std::hex << basic->get_id() << " end --------------------" << std::endl;
         }
         /*  Insert the definition and use pair into the map */
         defuseBlockMap.insert(std::pair<SgAsmBlock*, bitPair>(basic, currentBits));
@@ -124,7 +127,7 @@ void liveVariableAnalysisHandler::instructionUsageAndDefinition(SgAsmStatement* 
                 newUse.insert(symBit);
                 /*  Debug code */
                 if (debuging) {
-                    std::cout << "use: sym_" << (*regiter).symbolicNumber << " ";
+                    std::cout << "use: sym_" << std::dec << (*regiter).symbolicNumber << " ";
                 }
             }
         }
@@ -145,7 +148,7 @@ void liveVariableAnalysisHandler::instructionUsageAndDefinition(SgAsmStatement* 
                 newDef.insert(symBit);
                 /*  Debug code */
                 if (debuging) {
-                    std::cout << "def: sym_" << (*regiter).symbolicNumber << " ";
+                    std::cout << "def: sym_" << std::dec << (*regiter).symbolicNumber << " ";
                 }
             }
         }
@@ -176,8 +179,8 @@ void liveVariableAnalysisHandler::instructionUsageAndDefinition(SgAsmStatement* 
     
     /*  debug printout of def and use */
     if(debuging) {
-        std::cout << "inst def: " << instructionPair.first << std::endl;
-        std::cout << "inst use: " << instructionPair.second << std::endl;
+        std::cout << mipsInst->get_address() << " inst def: " << instructionPair.first << std::endl;
+        std::cout << mipsInst->get_address() << " inst use: " << instructionPair.second << std::endl;
     }
 }
 
@@ -338,8 +341,16 @@ void liveVariableAnalysisHandler::computeInOutOnBlocks() {
                 /*  Compare latest computed IN with previous IN. If they differ
                     then set modifiedIN to true */
                 if (inoutPair.first != oldIN) {
+                    if (debuging) {
+                        std::cout << "IN changed Block:"  << std::hex << (*iter).first->get_id() << std::endl;
+                        std::cout << "OLD: " << oldIN << std::endl;
+                        std::cout << "NEW: " << inoutPair.first << std::endl;
+                        std::cout << "OUT: " << inoutPair.second << std::endl;
+                    }
                     modifiedIN = true;
                 }
+                /*  Save the new IN and OUT computation */
+                (*iter).second = inoutPair;
             }
         }
     }

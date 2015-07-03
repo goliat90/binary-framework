@@ -28,8 +28,13 @@ linearScanHandler::linearScanHandler(CFGhandler* passedCfgObject){
     freeRegisters.insert(t8);
     freeRegisters.insert(t9);
     /*  extra register to test. */
-    freeRegisters.insert(a2);
-    freeRegisters.insert(a3);
+    //freeRegisters.insert(a2);
+
+    //functions in replacement, not any pseudo instructions.
+    //freeRegisters.insert(v1);
+
+    //does not work in replacement
+    //freeRegisters.insert(a3);
 }
 
 
@@ -125,6 +130,16 @@ void linearScanHandler::replaceHardRegisters() {
                     }
                 }
             }
+        }
+    }
+
+    if (debuging) {
+        for(std::pair<CFGVIter, CFGVIter> vertPair = vertices(*functionCFG);
+            vertPair.first != vertPair.second; ++vertPair.first) {
+            /*  Get the block pointer */
+            SgAsmBlock* block = get(boost::vertex_name, *functionCFG, *vertPair.first);
+            /*  Print the basic block if debuging */
+            printBasicBlockInstructions(block);
         }
     }
 }
