@@ -51,7 +51,13 @@ void liveVariableAnalysisHandler::performLiveRangeAnalysis() {
         std::cout << "Determining DFS order." << std::endl;
     }
     determineOrderOfDFS();
+
     /*  Build a live-analysis representation. */
+    if (debuging) {
+        std::cout << "Building live intervals." << std::endl;
+    }
+    buildLiveIntervals();    
+
 }
 
 /*  Function computes the def and use for each basic block. Iterates through
@@ -514,6 +520,7 @@ void liveVariableAnalysisHandler::determineOrderOfDFS() {
     /*  The blockOrder list should now be in a order that is acceptable
         Go through it and create a list of instructions. Consisting of the
         order the blocks have been sorted. */
+    int DFSnumber = 0;
     for(std::list<SgAsmBlock*>::iterator iter = blockOrder.begin();
         iter != blockOrder.end(); ++iter) {
         /*  Get the statement list and copy it to the list. */
@@ -528,17 +535,21 @@ void liveVariableAnalysisHandler::determineOrderOfDFS() {
                 /*  Cast to mips instruction pointer. */
                 SgAsmMipsInstruction* mips = isSgAsmMipsInstruction(*stmtIter);
                 /*  Save the pointer, push to back. */
-                DFSInstructionOrder.push_back(mips);
+                DFSInstructionOrder.push_back(std::pair<int, SgAsmMipsInstruction*>(DFSnumber, mips));
+                /* Increment number counter */
+                DFSnumber++;
             }
         }
     }
     /* Print the instruction list if debuging is set */
     if (debuging) {
         std::cout << "DFS Instruction order." << std::endl;
-        for(std::list<SgAsmMipsInstruction*>::iterator iter = DFSInstructionOrder.begin();
+        for(std::list<std::pair<int, SgAsmMipsInstruction*> >::iterator iter = DFSInstructionOrder.begin();
             iter != DFSInstructionOrder.end(); ++iter) {
             /*  Decode the instruction */
-            instructionStruct inst = decodeInstruction(*iter);
+            instructionStruct inst = decodeInstruction((*iter).second);
+            /*  Print the dfs order number. */
+            std::cout << "DFS num " << (*iter).first << "  -- ";
             /*  Print instructions */
             printInstruction(&inst);
         }
@@ -546,15 +557,43 @@ void liveVariableAnalysisHandler::determineOrderOfDFS() {
     }
 }
 
-/*  Function performs live-analysis */
-void liveVariableAnalysisHandler::computeLiveAnalysis() {
 
-}
+/*  Uses the live-variable analysis to build a live interval representation. */
+void liveVariableAnalysisHandler::buildLiveIntervals() {
+
+    /*  Find for each symbolic where it starts in the dfs order. */
+    for(std::map<unsigned, int>::iterator symbolIter = symbolicToBit.begin();
+        symbolIter != symbolicToBit.end(); ++symbolIter) {
+        /*  By iterating through the dfs order from the beginning i will find the
+            beginning of an interval. */
+        for(std::list<std::pair<int, SgAsmMipsInstruction*> >::iterator dfsIter = DFSInstructionOrder.begin();
+            dfsIter != DFSInstructionOrder.end(); ++dfsIter) {
+            /*  For each instruction check the IN/OUT bit pair for the specific
+                symbolic which is mapped to a specific bit. */
+
+            /*  Save the live interval start point and the number of the symbolic */
+            //TODO when it has been found break from this loop.
+        }
+
+        /*  Iterate backwards and find where the live range ends for the current symolic. */
+        for(std::list<std::pair<int, SgAsmMipsInstruction*> >::reverse_iterator dfsIterRev = DFSInstructionOrder.rbegin();
+            dfsIterRev != DFSInstructionOrder.rend(); ++dfsIterRev) {
+            /*  For each instruction check the IN/OUT bit pair for the specific
+                symbolic which is mapped to a specific bit. */
+
+            /*  Save the live interval end point and the number of the symbolic */
+            //TODO when it has been found break from this loop.
+
+        }
+
+    }
 
 
-/*  Uses the live-variable analysis to find the live intervals  */
-void liveVariableAnalysisHandler::findLiveIntervals() {
 
+    /*  Print out the live intervals if debug is set. */
+    if (debuging) {
+
+    }
 }
 
 

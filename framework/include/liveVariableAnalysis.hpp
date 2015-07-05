@@ -70,11 +70,9 @@ class liveVariableAnalysisHandler {
     /*  Function that determines a correct DFS order that will be used in
         the live-range analysis */
     void determineOrderOfDFS();
-    /*  Live variable analysis function */
-    void computeLiveAnalysis();
     /*  Live interval function, finds the intervals,
         depth first search traversal.   */
-    void findLiveIntervals();
+    void buildLiveIntervals();
 
     /*  Variables   */
     /*  Switch debuging on and off. */
@@ -104,12 +102,20 @@ class liveVariableAnalysisHandler {
     /*  Storage for IN and OUT for individual instructions. */
     std::map<SgAsmMipsInstruction*, bitPair> inoutInstructionMap;
     /*  The DFS order of the instructions in a list */
-    std::list<SgAsmMipsInstruction*> DFSInstructionOrder;
+    std::list<std::pair<int, SgAsmMipsInstruction*> > DFSInstructionOrder;
 
-    /*  Storage representation for live intervals.  */
+    /*  Storage representation for live intervals. */
+        //TODO determine a representation for the intervals, ordered by the
+        //increasing start point.
 
-    /*  Map to track visited blocks when determining depth first search
-        order.  */
+    //int is the start point, easy to access. can be sorted.
+    //the pair contains the end point and the symbolic 
+    //TODO perhaps use a map so it will sort and be easy to find later?
+    //TODO map does not allow duplicate keys. can it be a problem?
+    //TODO believe so if two ranges end in the same place or begin.
+    //TODO a multimap could probably be the solution instead. 
+    std::map<int, std::pair<int, unsigned> > startPointMap;
+    std::map<int, std::pair<int, unsigned> > endPointMap;
 
 };
 
