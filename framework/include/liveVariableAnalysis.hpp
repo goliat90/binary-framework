@@ -12,6 +12,10 @@
 #include "binaryDebug.hpp"
 
 /*  Boost includes  */
+#include "boost/bimap.hpp"
+#include "boost/bimap/set_of.hpp"
+#include "boost/bimap/multiset_of.hpp"
+
 #include "boost/dynamic_bitset.hpp"
 #include "boost/graph/depth_first_search.hpp"
 
@@ -20,6 +24,9 @@
     is first = definition, second = usage.
     When used for IN and OUT calculations, first = IN, second = OUT. */
 typedef std::pair<boost::dynamic_bitset<>, boost::dynamic_bitset<> > bitPair;
+
+/*  Typedef for the interval maps, maps interval(int) to symbolic(unsigned). */
+typedef boost::bimap<boost::bimaps::multiset_of<int>, boost::bimaps::set_of<unsigned> > intervalMap;
 
 //testing dfs visitor
 class liveDFSVisitor : public boost::default_dfs_visitor {
@@ -114,8 +121,8 @@ class liveVariableAnalysisHandler {
     //TODO map does not allow duplicate keys. can it be a problem?
     //TODO believe so if two ranges end in the same place or begin.
     //TODO a multimap could probably be the solution instead. 
-    std::map<int, std::pair<int, unsigned> > startPointMap;
-    std::map<int, std::pair<int, unsigned> > endPointMap;
+    intervalMap startPointBiMap;
+    intervalMap endPointBiMap;
 
 };
 

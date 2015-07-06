@@ -133,9 +133,12 @@ void liveVariableAnalysisHandler::instructionUsageAndDefinition(SgAsmStatement* 
                 newUse.insert(symBit);
                 /*  Debug code */
                 if (debuging) {
-                    std::cout << "use: sym_" << std::dec << (*regiter).symbolicNumber << " ";
+                    std::cout << "block identified use: sym_" << std::dec << (*regiter).symbolicNumber << " ";
                 }
             }
+            //TODO Need to add code here that sets the bit for the def use pair for the instruction
+            /*  Set the bit for the use bit in the instruction def/use. */
+            instructionPair.second[symBit] = true;
         }
     }
     /*  Definition of Definition: Set of variables defined in
@@ -154,9 +157,12 @@ void liveVariableAnalysisHandler::instructionUsageAndDefinition(SgAsmStatement* 
                 newDef.insert(symBit);
                 /*  Debug code */
                 if (debuging) {
-                    std::cout << "def: sym_" << std::dec << (*regiter).symbolicNumber << " ";
+                    std::cout << "block identiefied def: sym_" << std::dec << (*regiter).symbolicNumber << " ";
                 }
             }
+            //TODO Need to add code here that sets the bit for the def use pair for the instruction
+            /*  Set the bit for the def bit in the instruction def/use. */
+            instructionPair.first[symBit] = true;
         }
     }
     /* new line for debug */
@@ -171,22 +177,22 @@ void liveVariableAnalysisHandler::instructionUsageAndDefinition(SgAsmStatement* 
         /* Set the specified bits to true in the use bitset. */
         duPair->second[*iter] = true;
         /*  Set the same bits in the instruction def and use. */
-        instructionPair.second[*iter] = true;
+        //instructionPair.second[*iter] = true;
     }
     for(std::set<int>::iterator iter = newDef.begin();
         iter != newDef.end(); ++iter) {
         /*  Set the specified bits to true in the define bitset. */
         duPair->first[*iter] = true;
         /*  Set the same bits in the instruction def and use. */
-        instructionPair.first[*iter] = true;
+        //instructionPair.first[*iter] = true;
     }
     /*  Save the instruction pair to the instruction defuse map */
     defuseInstructionMap.insert(std::pair<SgAsmMipsInstruction*, bitPair>(mipsInst, instructionPair));
     
     /*  debug printout of def and use */
     if(debuging) {
-        std::cout << mipsInst->get_address() << " inst def: " << instructionPair.first << std::endl;
-        std::cout << mipsInst->get_address() << " inst use: " << instructionPair.second << std::endl;
+        std::cout << mipsInst->get_address() << " inst " << mipsInst->get_mnemonic() << " def: " << instructionPair.first << std::endl;
+        std::cout << mipsInst->get_address() << " inst " << mipsInst->get_mnemonic() << " use: " << instructionPair.second << std::endl;
     }
 }
 
@@ -221,10 +227,10 @@ void liveVariableAnalysisHandler::countSymbolicRegisters() {
                             /*  Save the symbolic register  */ 
                             foundRegs.insert((*regiter).symbolicNumber);
                             /*  debuging code */
-                            if (debuging) {
-                                std::cout << "mapping sym_" << (*regiter).symbolicNumber 
-                                << " to bit " << bitNum << std::endl;
-                            }
+                            //if (debuging) {
+                            //    std::cout << "mapping sym_" << (*regiter).symbolicNumber 
+                            //    << " to bit " << bitNum << std::endl;
+                            //}
                             /*  Map the symbolic register to a bit  */
                             symbolicToBit.insert(std::make_pair((*regiter).symbolicNumber, bitNum));
                             bitNum++;
@@ -240,10 +246,10 @@ void liveVariableAnalysisHandler::countSymbolicRegisters() {
                             /*  Save the symbolic register  */ 
                             foundRegs.insert((*regiter).symbolicNumber);
                             /*  debuging code */
-                            if (debuging) {
-                                std::cout << "mapping sym_" << (*regiter).symbolicNumber 
-                                << "to bit " << bitNum << std::endl;
-                            }
+                            //if (debuging) {
+                            //    std::cout << "mapping sym_" << (*regiter).symbolicNumber 
+                            //    << " to bit " << bitNum << std::endl;
+                            //}
                             /*  Map the symbolic register to a bit  */
                             symbolicToBit.insert(std::make_pair((*regiter).symbolicNumber, bitNum));
                             bitNum++;
@@ -255,6 +261,11 @@ void liveVariableAnalysisHandler::countSymbolicRegisters() {
     }
     if (debuging) {
         std::cout << "unique symbolics found: " << bitNum << std::endl;
+        /*  Printout the mapping */
+        for(std::map<unsigned, int>::iterator iter = symbolicToBit.begin();
+            iter != symbolicToBit.end(); ++iter) {
+            std::cout << "symbolic: " << iter->first << " mapped to bit: " << iter->second << std::endl;
+        }
     }
     /*  Save the number of variables found */
     numberOfVariables = bitNum;
@@ -270,6 +281,10 @@ void liveVariableAnalysisHandler::computeInstructionInOut() {
         bool firstInstruction = true;
         /*  Get the basic block from the vertex */
         SgAsmBlock* basic = get(boost::vertex_name, *functionCFG, *vertPair.first);
+        /*  If debuging print out block address */
+        if (debuging) {
+            std::cout << "Calculating IN/OUT on instructions in block: " << basic->get_id() << std::endl;
+        }
         /*  extract the statementlist so it can be iterated */
         SgAsmStatementPtrList& stmtList = basic->get_statementList();
         /*  Iterate the backward through each blocks instruction */
@@ -295,7 +310,7 @@ void liveVariableAnalysisHandler::computeInstructionInOut() {
                         the current block as IN. It is basically just copying it.  */
                     inoutBits.second = inoutBlockBits.first;
                     /*  Calculate IN */
-                    inoutBits.first = defuseBits.second | (inoutBits.second - inoutBits.first);
+                    inoutBits.first = defuseBits.second | (inoutBits.second - defuseBits.first);
                     /*  Set the bool to false since the special case has been handled */
                     firstInstruction = false;
                 } else {
@@ -306,14 +321,27 @@ void liveVariableAnalysisHandler::computeInstructionInOut() {
                     boost::dynamic_bitset<> prevIN = inoutInstructionMap.find(prevMips)->second.first;
                     inoutBits.second = prevIN;
                     /*  Calculate IN */
-                    inoutBits.first = defuseBits.second | (inoutBits.second - inoutBits.first);
+                    inoutBits.first = defuseBits.second | (inoutBits.second - defuseBits.first);
+                }
+                /*  Print the IN/OUT set, if debuging is active. */
+                if (debuging) {
+                    std::cout << mips->get_address() << " inst  IN: " << inoutBits.first << std::endl;
+                    std::cout << mips->get_address() << " inst OUT: " << inoutBits.second << std::endl;
                 }
                 /*  Save the bits in the inoutInstructionmap */
                 inoutInstructionMap.insert(std::pair<SgAsmMipsInstruction*, bitPair>(mips, inoutBits));
             }
         }
+        /*  If debuging print out block address */
+        if (debuging) {
+            std::cout << "IN/OUT calculations finished on instructions in block: " << basic->get_id() << std::endl;
+        }
     }
     /* All blocks have been visited and the instructions have their IN and OUT calculated */
+    /*  If debuging print the IN/OUT map values. */
+    if (debuging) {
+        
+    }
 }
 
 /*  Compute In and Out on basic blocks. */
@@ -549,7 +577,7 @@ void liveVariableAnalysisHandler::determineOrderOfDFS() {
             /*  Decode the instruction */
             instructionStruct inst = decodeInstruction((*iter).second);
             /*  Print the dfs order number. */
-            std::cout << "DFS num " << (*iter).first << "  -- ";
+            std::cout << "DFS num " << std::dec << (*iter).first << "  -- ";
             /*  Print instructions */
             printInstruction(&inst);
         }
@@ -566,13 +594,32 @@ void liveVariableAnalysisHandler::buildLiveIntervals() {
         symbolIter != symbolicToBit.end(); ++symbolIter) {
         /*  By iterating through the dfs order from the beginning i will find the
             beginning of an interval. */
+        /*  Get the bit index for the symbolic. */
+        int bitNum = symbolIter->second;
+        if (debuging) {
+            std::cout << "Building interval for sym_" << symbolIter->first
+                << " which has bit " << symbolIter->second << std::endl;
+        }
         for(std::list<std::pair<int, SgAsmMipsInstruction*> >::iterator dfsIter = DFSInstructionOrder.begin();
             dfsIter != DFSInstructionOrder.end(); ++dfsIter) {
             /*  For each instruction check the IN/OUT bit pair for the specific
                 symbolic which is mapped to a specific bit. */
-
-            /*  Save the live interval start point and the number of the symbolic */
-            //TODO when it has been found break from this loop.
+            bitPair instInOut = inoutInstructionMap.find((*dfsIter).second)->second;
+            /*  Check the bit for the symbolic being checked. If it is set then the startpoint
+                has been found. Check if OUT is set for the specific bit in the instruction.
+                Then it becomes live in this instruction. */
+            if (instInOut.second[bitNum]) {
+                /*  Save the where the instruction is in the dfs order (number)
+                    and the symbolic number related to the range. */
+                startPointBiMap.insert(intervalMap::value_type(dfsIter->first, symbolIter->first));
+                /*  Debug print. */
+                if (debuging) {
+                    /*  Print out the found range. */
+                    std::cout << "Symbolic: " << symbolIter->first << " Start: " << dfsIter->first << std::endl;
+                }
+                /*  When the interval has been found we can break from the loop */
+                break;
+            }
         }
 
         /*  Iterate backwards and find where the live range ends for the current symolic. */
@@ -580,15 +627,22 @@ void liveVariableAnalysisHandler::buildLiveIntervals() {
             dfsIterRev != DFSInstructionOrder.rend(); ++dfsIterRev) {
             /*  For each instruction check the IN/OUT bit pair for the specific
                 symbolic which is mapped to a specific bit. */
-
-            /*  Save the live interval end point and the number of the symbolic */
-            //TODO when it has been found break from this loop.
-
+            bitPair instInOut = inoutInstructionMap.find((*dfsIterRev).second)->second;
+            /*  Check if the bit for the symbolic is set on IN but not OUT. This
+                indicates that the symbolic has been used and the range ends here. */
+            if (instInOut.first[bitNum] && !instInOut.second[bitNum]) {
+                /*  Save the live interval end point and the number of the symbolic */
+                endPointBiMap.insert(intervalMap::value_type(dfsIterRev->first, symbolIter->first));
+                /*  Debug print. */
+                if (debuging) {
+                    /*  Print out the found range. */
+                    std::cout << "Symbolic: " << symbolIter->first << " End: " << dfsIterRev->first << std::endl;
+                }
+                /*  Break from the loop. */
+                break;
+            }
         }
-
     }
-
-
 
     /*  Print out the live intervals if debug is set. */
     if (debuging) {
