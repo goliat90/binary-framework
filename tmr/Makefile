@@ -37,7 +37,7 @@ userRewriter.out: buildLibrary userFramework.lo
 
 
 debug:
-	libtool --mode=execute gdb --args ./userRewriter.out littleend.out
+	libtool --mode=execute gdb --args ./userRewriter.out ../mipsCode/simpleAdd.out
 
 test:
 	./userRewriter.out ../mipsCode/simpleAdd.out
