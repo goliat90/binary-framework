@@ -43,12 +43,6 @@ class liveVariableAnalysisHandler {
     public:
     /*  Constructor */
     liveVariableAnalysisHandler(CFG*);
-    /*  Returns some kind of structure with live intervals
-        or is a query function perhaps  */
-    //TODO add function head.
-    /*  Query function to to get information if variables are live
-        at a certain instruction. */
-    void livenessAtInstruction();
     /*  Execute the live range analysis */
     void performLiveRangeAnalysis();
     /*  enable debuging    */

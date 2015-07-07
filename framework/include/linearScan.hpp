@@ -22,19 +22,16 @@ class linearScanHandler {
     void applyLinearScan();
     /*  Select debug mode */
     void selectDebuging(bool);
+
     private:
     /*  Hide default constructor */
     linearScanHandler();
-    /*  Variables */
     /*  debug mode. */
     bool debuging;
     /*  Cfg handler */
     CFGhandler* cfgHandlerPtr;
     /*  live-range analysis handler */
     liveVariableAnalysisHandler* liveRangeHandler;
-    /*  Container mapping a physical register to a symbolic registers */
-    std::map<unsigned, mipsRegisterName> registerAllocationMap;
-
     /*  Variables used in the linear scan register allocation.
         Contains the end point for the interval and its name. */
     intervalMap activeMap;
@@ -48,20 +45,24 @@ class linearScanHandler {
     /*  Map storing which interval has been given a register. */
     std::map<unsigned, mipsRegisterName> allocationMap;
     /*  Map to intervals spilled and their stack location. */
-    //TODO verify the types used. 
-    std::map<unsigned, unsigned> spillMap;
+    std::map<unsigned, uint64_t> spillMap;
+    /*  Stack offset counter. */
+    uint64_t stackOffset;
 
+    /*  Functions. */
     /*  Replace temporary registers with symbolic names before live-range analysis.
         The registers used by linear scan is t0-7, t8,t9. */
     void replaceHardRegisters();
     /*  Linear scan allocation function */
     void linearScanAllocation();
     /*  Expire old live interval */
-    //TODO need to figure out the argument
     void expireOldIntervals(int);
     /*  Spill at interval */
-    //TODO need to figure out the argument
     void spillAtInterval(intervalMap::left_iterator);
+    /*  Modifies stack appropriateley. */
+    void linearStackModification();
+    /*  Go through the instructions and replace the symbolic registers. */
+    void replaceSymbolicRegister();
 };
 
 #endif

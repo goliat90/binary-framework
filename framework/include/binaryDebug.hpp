@@ -17,6 +17,8 @@
 void printBasicBlockInstructions(SgAsmBlock*);
 /*  Prints a specific instruction */
 void printInstruction(instructionStruct*);
+/*  Get the string for a register. */
+std::string getRegisterString(mipsRegisterName);
 
 #endif
 

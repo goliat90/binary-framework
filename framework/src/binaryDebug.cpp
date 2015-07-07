@@ -85,6 +85,21 @@ void printConstant(std::stringstream* conStream, instructionStruct* instStruct) 
     
 }
 
+
+/*  Function to get a register name as a string. */
+std::string getRegisterString(mipsRegisterName reg) {
+    /* Map that is mapping enum to corresponding string */
+    static std::map<mipsRegisterName, std::string> registerMap = initRegStringMap();
+    /*  Find the string for the register. */
+    std::map<mipsRegisterName, std::string>::iterator regIter = registerMap.find(reg);
+    /*  Check that the the iterator is not end */
+    if (regIter != registerMap.end()) {
+        return regIter->second;
+    } else {
+        return "Invalid Reg Name";
+    }
+}
+
 /* adds registers to the stringstream object */
 void printRegisters(std::stringstream* regStream, std::vector<registerStruct>* registers) {
     /* Map that is mapping enum to corresponding string */
