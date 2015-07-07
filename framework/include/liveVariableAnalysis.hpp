@@ -53,6 +53,9 @@ class liveVariableAnalysisHandler {
     void performLiveRangeAnalysis();
     /*  enable debuging    */
     void setDebug(bool);
+    /*  Functions that return references to the start and endpoint maps */
+    intervalMap* getStartPoints()   {return &startPointBiMap; };
+    intervalMap* getEndPoints()     {return &endPointBiMap; };
 
     private:
     /*  Hide default constructor    */

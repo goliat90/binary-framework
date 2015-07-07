@@ -596,10 +596,6 @@ void liveVariableAnalysisHandler::buildLiveIntervals() {
             beginning of an interval. */
         /*  Get the bit index for the symbolic. */
         int bitNum = symbolIter->second;
-        if (debuging) {
-            std::cout << "Building interval for sym_" << symbolIter->first
-                << " which has bit " << symbolIter->second << std::endl;
-        }
         for(std::list<std::pair<int, SgAsmMipsInstruction*> >::iterator dfsIter = DFSInstructionOrder.begin();
             dfsIter != DFSInstructionOrder.end(); ++dfsIter) {
             /*  For each instruction check the IN/OUT bit pair for the specific
@@ -612,11 +608,6 @@ void liveVariableAnalysisHandler::buildLiveIntervals() {
                 /*  Save the where the instruction is in the dfs order (number)
                     and the symbolic number related to the range. */
                 startPointBiMap.insert(intervalMap::value_type(dfsIter->first, symbolIter->first));
-                /*  Debug print. */
-                if (debuging) {
-                    /*  Print out the found range. */
-                    std::cout << "Symbolic: " << symbolIter->first << " Start: " << dfsIter->first << std::endl;
-                }
                 /*  When the interval has been found we can break from the loop */
                 break;
             }
@@ -633,11 +624,6 @@ void liveVariableAnalysisHandler::buildLiveIntervals() {
             if (instInOut.first[bitNum] && !instInOut.second[bitNum]) {
                 /*  Save the live interval end point and the number of the symbolic */
                 endPointBiMap.insert(intervalMap::value_type(dfsIterRev->first, symbolIter->first));
-                /*  Debug print. */
-                if (debuging) {
-                    /*  Print out the found range. */
-                    std::cout << "Symbolic: " << symbolIter->first << " End: " << dfsIterRev->first << std::endl;
-                }
                 /*  Break from the loop. */
                 break;
             }
@@ -646,7 +632,17 @@ void liveVariableAnalysisHandler::buildLiveIntervals() {
 
     /*  Print out the live intervals if debug is set. */
     if (debuging) {
-
+        /*  Using the start point map and then with the symbolic
+            retrieve the endpoint from endpoint map. */
+        for(intervalMap::left_iterator startPointIter = startPointBiMap.left.begin();
+            startPointIter != startPointBiMap.left.end(); ++startPointIter) {
+            /*  Retrieve the end point value. */
+            intervalMap::right_iterator endPointIter = endPointBiMap.right.find(startPointIter->second);
+            /*  Start printing symbolic number. Then start and end point. */
+            std::cout << "Symbolic: " << startPointIter->second
+                << " Range: " << startPointIter->first
+                << " - " << endPointIter->second << std::endl;
+        }
     }
 }
 
