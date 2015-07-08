@@ -342,6 +342,8 @@ void linearScanHandler::replaceSymbolicRegisters() {
         SgAsmBlock* basic = get(boost::vertex_name, *functionCFG, *vIter.first);
         /*  Get the statementlist. */
         SgAsmStatementPtrList& stmtList = basic->get_statementList();
+        /*  Create a shadowlist that will be swapped with the statementlist. */
+        SgAsmStatementPtrList shadowList;
         /*  Iterate through the statement list. */
         for(SgAsmStatementPtrList::iterator stmtIter = stmtList.begin();
             stmtIter != stmtList.end(); ++stmtIter) {
@@ -360,14 +362,39 @@ void linearScanHandler::replaceSymbolicRegisters() {
                         /*  Cast to register exporession. */
                         SgAsmDirectRegisterExpression* regPtr = isSgAsmDirectRegisterExpression(*opIter);
                         /*  Decode register and check if it is symbolic. */
-
-                        /*  If symbolic find the hard register it should have. */
-
-                        /*  Replace the register. */
+                        registerStruct regS = decodeRegister(regPtr);
+                        if (symbolic_reg == regS.regName) {
+                            /*  Check if the register is allocated or spilled. */
+                            if (1 == allocationMap.count(regS.symbolicNumber)) {
+                                /*  Register struct */
+                                registerStruct newHardReg;
+                                /*  The symbolic is allocated. Retrieve which register it is allocated. */
+                                newHardReg.regName = allocationMap.find(regS.symbolicNumber)->second;
+                                /*  Build the register expression. */
+                                SgAsmDirectRegisterExpression* newRegExpr = buildRegister(newHardReg);
+                                /*  Insert the new register expression into the operand list. */
+                            } else if (1 == spillMap.count(regS.symbolicNumber)) {
+                                /*  The symbolic is spilled. Add spill instructions and fix register. */
+                                //TODO add instructions creating the load and store instructions
+                                //TODO i will probably need to set a variable to set that
+                                //TODO load and store instructions need to be inserted later.
+                            } else {
+                                /*  If it is neither allocated or spilled throw error. */
+                                std::cout << "Encountered Symbolic register with no register or spill allocation." << std::endl;
+                                exit(EXIT_FAILURE);
+                            }
+                        } 
                     }
                 }
+                /*  The operands have been checked. Save the instruction now. */
+                //TODO here i need to hande load and store for spills.
+            } else {
+                /*  The statement is not a mips instruction but we save it. */
+                shadowList.push_back(*stmtIter);
             }
         }
+        /* Swap the shadowlist and the statementlist. */
+        stmtList.swap(shadowList);
     }
 }
 

@@ -47,9 +47,9 @@ SgAsmMipsInstruction* buildInstruction(instructionStruct*);
 /* Return the format of an instruction defined by the framework */
 instructionType getInstructionFormat(MipsInstructionKind);
 /* decode a register operand */
-registerStruct decodeRegister(SgAsmExpression* expr);
+registerStruct decodeRegister(SgAsmExpression*);
 /* Creates a register expression */
-SgAsmDirectRegisterExpression* buildRegister(registerStruct regStruct);
+SgAsmDirectRegisterExpression* buildRegister(registerStruct);
 
 // -------- instruction struct --------
 // Contains information that is useful for the framework about
