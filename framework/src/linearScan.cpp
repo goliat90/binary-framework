@@ -39,6 +39,8 @@ linearScanHandler::linearScanHandler(CFGhandler* passedCfgObject){
     //registerPool.push_front(a3);
 
     //TODO take one register from the pool and put aside as spill register.
+    spillReg = registerPool.back();
+    registerPool.pop_back();
 }
 
 
@@ -71,9 +73,13 @@ void linearScanHandler::applyLinearScan() {
 
     /*  Replace all symbolic registers with real register and
         insert instructions for spilled registers. */
+    if (debuging) {
+        std::cout << "Replacing symbolic registers and adding spill instructions." << std::endl; 
+    }
+    replaceSymbolicRegisters();
 
     /*  After linear scan has been performed modify the stack. If there is no
-        stack then create a stack instruction. */
+        stack then create stack instructions. */
 
 
 }
@@ -318,3 +324,51 @@ void linearScanHandler::spillAtInterval(intervalMap::left_iterator newInterval) 
         }
     }
 }
+
+
+/*  Replaces all symbolic registers with real and fix
+    load and store instructions for the spilled intervals. */
+void linearScanHandler::replaceSymbolicRegisters() {
+    if (debuging) {
+        std::cout << getRegisterString(spillReg) << " used for spill." << std::endl;
+    }
+    /*  Variables */
+    CFG* functionCFG = cfgHandlerPtr->getFunctionCFG();
+    /*  Iterate through the blocks and check each instruction for
+        for symbolic registers and replace them. */
+    for(std::pair<CFGVIter, CFGVIter> vIter = vertices(*functionCFG);
+        vIter.first != vIter.second; ++vIter.first) {
+        /*  Get the block pointer. */
+        SgAsmBlock* basic = get(boost::vertex_name, *functionCFG, *vIter.first);
+        /*  Get the statementlist. */
+        SgAsmStatementPtrList& stmtList = basic->get_statementList();
+        /*  Iterate through the statement list. */
+        for(SgAsmStatementPtrList::iterator stmtIter = stmtList.begin();
+            stmtIter != stmtList.end(); ++stmtIter) {
+            /*  Check if the statement is a mips instruction. */
+            if (V_SgAsmMipsInstruction == (*stmtIter)->variantT()) {
+                /*  Cast to mips instruction pointer. */
+                SgAsmMipsInstruction* mips = isSgAsmMipsInstruction((*stmtIter));
+                /*  Get the operand list from the instruction. */
+                SgAsmExpressionPtrList& opList = mips->get_operandList()->get_operands();
+                /*  Go through the operands and check if they are registers.
+                    If they are then check if they are symbolic, i.e zero registers. */
+                for(SgAsmExpressionPtrList::iterator opIter = opList.begin();
+                    opIter != opList.end(); ++opIter) {
+                    /*  Is it a register. */
+                    if (V_SgAsmDirectRegisterExpression == (*opIter)->variantT()) {
+                        /*  Cast to register exporession. */
+                        SgAsmDirectRegisterExpression* regPtr = isSgAsmDirectRegisterExpression(*opIter);
+                        /*  Decode register and check if it is symbolic. */
+
+                        /*  If symbolic find the hard register it should have. */
+
+                        /*  Replace the register. */
+                    }
+                }
+            }
+        }
+    }
+}
+
+
