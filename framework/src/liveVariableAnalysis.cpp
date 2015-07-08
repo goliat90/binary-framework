@@ -634,15 +634,20 @@ void liveVariableAnalysisHandler::buildLiveIntervals() {
     if (debuging) {
         /*  Using the start point map and then with the symbolic
             retrieve the endpoint from endpoint map. */
-        for(intervalMap::left_iterator startPointIter = startPointBiMap.left.begin();
-            startPointIter != startPointBiMap.left.end(); ++startPointIter) {
-            /*  Retrieve the end point value. */
-            intervalMap::right_iterator endPointIter = endPointBiMap.right.find(startPointIter->second);
-            /*  Start printing symbolic number. Then start and end point. */
-            std::cout << "Symbolic: " << startPointIter->second
-                << " Range: " << startPointIter->first
-                << " - " << endPointIter->second << std::endl;
+        std::cout << "Start Points." << std::endl;
+        for(intervalMap::iterator startIter = startPointBiMap.begin();
+            startIter != startPointBiMap.end(); ++startIter) {
+            /*  left = interval point, right = symbol */
+            std::cout << "Symbolic: " << startIter->right << " Start: " << startIter->left << std::endl;
         }
+
+        std::cout << std::endl << " End points." << std::endl;
+        for(intervalMap::iterator endIter = endPointBiMap.begin();
+            endIter != endPointBiMap.end(); ++endIter) {
+            /*  left = interval point, right = symbol */
+            std::cout << "Symbolic: " << endIter->right << " End: " << endIter->left << std::endl;
+        }
+        std::cout << std::endl;
     }
 }
 

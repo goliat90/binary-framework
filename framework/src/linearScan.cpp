@@ -37,6 +37,8 @@ linearScanHandler::linearScanHandler(CFGhandler* passedCfgObject){
 
     //does not work in replacement
     //registerPool.push_front(a3);
+
+    //TODO take one register from the pool and put aside as spill register.
 }
 
 
@@ -165,14 +167,12 @@ void linearScanHandler::linearScanAllocation() {
     /*  Clearing active. */
     activeMap.clear();
     int registerPoolSize = registerPool.size();
+    if (debuging) {
+        std::cout << "registerPool: " << registerPoolSize << std::endl;
+    }
     /*  Retrieving the Pointers for the start and endpoint maps. */
     startPointMap = liveRangeHandler->getStartPoints();
     endPointMap = liveRangeHandler->getEndPoints();
-
-    /*  Debug printout */
-    if (debuging) {
-        std::cout << "Iterating through the intervals." << std::endl;
-    }
 
     /*  Iterate through the intervals, lowest start point to highest. */
     for(intervalMap::left_iterator intervalIter = startPointMap->left.begin();
@@ -183,6 +183,9 @@ void linearScanHandler::linearScanAllocation() {
             Otherwise allocate register for the interval. */
         if (registerPoolSize == activeMap.size()) {
             //SPILL interval.
+            if (debuging) {
+                std::cout << "Spilling at point: " << intervalIter->first << std::endl;
+            }
             spillAtInterval(intervalIter);
         } else {
             /*  Take a register from the pool and remove it form the pool. */
@@ -190,16 +193,20 @@ void linearScanHandler::linearScanAllocation() {
             registerPool.pop_front();
             /*  Save the interval and its register. */
             allocationMap.insert(std::pair<unsigned, mipsRegisterName>(intervalIter->second, intervalReg));
+            if (debuging) {
+                std::cout << "symbolic: " << intervalIter->second << " allocated to register "
+                    << getRegisterString(intervalReg) << std::endl;
+            }
+            mipsRegisterName test = allocationMap.find(intervalIter->second)->second;
             /*  Add the interval to the active list. Get the end point for the interval. */
             intervalMap::right_iterator intervalEndPoint = endPointMap->right.find(intervalIter->second);
             /*  Insert the values. */
             activeMap.insert(intervalMap::value_type(intervalEndPoint->second, intervalEndPoint->first));
         }
     }
+
     /*  Debug printout */
     if (debuging) {
-        std::cout << "Iteration of intervals complete." << std::endl;
-
         std::cout << "---------- Allocation ----------" << std::endl;
         /*  Printout the allocation map. */
         for(std::map<unsigned, mipsRegisterName>::iterator allocIter = allocationMap.begin();
@@ -211,44 +218,46 @@ void linearScanHandler::linearScanAllocation() {
         std::cout << "---------- Allocation End ----------" << std::endl << std::endl;
 
         /*  Print the spill map. */
-        std::cout << "---------- Spills ----------" << std::endl << std::endl;
+        std::cout << "---------- Spills ----------" << std::endl;
         for(std::map<unsigned, uint64_t>::iterator spillIter = spillMap.begin();
             spillIter != spillMap.end(); ++spillIter) {
             /*  Print the map entry. */
-            std::cout << "Symbolic: " << spillIter->first << " spilled. Offest: "
+            std::cout << "Symbolic: " << std::dec << spillIter->first << " spilled. Offest: "
                 << std::hex << spillIter->second << std::endl;
         }
         std::cout << "---------- Spills End ----------" << std::endl << std::endl;
     }
-
-/*
-Active is a list of active live intervals
-active list <- empty
-foreach live interval i, in order of increasing start point
-    EXPIREOLDINTERVAL(i)
-    if length(active) = R then
-        SPILLATINTERVAL(i)
-    else
-        register[i] <- a register removed from pool of free registers
-        add i to active, sorted by inreasing end point
-*/
-
 }
 
 
 void linearScanHandler::expireOldIntervals(int startPoint) {
     /*  Temporary storage for the intervals being removed. */
     std::set<unsigned> oldIntervals;
+    /*  debug printout */
+    if (debuging) {
+        std::cout << "Searching for expired intervals at point: " << startPoint << std::endl;
+    }
     /*  Iterate through the active list and remove all
         intervals that have expired. */
     for(intervalMap::right_iterator activeIter = activeMap.right.begin();
         activeIter != activeMap.right.end(); ++activeIter) {
         /*  Check if the interval has expired or not. */
-        if ((activeIter->second) <= startPoint) {
+        if ((activeIter->second) >= startPoint) {
+            continue;
+        } else {
             /*  Save the interval so it can be removed after the iteration. */
             oldIntervals.insert(activeIter->first);
+            if (debuging) {
+                std::cout << "Interval symbolic: " << activeIter->first
+                    << " with end point: " << activeIter->second 
+                    << " has expired. " << std::endl;
+            }
             /*  Get the register that the interval has used. */
             mipsRegisterName intervalReg = allocationMap.find(activeIter->first)->second;
+            if (debuging) {
+                std::cout << "register: " << getRegisterString(intervalReg)
+                << " returned to pool." << std::endl;
+            }
             /*  Return the register to the pool of free registers. */
             registerPool.push_back(intervalReg);
         }
@@ -260,51 +269,52 @@ void linearScanHandler::expireOldIntervals(int startPoint) {
         /* Call erase on the map. */
         activeMap.right.erase(*removeIter);
     }
-/*
-foreach interval j in active, in order of increasing end point
-    if endpoint[i] >= startpoint[i] then
-        return
-    remove j from active
-    //TODO check here what register the interval was given.
-    add register[j] to pool of free registers
-*/
 }
 
-/*  spill interval function. */
+/*  spill interval function. newInterval, first = endPoint, second = symbolic. */
 void linearScanHandler::spillAtInterval(intervalMap::left_iterator newInterval) {
-    /*  Get the last interval in active. Endpoint and symbolic. */
+    /*  Get the last interval in active. Endpoint and symbolic.
+        first = endpoint, second = symbolic. */
     intervalMap::left_reverse_iterator lastActiveInterval = activeMap.left.rbegin();
-    /*  Get the end point of the new interval. */
+    /*  Get the end point of the new interval. 
+        first = symbolic, second = endpoint */
     intervalMap::right_iterator newIntervalEnd = endPointMap->right.find(newInterval->second);
     /*  Check if the last interval in active should be spilled or the new interval. */
-    if ((lastActiveInterval->first) > (newInterval->first)) {
-        /*  The last interval in active has the furthest end point.
-            spill it and give the register to the new interval. */
+    if ((lastActiveInterval->first) > (newIntervalEnd->second)) {
+        if (debuging) {
+            std::cout << "Spilling last active interval: " << lastActiveInterval->second  
+                << " since its end point (" << lastActiveInterval->first
+                << ") is further away than new end point " << newIntervalEnd->second 
+                << " belonging to interval " << newIntervalEnd->first << std::endl;
+        }
+        /*  Get the register used by the interval being spilled.  */
         mipsRegisterName intervalReg = allocationMap.find(lastActiveInterval->second)->second;
-        /*  Remove the last active interval from the allocation map. */
+        if (debuging) {
+            std::cout << "symbolic: " << lastActiveInterval->second << " used register "
+                << getRegisterString(intervalReg) << std::endl;
+        }
+        /*  Remove the interval being spilled from the allocationmap. */
         allocationMap.erase(lastActiveInterval->second);
+        /*  Add the last active interval which is being spilled to the spill map. */
+        spillMap.insert(std::pair<unsigned, uint64_t>(lastActiveInterval->second, stackOffset));
+        /*  Increment stack offset. */
+        stackOffset += 4;
+
         /*  Insert the new interval into the allocation map with
             the register that the last active interval was given. */
         allocationMap.insert(std::pair<unsigned, mipsRegisterName>(newInterval->second, intervalReg));
+        /*  Remove the last active interval from the active list. */
+        activeMap.right.erase(lastActiveInterval->second);
         /*  Add the new interval to the active list. */
         activeMap.insert(intervalMap::value_type(newIntervalEnd->second, newIntervalEnd->first));
-        /*  Add the last active interval which is being spilled to the spill map. */
-        spillMap.insert(std::pair<unsigned, uint64_t>(lastActiveInterval->second, stackOffset));
-        stackOffset += 4;
     } else {
         /*  The new interval has the furthest end point. Spill it to memory.
             Add it to the spill map and then increment the offset. */
         spillMap.insert(std::pair<unsigned, uint64_t>(newInterval->second, stackOffset));
         stackOffset += 4;
+        /*  Debug printout. */
+        if (debuging) {
+            std::cout << "Spilling symbolic: " << newInterval->second << " immediateley." << std::endl << std::endl;
+        }
     }
-/*
-spill <- last interval in active
-if endpoint[spill] > endpoint[i] then
-    register[i] <- register[spill]
-    location[spill] <- new stack location
-    remove spill from active
-    add i to active, sorted by increasing end point
-else
-    location[i] <- new stack location
-*/
 }
