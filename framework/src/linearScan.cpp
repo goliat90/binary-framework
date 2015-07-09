@@ -19,28 +19,24 @@ linearScanHandler::linearScanHandler(CFGhandler* passedCfgObject){
     /*  Initialize the freeRegister set */
     /*  t0-t7 */
     registerPool.push_front(t0);
-    registerPool.push_front(t1);
-    registerPool.push_front(t2);
-    registerPool.push_front(t3);
-    registerPool.push_front(t4);
-    registerPool.push_front(t5);
-    registerPool.push_front(t6);
-    registerPool.push_front(t7);
+    //registerPool.push_front(t1);
+    //registerPool.push_front(t2);
+    //registerPool.push_front(t3);
+    //registerPool.push_front(t4);
+    //registerPool.push_front(t5);
+    //registerPool.push_front(t6);
+    //registerPool.push_front(t7);
     /*  t8-t9 */
-    registerPool.push_front(t8);
-    registerPool.push_front(t9);
+    //registerPool.push_front(t8);
+    //registerPool.push_front(t9);
     /*  extra register to test. */
-    //registerPool.push_front(a2);
+    registerPool.push_front(a2);
 
     //functions in replacement, not any pseudo instructions.
     //registerPool.push_front(v1);
 
     //does not work in replacement
     //registerPool.push_front(a3);
-
-    //TODO take one register from the pool and put aside as spill register.
-    spillReg = registerPool.back();
-    registerPool.pop_back();
 }
 
 
@@ -74,7 +70,7 @@ void linearScanHandler::applyLinearScan() {
     /*  Replace all symbolic registers with real register and
         insert instructions for spilled registers. */
     if (debuging) {
-        std::cout << "Replacing symbolic registers and adding spill instructions." << std::endl; 
+        std::cout << "Replacing symbolic registers." << std::endl; 
     }
     replaceSymbolicRegisters();
 
@@ -203,7 +199,6 @@ void linearScanHandler::linearScanAllocation() {
                 std::cout << "symbolic: " << intervalIter->second << " allocated to register "
                     << getRegisterString(intervalReg) << std::endl;
             }
-            mipsRegisterName test = allocationMap.find(intervalIter->second)->second;
             /*  Add the interval to the active list. Get the end point for the interval. */
             intervalMap::right_iterator intervalEndPoint = endPointMap->right.find(intervalIter->second);
             /*  Insert the values. */
@@ -329,9 +324,6 @@ void linearScanHandler::spillAtInterval(intervalMap::left_iterator newInterval) 
 /*  Replaces all symbolic registers with real and fix
     load and store instructions for the spilled intervals. */
 void linearScanHandler::replaceSymbolicRegisters() {
-    if (debuging) {
-        std::cout << getRegisterString(spillReg) << " used for spill." << std::endl;
-    }
     /*  Variables */
     CFG* functionCFG = cfgHandlerPtr->getFunctionCFG();
     /*  Iterate through the blocks and check each instruction for
@@ -351,6 +343,9 @@ void linearScanHandler::replaceSymbolicRegisters() {
             if (V_SgAsmMipsInstruction == (*stmtIter)->variantT()) {
                 /*  Cast to mips instruction pointer. */
                 SgAsmMipsInstruction* mips = isSgAsmMipsInstruction((*stmtIter));
+                /*  Set to track registers used in the instruction. At least registers relevant
+                    to linear scan. */
+                std::set<mipsRegisterName> regsUsed;
                 /*  Get the operand list from the instruction. */
                 SgAsmExpressionPtrList& opList = mips->get_operandList()->get_operands();
                 /*  Go through the operands and check if they are registers.
@@ -364,7 +359,7 @@ void linearScanHandler::replaceSymbolicRegisters() {
                         /*  Decode register and check if it is symbolic. */
                         registerStruct regS = decodeRegister(regPtr);
                         if (symbolic_reg == regS.regName) {
-                            /*  Check if the register is allocated or spilled. */
+                            /*  Check if the register is allocated. */
                             if (1 == allocationMap.count(regS.symbolicNumber)) {
                                 /*  Register struct */
                                 registerStruct newHardReg;
@@ -373,21 +368,89 @@ void linearScanHandler::replaceSymbolicRegisters() {
                                 /*  Build the register expression. */
                                 SgAsmDirectRegisterExpression* newRegExpr = buildRegister(newHardReg);
                                 /*  Insert the new register expression into the operand list. */
-                            } else if (1 == spillMap.count(regS.symbolicNumber)) {
-                                /*  The symbolic is spilled. Add spill instructions and fix register. */
-                                //TODO add instructions creating the load and store instructions
-                                //TODO i will probably need to set a variable to set that
-                                //TODO load and store instructions need to be inserted later.
+                                (*opIter) = newRegExpr;
+                                /*  Save the register to the set for later checking. */
+                                regsUsed.insert(newHardReg.regName);
+                            } 
+                        } 
+                    }
+                }
+
+                /*  Now all symbolic allocated have been given their registers in the instruction.
+                    Next is to fix the spilled symbolics in the instruction. */
+                /*  Map to track if a spilled has been given a register already.
+                    Think when a spilled symbolic is source and destination. */
+                std::map<unsigned, mipsRegisterName> spillRegs;
+                /*  Lists of spill symbolics load and store instructions. */
+                std::list<SgAsmMipsInstruction> loadSpills;
+                std::list<SgAsmMipsInstruction> storeSpills;
+                /*  Spill register name variable. */
+                mipsRegisterName spillReg;
+                /*  Decode the instruction. */
+                instructionStruct decodedMips = decodeInstruction(mips);
+                /*  Check the source registers. */
+                for(std::vector<registerStruct>::iterator sIter = decodedMips.sourceRegisters.begin();
+                    sIter != decodedMips.sourceRegisters.end(); ++sIter) {
+                    /* Check if the register is symbolic. */
+                    if (symbolic_reg == (*sIter).regName) {
+                        /*  Check if the register is spilled. */
+                        if (1 == spillMap.count((*sIter).symbolicNumber)) {
+                            /*  The register was spilled. Need to free a register to use temporarily. */
+                            /*  Check if the spilled symbolic already has a reg for this instruction. */
+                            if (1 == spillRegs.count((*sIter).symbolicNumber)) {
+                                /*  It has a register so use it again. */
+                                spillReg = spillRegs.find((*sIter).symbolicNumber)->second;
                             } else {
-                                /*  If it is neither allocated or spilled throw error. */
-                                std::cout << "Encountered Symbolic register with no register or spill allocation." << std::endl;
-                                exit(EXIT_FAILURE);
+                                /*  It did not have a register so get one. */
+                                for(std::list<mipsRegisterName>::iterator rIter = registerPool.begin();
+                                    rIter != registerPool.end(); ++rIter) {
+                                    /*  Find the first register in the pool we know is not used in the instruction. */
+                                    if (1 != regsUsed.count(*rIter)) {
+                                        spillReg = *rIter;
+                                        break;
+                                    }
+                                }
                             }
+                            /*  Set it as a used register for the instruction. */
+                            regsUsed.insert(spillReg);
+                            /*  Map the register to the symbolic. */
+                            spillRegs.insert(std::pair<unsigned, mipsRegisterName>((*sIter).symbolicNumber, spillReg));
+
+                            //TODO create load and store instructions.
+                            //naive has a instruction that can be adapted.
+                            //save the load and stores to their lists
+                            /*  Return the register used as spill to the pool again. */
+                            //TODO might not need this..
+                            registerPool.push_back(spillReg);
+                        } 
+                    }
+                }
+
+                /*  Check destination registers. */
+                for(std::vector<registerStruct>::iterator dIter = decodedMips.destinationRegisters.begin();
+                    dIter != decodedMips.destinationRegisters.end(); ++dIter) {
+                    /* Check if the register is symbolic. */
+                    if (symbolic_reg == (*dIter).regName) {
+                        /*  Check if the register is allocated or spilled. */
+                        if (1 == spillMap.count((*dIter).symbolicNumber) &&
+                            1 != spillRegs.count((*dIter).symbolicNumber)) {
+                            /*  The register was spilled and is not used as a source. 
+                                Need to free a register to use temporarily. */
+                            /*  I take the last used register for spill. */
+                            mipsRegisterName spillReg = registerPool.front();
+                            registerPool.pop_front();
+                            //TODO create load and store instructions and save these.
+
+                            /*  Save it in the temporary mapping. */
+                            //regReplacements.insert(boost::bimap<unsigned, mipsRegisterName>::value_type
+                            //    ((*dIter).symbolicNumber, spillReg));
+                            /*  return register to pool */
+                            registerPool.push_back(spillReg);
                         } 
                     }
                 }
                 /*  The operands have been checked. Save the instruction now. */
-                //TODO here i need to hande load and store for spills.
+                shadowList.push_back(*stmtIter);
             } else {
                 /*  The statement is not a mips instruction but we save it. */
                 shadowList.push_back(*stmtIter);
@@ -397,5 +460,4 @@ void linearScanHandler::replaceSymbolicRegisters() {
         stmtList.swap(shadowList);
     }
 }
-
 

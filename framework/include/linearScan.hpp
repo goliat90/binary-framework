@@ -48,8 +48,6 @@ class linearScanHandler {
     std::map<unsigned, uint64_t> spillMap;
     /*  Stack offset counter. */
     uint64_t stackOffset;
-    /*  Spill register. */
-    mipsRegisterName spillReg;
 
     /*  Functions. */
     /*  Replace temporary registers with symbolic names before live-range analysis.
