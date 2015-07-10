@@ -608,6 +608,10 @@ void liveVariableAnalysisHandler::buildLiveIntervals() {
                 /*  Save the where the instruction is in the dfs order (number)
                     and the symbolic number related to the range. */
                 startPointBiMap.insert(intervalMap::value_type(dfsIter->first, symbolIter->first));
+                /*  When we find an interval we also add an end point which is the last
+                    in the dfs order. */
+                //TODO test 
+                //endPointBiMap.insert(intervalMap::value_type((DFSInstructionOrder.size() - 1), symbolIter->first));
                 /*  When the interval has been found we can break from the loop */
                 break;
             }
@@ -623,6 +627,7 @@ void liveVariableAnalysisHandler::buildLiveIntervals() {
                 indicates that the symbolic has been used and the range ends here. */
             if (instInOut.first[bitNum] && !instInOut.second[bitNum]) {
                 /*  Save the live interval end point and the number of the symbolic */
+                //TODO do replace here instead.
                 endPointBiMap.insert(intervalMap::value_type(dfsIterRev->first, symbolIter->first));
                 /*  Break from the loop. */
                 break;

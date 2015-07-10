@@ -12,13 +12,21 @@ linearScanHandler::linearScanHandler(CFGhandler* passedCfgObject){
     debuging = false;
     /*  reset stack offset. */
     stackOffset = 0;
+    /*  reset spill counter */
+    maxSpillOffset = 0;
     /*  Save the pointer to the cfg handler */
     cfgHandlerPtr = passedCfgObject;
     /*  Create the live variable analysis object */
     liveRangeHandler = new liveVariableAnalysisHandler(cfgHandlerPtr->getFunctionCFG());
+    /*  Initialize the register pool. */
+    initializeRegisterPool();
+}
+
+void linearScanHandler::initializeRegisterPool() {
+    registerPool.clear();
     /*  Initialize the freeRegister set */
     /*  t0-t7 */
-    registerPool.push_front(t0);
+    //registerPool.push_front(t0);
     //registerPool.push_front(t1);
     //registerPool.push_front(t2);
     //registerPool.push_front(t3);
@@ -33,10 +41,10 @@ linearScanHandler::linearScanHandler(CFGhandler* passedCfgObject){
     registerPool.push_front(a2);
 
     //functions in replacement, not any pseudo instructions.
-    //registerPool.push_front(v1);
+    registerPool.push_front(a1);
 
     //does not work in replacement
-    //registerPool.push_front(a3);
+    registerPool.push_front(v1);
 }
 
 
@@ -324,6 +332,16 @@ void linearScanHandler::spillAtInterval(intervalMap::left_iterator newInterval) 
 /*  Replaces all symbolic registers with real and fix
     load and store instructions for the spilled intervals. */
 void linearScanHandler::replaceSymbolicRegisters() {
+    /*  Print list. */
+    initializeRegisterPool();
+
+    if (debuging) {
+        std::cout << "pool size:" << registerPool.size() << std::endl;
+        for(std::list<mipsRegisterName>::iterator iter = registerPool.begin();
+            iter != registerPool.end(); ++iter) {
+            std::cout << getRegisterString(*iter) << std::endl;
+        }
+    }
     /*  Variables */
     CFG* functionCFG = cfgHandlerPtr->getFunctionCFG();
     /*  Iterate through the blocks and check each instruction for
@@ -371,19 +389,21 @@ void linearScanHandler::replaceSymbolicRegisters() {
                                 (*opIter) = newRegExpr;
                                 /*  Save the register to the set for later checking. */
                                 regsUsed.insert(newHardReg.regName);
-                            } 
-                        } 
+                            }
+                        }
                     }
                 }
-
                 /*  Now all symbolic allocated have been given their registers in the instruction.
                     Next is to fix the spilled symbolics in the instruction. */
+
                 /*  Map to track if a spilled has been given a register already.
                     Think when a spilled symbolic is source and destination. */
                 std::map<unsigned, mipsRegisterName> spillRegs;
                 /*  Lists of spill symbolics load and store instructions. */
-                std::list<SgAsmMipsInstruction> loadSpills;
-                std::list<SgAsmMipsInstruction> storeSpills;
+                SgAsmStatementPtrList loadSpills;
+                SgAsmStatementPtrList storeSpills;
+                /*  Spill offset. Added to the regular offset. */
+                uint64_t spillOffset = 0;
                 /*  Spill register name variable. */
                 mipsRegisterName spillReg;
                 /*  Decode the instruction. */
@@ -415,42 +435,99 @@ void linearScanHandler::replaceSymbolicRegisters() {
                             regsUsed.insert(spillReg);
                             /*  Map the register to the symbolic. */
                             spillRegs.insert(std::pair<unsigned, mipsRegisterName>((*sIter).symbolicNumber, spillReg));
-
-                            //TODO create load and store instructions.
-                            //naive has a instruction that can be adapted.
-                            //save the load and stores to their lists
+                            /*  Create a store instruction save it. */
+                            SgAsmMipsInstruction* store = buildLoadOrStoreSpillInstruction
+                                (mips_sw, spillReg, stackOffset+spillOffset);
+                            storeSpills.push_back(store);
+                            /*  Create a load instruction and save it. */
+                            SgAsmMipsInstruction* load = buildLoadOrStoreSpillInstruction
+                                (mips_lw, spillReg, stackOffset+spillOffset);
+                            loadSpills.push_back(load);
+                            /*  Increase the spill offset. */
+                            spillOffset += 4;
                             /*  Return the register used as spill to the pool again. */
-                            //TODO might not need this..
                             registerPool.push_back(spillReg);
                         } 
                     }
                 }
-
                 /*  Check destination registers. */
                 for(std::vector<registerStruct>::iterator dIter = decodedMips.destinationRegisters.begin();
                     dIter != decodedMips.destinationRegisters.end(); ++dIter) {
                     /* Check if the register is symbolic. */
                     if (symbolic_reg == (*dIter).regName) {
-                        /*  Check if the register is allocated or spilled. */
-                        if (1 == spillMap.count((*dIter).symbolicNumber) &&
-                            1 != spillRegs.count((*dIter).symbolicNumber)) {
-                            /*  The register was spilled and is not used as a source. 
-                                Need to free a register to use temporarily. */
-                            /*  I take the last used register for spill. */
-                            mipsRegisterName spillReg = registerPool.front();
-                            registerPool.pop_front();
-                            //TODO create load and store instructions and save these.
-
-                            /*  Save it in the temporary mapping. */
-                            //regReplacements.insert(boost::bimap<unsigned, mipsRegisterName>::value_type
-                            //    ((*dIter).symbolicNumber, spillReg));
+                        /*  Check if the register is spilled. And if it has a register or not. */
+                        if (1 == spillMap.count((*dIter).symbolicNumber)) {
+                            /*  Check if the symbolic has a register or needs one. */
+                            if (1 == spillRegs.count((*dIter).symbolicNumber)) {
+                                /* It has a register, use it. */
+                                spillReg = spillRegs.find((*dIter).symbolicNumber)->second;
+                            } else {
+                                /*  It did not have a register so get one. */
+                                for(std::list<mipsRegisterName>::iterator rIter = registerPool.begin();
+                                    rIter != registerPool.end(); ++rIter) {
+                                    /*  Find the first register in the pool we know is not used in the instruction. */
+                                    if (1 != regsUsed.count(*rIter)) {
+                                        spillReg = *rIter;
+                                        break;
+                                    }
+                                }
+                            }
+                            /*  Set it as a used register for the instruction. */
+                            regsUsed.insert(spillReg);
+                            /*  Map the register to the symbolic. */
+                            spillRegs.insert(std::pair<unsigned, mipsRegisterName>((*dIter).symbolicNumber, spillReg));
+                            /*  Create a store instruction save it. */
+                            SgAsmMipsInstruction* store = buildLoadOrStoreSpillInstruction
+                                (mips_sw, spillReg, stackOffset+spillOffset);
+                            storeSpills.push_back(store);
+                            /*  Create a load instruction and save it. */
+                            SgAsmMipsInstruction* load = buildLoadOrStoreSpillInstruction
+                                (mips_lw, spillReg, stackOffset+spillOffset);
+                            loadSpills.push_back(load);
+                            /*  Increase the spill offset. */
+                            spillOffset += 4;
                             /*  return register to pool */
                             registerPool.push_back(spillReg);
-                        } 
+                        }
                     }
                 }
-                /*  The operands have been checked. Save the instruction now. */
+                /*  After checking the spilled regs it is safe to do the replacement.
+                    On these as well. */
+                for(SgAsmExpressionPtrList::iterator oIter = opList.begin();
+                    oIter != opList.end(); ++oIter) {
+                    /* Check that the operand is a register. */
+                    if (V_SgAsmDirectRegisterExpression == (*oIter)->variantT()) {
+                        /*  Cast to register exporession. */
+                        SgAsmDirectRegisterExpression* regPtr = isSgAsmDirectRegisterExpression(*oIter);
+                        /*  Decode register and check if it is symbolic. */
+                        registerStruct regS = decodeRegister(regPtr);
+                        if (symbolic_reg == regS.regName) {
+                            /*  Check that it has a register it should have. */
+                            if (1 == spillRegs.count(regS.symbolicNumber)) {
+                                /*  Get the register, change the regname in the struct. */
+                                regS.regName = spillRegs.find(regS.symbolicNumber)->second;
+                                /*  Build an register expression. */
+                                SgAsmDirectRegisterExpression* regExpr = buildRegister(regS);
+                                /*  Set the new expression. */
+                                (*oIter) = regExpr;
+                            } 
+                        }
+                    }
+                }
+                /*  Insert spill store. */
+                if (0 < storeSpills.size()) {
+                    shadowList.insert(shadowList.end(), storeSpills.begin(), storeSpills.end());
+                }
+                /*  Save the instruction. */
                 shadowList.push_back(*stmtIter);
+                /*  Insert spill loads. */
+                if (0 < storeSpills.size()) {
+                    shadowList.insert(shadowList.end(), loadSpills.begin(), loadSpills.end());
+                }
+                /*  Check if the spillOffset it higher than the max. If so then save it. */
+                if (spillOffset > maxSpillOffset) {
+                    maxSpillOffset = spillOffset;
+                }
             } else {
                 /*  The statement is not a mips instruction but we save it. */
                 shadowList.push_back(*stmtIter);
@@ -459,5 +536,53 @@ void linearScanHandler::replaceSymbolicRegisters() {
         /* Swap the shadowlist and the statementlist. */
         stmtList.swap(shadowList);
     }
+}
+
+
+/* help functions to build load/store instructions */
+SgAsmMipsInstruction* linearScanHandler::buildLoadOrStoreSpillInstruction
+        (MipsInstructionKind kind, mipsRegisterName regname, uint64_t offset) {
+    /* Stack pointer register that can be used */
+    registerStruct spStruct;
+    spStruct.regName = sp; 
+    /* a destination register or source register */
+    registerStruct destinationOrSource;
+    destinationOrSource.regName = regname;
+    /* Create instruction struct accordingly then build instruction */
+    instructionStruct loadstoreStruct;
+
+    if (mips_lw == kind) {
+        /*  Settings for the load instructions. */
+        loadstoreStruct.kind = mips_lw;
+        loadstoreStruct.mnemonic = "lw";
+        loadstoreStruct.format = getInstructionFormat(mips_lw);
+        /*  Set the destination register. */
+        loadstoreStruct.destinationRegisters.push_back(destinationOrSource);
+        /*  set the sp in the source register. */
+        loadstoreStruct.sourceRegisters.push_back(spStruct);
+    } else if (mips_sw == kind) {
+        /*  Settings for store instructions. */
+        loadstoreStruct.kind = mips_sw;
+        loadstoreStruct.mnemonic = "sw";
+        loadstoreStruct.format = getInstructionFormat(mips_sw);
+        /*  Set the sp to the source register. */
+        loadstoreStruct.destinationRegisters.push_back(spStruct);
+        /*  set the source register which is being saved. */
+        loadstoreStruct.sourceRegisters.push_back(destinationOrSource);
+    } else {
+        /* Failure, the kind is neither a load or store. */
+        ASSERT_not_reachable("Invalid instruction kind passed");
+    }
+    /*  Set data size and sign bits. */
+    loadstoreStruct.memoryReferenceSize = 32;
+    loadstoreStruct.significantBits = 32;
+    loadstoreStruct.isSignedMemory = true;
+    /*  Set the constant of the instruction, which determines the offset. */
+    loadstoreStruct.instructionConstant = offset;
+    /*  Build the instruction. */
+    SgAsmMipsInstruction* mipsInst = buildInstruction(&loadstoreStruct);
+    /*  return instruction pointer. */
+    return mipsInst;
+    
 }
 

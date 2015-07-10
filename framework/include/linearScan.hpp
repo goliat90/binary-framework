@@ -46,10 +46,14 @@ class linearScanHandler {
     std::map<unsigned, mipsRegisterName> allocationMap;
     /*  Map to intervals spilled and their stack location. */
     std::map<unsigned, uint64_t> spillMap;
-    /*  Stack offset counter. */
+    /*  Stack offset counter. Will also determin how much the stack needs to be modified. */
     uint64_t stackOffset;
+    /*  Maximum spills offset.  */
+    uint64_t maxSpillOffset;
 
     /*  Functions. */
+    /*  Sets up the register pool. */
+    void initializeRegisterPool();
     /*  Replace temporary registers with symbolic names before live-range analysis.
         The registers used by linear scan is t0-7, t8,t9. */
     void replaceHardRegisters();
@@ -63,6 +67,8 @@ class linearScanHandler {
     void linearStackModification();
     /*  Go through the instructions and replace the symbolic registers. */
     void replaceSymbolicRegisters();
+    /*  help function to build load and store instructions for spilled registers. */
+    SgAsmMipsInstruction* buildLoadOrStoreSpillInstruction(MipsInstructionKind, mipsRegisterName, uint64_t);
 };
 
 #endif
