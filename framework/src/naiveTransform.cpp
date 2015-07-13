@@ -349,6 +349,7 @@ mipsRegisterName naiveHandler::getHardRegister() {
 }
 
 /* Adjust the size of the stack */
+//TODO need to alter this function to create activation instructions if the do not exists. */
 void naiveHandler::modifyStack() {
     /*  From the cfgHandler retrieve the activation records
         that adjusts the stack and modify them to include

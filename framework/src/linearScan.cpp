@@ -22,12 +22,16 @@ linearScanHandler::linearScanHandler(CFGhandler* passedCfgObject){
     initializeRegisterPool();
 }
 
+/*  Initialize function for the register pool. Current implementation only uses
+    the temporary registers. If other are to be used the live-range analysis needs to
+    be fixed to include the semantics of those registers, such as they are return
+    value registers or arguments for function. */
 void linearScanHandler::initializeRegisterPool() {
     registerPool.clear();
     /*  Initialize the freeRegister set */
     /*  t0-t7 */
-    //registerPool.push_front(t0);
-    //registerPool.push_front(t1);
+    registerPool.push_front(t0);
+    registerPool.push_front(t1);
     //registerPool.push_front(t2);
     //registerPool.push_front(t3);
     //registerPool.push_front(t4);
@@ -37,14 +41,6 @@ void linearScanHandler::initializeRegisterPool() {
     /*  t8-t9 */
     //registerPool.push_front(t8);
     //registerPool.push_front(t9);
-    /*  extra register to test. */
-    registerPool.push_front(a2);
-
-    //functions in replacement, not any pseudo instructions.
-    registerPool.push_front(a1);
-
-    //does not work in replacement
-    registerPool.push_front(v1);
 }
 
 
@@ -84,8 +80,10 @@ void linearScanHandler::applyLinearScan() {
 
     /*  After linear scan has been performed modify the stack. If there is no
         stack then create stack instructions. */
-
-
+    if (debuging) {
+        std::cout << "Modifying stack." << std::endl;
+    }
+    linearStackModification();
 }
 
 /*  Replace the registers used by linear scan with symbolic names.
@@ -400,8 +398,8 @@ void linearScanHandler::replaceSymbolicRegisters() {
                     Think when a spilled symbolic is source and destination. */
                 std::map<unsigned, mipsRegisterName> spillRegs;
                 /*  Lists of spill symbolics load and store instructions. */
-                SgAsmStatementPtrList loadSpills;
-                SgAsmStatementPtrList storeSpills;
+                SgAsmStatementPtrList beforeSpillInst;
+                SgAsmStatementPtrList afterSpillInst;
                 /*  Spill offset. Added to the regular offset. */
                 uint64_t spillOffset = 0;
                 /*  Spill register name variable. */
@@ -435,14 +433,25 @@ void linearScanHandler::replaceSymbolicRegisters() {
                             regsUsed.insert(spillReg);
                             /*  Map the register to the symbolic. */
                             spillRegs.insert(std::pair<unsigned, mipsRegisterName>((*sIter).symbolicNumber, spillReg));
-                            /*  Create a store instruction save it. */
+                            /*  Create a store instruction to save the value of the register temporarily. */
                             SgAsmMipsInstruction* store = buildLoadOrStoreSpillInstruction
                                 (mips_sw, spillReg, stackOffset+spillOffset);
-                            storeSpills.push_back(store);
-                            /*  Create a load instruction and save it. */
+                            beforeSpillInst.push_back(store);
+                            /*  The value residing in the register is temporarily stored, now the spilled
+                                value can be loaded and used in the instruction. Afterwards it is saved in memeory. */
+                            /*  Get the offset for the spilled value. */
+                            uint64_t memVariableOffset = spillMap.find((*sIter).symbolicNumber)->second;
+                            /*  Build load and store instructions using the offset. */
+                            SgAsmMipsInstruction* memVarLoad = buildLoadOrStoreSpillInstruction
+                                (mips_lw, spillReg, memVariableOffset);
+                            beforeSpillInst.push_back(memVarLoad);
+                            SgAsmMipsInstruction* memVarStore = buildLoadOrStoreSpillInstruction
+                                (mips_sw, spillReg, memVariableOffset);
+                            afterSpillInst.push_back(memVarStore);
+                            /*  Create a load instruction to retrieve the temporary stored value. */
                             SgAsmMipsInstruction* load = buildLoadOrStoreSpillInstruction
                                 (mips_lw, spillReg, stackOffset+spillOffset);
-                            loadSpills.push_back(load);
+                            afterSpillInst.push_back(load);
                             /*  Increase the spill offset. */
                             spillOffset += 4;
                             /*  Return the register used as spill to the pool again. */
@@ -476,14 +485,22 @@ void linearScanHandler::replaceSymbolicRegisters() {
                             regsUsed.insert(spillReg);
                             /*  Map the register to the symbolic. */
                             spillRegs.insert(std::pair<unsigned, mipsRegisterName>((*dIter).symbolicNumber, spillReg));
-                            /*  Create a store instruction save it. */
+                            /*  Create a store instruction to save the value of the register temporarily. */
                             SgAsmMipsInstruction* store = buildLoadOrStoreSpillInstruction
                                 (mips_sw, spillReg, stackOffset+spillOffset);
-                            storeSpills.push_back(store);
-                            /*  Create a load instruction and save it. */
+                            beforeSpillInst.push_back(store);
+                            /*  The value residing in the register is temporarily stored, now the spilled
+                                value can be stored after it has recieved its new value. */
+                            /*  Get the offset for the spilled value. */
+                            uint64_t memVariableOffset = spillMap.find((*dIter).symbolicNumber)->second;
+                            /*  Create a store instruction using the offset. */
+                            SgAsmMipsInstruction* memVariableStore = buildLoadOrStoreSpillInstruction
+                                (mips_sw, spillReg, memVariableOffset);
+                            afterSpillInst.push_back(memVariableStore);
+                            /*  Create a load instruction to retrieve the temporary stored value. */
                             SgAsmMipsInstruction* load = buildLoadOrStoreSpillInstruction
                                 (mips_lw, spillReg, stackOffset+spillOffset);
-                            loadSpills.push_back(load);
+                            afterSpillInst.push_back(load);
                             /*  Increase the spill offset. */
                             spillOffset += 4;
                             /*  return register to pool */
@@ -514,15 +531,15 @@ void linearScanHandler::replaceSymbolicRegisters() {
                         }
                     }
                 }
-                /*  Insert spill store. */
-                if (0 < storeSpills.size()) {
-                    shadowList.insert(shadowList.end(), storeSpills.begin(), storeSpills.end());
+                /*  Insert load store instructions ahead of the instruction.. */
+                if (0 < beforeSpillInst.size()) {
+                    shadowList.insert(shadowList.end(), beforeSpillInst.begin(), beforeSpillInst.end());
                 }
                 /*  Save the instruction. */
                 shadowList.push_back(*stmtIter);
-                /*  Insert spill loads. */
-                if (0 < storeSpills.size()) {
-                    shadowList.insert(shadowList.end(), loadSpills.begin(), loadSpills.end());
+                /*  Insert load store instructions after the instruction. */
+                if (0 < afterSpillInst.size()) {
+                    shadowList.insert(shadowList.end(), afterSpillInst.begin(), afterSpillInst.end());
                 }
                 /*  Check if the spillOffset it higher than the max. If so then save it. */
                 if (spillOffset > maxSpillOffset) {
@@ -586,3 +603,118 @@ SgAsmMipsInstruction* linearScanHandler::buildLoadOrStoreSpillInstruction
     
 }
 
+
+/*  Modifies the stack to give space for the linear scans stack needs. */
+void linearScanHandler::linearStackModification() {
+    /*  Check if the function has activation records by getting the pair
+        and checking the pointers. */
+    if (debuging) {
+        std::cout << "stackOffset: " << std::hex << stackOffset << std::endl;
+        std::cout << "maxSpillOffset: " << std::hex << maxSpillOffset << std::endl;
+        std::cout << "Combined: " << std::hex << (stackOffset + maxSpillOffset) << std::endl;
+    }
+    std::pair<SgAsmMipsInstruction*, SgAsmMipsInstruction*> activePair = cfgHandlerPtr->getActivationRecord();
+    /*  Check if there is an activation record that increases the stack, if so use it.
+        Otherwise create an activation record and insert it. */
+    //TODO check if there are any elements in the spill man, if not we do not need to touch the stack. 
+    if (0 > spillMap.size()) {
+        if (activePair.first == NULL) {
+            /*  There is no activation record instruction that
+                increases the stack size. We build and insert one. */
+            instructionStruct myActivation;
+            /*  Register struct for the stack pointer. */
+            registerStruct spReg;
+            spReg.regName = sp;
+            /*  Set the kind, mnemonic, format. */
+            myActivation.kind = mips_addiu;
+            myActivation.mnemonic = "addiu";
+            myActivation.format = getInstructionFormat(mips_addiu);
+            /*  set the constants for the instruction. */
+            myActivation.instructionConstant = stackOffset + maxSpillOffset;
+            myActivation.significantBits = 32;
+            /*  Set the registers to be used in the instruction.
+                It is SP as both source and destination. */
+            myActivation.sourceRegisters.push_back(spReg);
+            myActivation.destinationRegisters.push_back(spReg);
+            /*  Build the instruction. */
+            SgAsmMipsInstruction* activationMips = buildInstruction(&myActivation);
+            /*  Get the entry block pointer. */
+            SgAsmBlock* eb = cfgHandlerPtr->getEntryBlock();
+            /*  Get the statement list. */
+            SgAsmStatementPtrList& entryList = eb->get_statementList();
+            /*  Insert the instruction in the beginning of the list. */ 
+            entryList.insert(entryList.begin(), activationMips);
+        } else {
+            /*  There is a activation record instruction. Modify it. */
+            SgAsmMipsInstruction* activation = activePair.first;
+            /*  Get the operand list. */
+            SgAsmExpressionPtrList& operandList = activation->get_operandList()->get_operands();
+            /*  Retrieve the constant of the activation instruction
+                and increase it accordingly. */
+            for(SgAsmExpressionPtrList::iterator opIter = operandList.begin();
+                opIter != operandList.end(); ++opIter) {
+                /* Check if it is a constant expression. */
+                if (V_SgAsmIntegerValueExpression == (*opIter)->variantT()) {
+                    /*  Cast to correct pointer. */
+                    SgAsmIntegerValueExpression* valExpr = isSgAsmIntegerValueExpression(*opIter);
+                    /*  Get the constant value. */
+                    uint64_t constant = valExpr->get_absoluteValue();
+                    /*  Increase the stack space allocated. Means the subtraction value is increased. */
+                    //TODO this value should be negative.
+                    constant -= (stackOffset + maxSpillOffset);
+                    /*  Set the expression. */
+                    valExpr->set_absoluteValue(constant);
+                }
+            }
+        }
+    }
+
+    /*  Check if there is a deactivation record. */
+    if (activePair.second == NULL) {
+        /*  There is no deactivation record so create and add one. */
+        instructionStruct myDeactivation;
+        /*  Register struct for the stack pointer. */
+        registerStruct spReg;
+        spReg.regName = sp;
+        /*  Set the kind, mnemonic, format. */
+        myDeactivation.kind = mips_addiu;
+        myDeactivation.mnemonic = "addiu";
+        myDeactivation.format = getInstructionFormat(mips_addiu);
+        /*  set the constants for the instruction. */
+        myDeactivation.instructionConstant = stackOffset + maxSpillOffset;
+        myDeactivation.significantBits = 32;
+        /*  Set the registers to be used in the instruction.
+            It is SP as both source and destination. */
+        myDeactivation.sourceRegisters.push_back(spReg);
+        myDeactivation.destinationRegisters.push_back(spReg);
+        /*  Build the instruction. */
+        SgAsmMipsInstruction* deactivationMips = buildInstruction(&myDeactivation);
+        /*  Get the entry block pointer. */
+        SgAsmBlock* eb = cfgHandlerPtr->getExitBlock();
+        /*  Get the statement list. */
+        SgAsmStatementPtrList& exitList = eb->get_statementList();
+        /*  Insert the instruction in the beginning of the list. */ 
+        //TODO consider inserting the instruction at the end?
+        exitList.insert(--exitList.end(), deactivationMips);
+    } else {
+        /*  There is a deactivation record. Modify it. */
+        SgAsmMipsInstruction* deactivation = activePair.second;
+        /*  Get the operand list. */
+        SgAsmExpressionPtrList& operandList = deactivation->get_operandList()->get_operands();
+        /*  Find the constant and modify it. */
+        for(SgAsmExpressionPtrList::iterator opIter = operandList.begin();
+            opIter != operandList.end(); ++opIter) {
+            /*  Check if it is the constant. */
+            if (V_SgAsmIntegerValueExpression == (*opIter)->variantT()) {
+                /*  cast to pointer. */
+                SgAsmIntegerValueExpression* valExpr = isSgAsmIntegerValueExpression(*opIter);
+                /*  Get the constant value. */
+                uint64_t constant = valExpr->get_absoluteValue();
+                /*  Adjust the value so all the stack space is returned. */
+                constant += (stackOffset + maxSpillOffset);
+                /*  Set this new value in the instruction. */
+                valExpr->set_absoluteValue(constant);
+            }
+        }
+    }
+}
