@@ -57,7 +57,10 @@ class CFGhandler {
         /* return pointer to program CFG */
         CFG* getProgramCFG();
         /* Get the activation record pair*/
-        std::pair<SgAsmInstruction*, SgAsmInstruction*> getActivationRecord();
+        std::pair<SgAsmMipsInstruction*, SgAsmMipsInstruction*> getActivationRecord();
+        /*  Functions to get pointers to the entry and exit block. */
+        SgAsmBlock* getEntryBlock() {return entryBlock;};
+        SgAsmBlock* getExitBlock()  {return exitBlock;};
         
     private:
 /**********************************************************************
@@ -82,7 +85,11 @@ class CFGhandler {
             than vector. */
         std::vector<SgAsmInstruction*> activationInstruction;
         /* first is the activationrecord, second is the deactivation record */
-        std::pair<SgAsmInstruction*, SgAsmInstruction*> activationPair;
+        std::pair<SgAsmMipsInstruction*, SgAsmMipsInstruction*> activationPair;
+        /*  Pointers to entry and exit block. */
+        SgAsmBlock* entryBlock;
+        SgAsmBlock* exitBlock;
+        //TODO consider adding it here?
 /**********************************************************************
 * Private Functions.
 **********************************************************************/

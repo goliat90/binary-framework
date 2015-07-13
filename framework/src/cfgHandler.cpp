@@ -4,6 +4,9 @@
 
 /* setup for this class */
 void CFGhandler::initialize(SgProject* root) {
+    /* Activation pair is set to null. */
+    activationPair.first = NULL;
+    activationPair.second = NULL;
     /* With the SgProject build the programcfg and save it */
     std::vector<SgAsmInterpretation*> interpretation = SageInterface::querySubTree<SgAsmInterpretation>(root);
     /* build cfg. */
@@ -43,7 +46,7 @@ bool CFGhandler::hasNewAddress(rose_addr_t instructionAddress) {
 
 
 /* return the activation record pair */
-std::pair<SgAsmInstruction*, SgAsmInstruction*> CFGhandler::getActivationRecord() {
+std::pair<SgAsmMipsInstruction*, SgAsmMipsInstruction*> CFGhandler::getActivationRecord() {
     return activationPair;
 }
 
@@ -93,8 +96,8 @@ void CFGhandler::findActivationRecords() {
         if (targetVertices.count(*iter) == 0) {
             /* The current vertex is the first block in the cfg,
                 save the vertex block as firstBlock */
-            SgAsmBlock* firstBlock = get(boost::vertex_name, *functionCFG, (*iter));
-            firstStatementList = &firstBlock->get_statementList();
+            entryBlock = get(boost::vertex_name, *functionCFG, (*iter));
+            firstStatementList = &entryBlock->get_statementList();
         }
     }
     for(std::set<CFG::vertex_descriptor>::iterator iter = targetVertices.begin();
@@ -104,8 +107,8 @@ void CFGhandler::findActivationRecords() {
         if (sourceVertices.count(*iter) == 0) {
             /* The current vertex is the last block in the cfg,
                 save the vertex block as lastBlock */
-            SgAsmBlock* lastBlock = get(boost::vertex_name, *functionCFG, (*iter));
-            lastStatementList = &lastBlock->get_statementList();
+            exitBlock = get(boost::vertex_name, *functionCFG, (*iter));
+            lastStatementList = &exitBlock->get_statementList();
         }
     }
 
@@ -156,6 +159,7 @@ void CFGhandler::findActivationRecords() {
         }
     }
 }
+
 
 /* Find the lowest and highest address in the function cfg */
 void CFGhandler::findAddressRange() {
