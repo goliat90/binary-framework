@@ -617,7 +617,7 @@ void linearScanHandler::linearStackModification() {
     /*  Check if there is an activation record that increases the stack, if so use it.
         Otherwise create an activation record and insert it. */
     //TODO check if there are any elements in the spill man, if not we do not need to touch the stack. 
-    if (0 > spillMap.size()) {
+    if (0 < spillMap.size()) {
         if (activePair.first == NULL) {
             /*  There is no activation record instruction that
                 increases the stack size. We build and insert one. */
@@ -630,7 +630,7 @@ void linearScanHandler::linearStackModification() {
             myActivation.mnemonic = "addiu";
             myActivation.format = getInstructionFormat(mips_addiu);
             /*  set the constants for the instruction. */
-            myActivation.instructionConstant = stackOffset + maxSpillOffset;
+            myActivation.instructionConstant = -(stackOffset + maxSpillOffset);
             myActivation.significantBits = 32;
             /*  Set the registers to be used in the instruction.
                 It is SP as both source and destination. */
@@ -660,60 +660,59 @@ void linearScanHandler::linearStackModification() {
                     /*  Get the constant value. */
                     uint64_t constant = valExpr->get_absoluteValue();
                     /*  Increase the stack space allocated. Means the subtraction value is increased. */
-                    //TODO this value should be negative.
                     constant -= (stackOffset + maxSpillOffset);
                     /*  Set the expression. */
                     valExpr->set_absoluteValue(constant);
                 }
             }
         }
-    }
 
-    /*  Check if there is a deactivation record. */
-    if (activePair.second == NULL) {
-        /*  There is no deactivation record so create and add one. */
-        instructionStruct myDeactivation;
-        /*  Register struct for the stack pointer. */
-        registerStruct spReg;
-        spReg.regName = sp;
-        /*  Set the kind, mnemonic, format. */
-        myDeactivation.kind = mips_addiu;
-        myDeactivation.mnemonic = "addiu";
-        myDeactivation.format = getInstructionFormat(mips_addiu);
-        /*  set the constants for the instruction. */
-        myDeactivation.instructionConstant = stackOffset + maxSpillOffset;
-        myDeactivation.significantBits = 32;
-        /*  Set the registers to be used in the instruction.
-            It is SP as both source and destination. */
-        myDeactivation.sourceRegisters.push_back(spReg);
-        myDeactivation.destinationRegisters.push_back(spReg);
-        /*  Build the instruction. */
-        SgAsmMipsInstruction* deactivationMips = buildInstruction(&myDeactivation);
-        /*  Get the entry block pointer. */
-        SgAsmBlock* eb = cfgHandlerPtr->getExitBlock();
-        /*  Get the statement list. */
-        SgAsmStatementPtrList& exitList = eb->get_statementList();
-        /*  Insert the instruction in the beginning of the list. */ 
-        //TODO consider inserting the instruction at the end?
-        exitList.insert(--exitList.end(), deactivationMips);
-    } else {
-        /*  There is a deactivation record. Modify it. */
-        SgAsmMipsInstruction* deactivation = activePair.second;
-        /*  Get the operand list. */
-        SgAsmExpressionPtrList& operandList = deactivation->get_operandList()->get_operands();
-        /*  Find the constant and modify it. */
-        for(SgAsmExpressionPtrList::iterator opIter = operandList.begin();
-            opIter != operandList.end(); ++opIter) {
-            /*  Check if it is the constant. */
-            if (V_SgAsmIntegerValueExpression == (*opIter)->variantT()) {
-                /*  cast to pointer. */
-                SgAsmIntegerValueExpression* valExpr = isSgAsmIntegerValueExpression(*opIter);
-                /*  Get the constant value. */
-                uint64_t constant = valExpr->get_absoluteValue();
-                /*  Adjust the value so all the stack space is returned. */
-                constant += (stackOffset + maxSpillOffset);
-                /*  Set this new value in the instruction. */
-                valExpr->set_absoluteValue(constant);
+        /*  Check if there is a deactivation record. */
+        if (activePair.second == NULL) {
+            /*  There is no deactivation record so create and add one. */
+            instructionStruct myDeactivation;
+            /*  Register struct for the stack pointer. */
+            registerStruct spReg;
+            spReg.regName = sp;
+            /*  Set the kind, mnemonic, format. */
+            myDeactivation.kind = mips_addiu;
+            myDeactivation.mnemonic = "addiu";
+            myDeactivation.format = getInstructionFormat(mips_addiu);
+            /*  set the constants for the instruction. */
+            myDeactivation.instructionConstant = stackOffset + maxSpillOffset;
+            myDeactivation.significantBits = 32;
+            /*  Set the registers to be used in the instruction.
+                It is SP as both source and destination. */
+            myDeactivation.sourceRegisters.push_back(spReg);
+            myDeactivation.destinationRegisters.push_back(spReg);
+            /*  Build the instruction. */
+            SgAsmMipsInstruction* deactivationMips = buildInstruction(&myDeactivation);
+            /*  Get the entry block pointer. */
+            SgAsmBlock* eb = cfgHandlerPtr->getExitBlock();
+            /*  Get the statement list. */
+            SgAsmStatementPtrList& exitList = eb->get_statementList();
+            /*  Insert the instruction in the beginning of the list. */ 
+            //TODO consider inserting the instruction at the end?
+            exitList.insert(--exitList.end(), deactivationMips);
+        } else {
+            /*  There is a deactivation record. Modify it. */
+            SgAsmMipsInstruction* deactivation = activePair.second;
+            /*  Get the operand list. */
+            SgAsmExpressionPtrList& operandList = deactivation->get_operandList()->get_operands();
+            /*  Find the constant and modify it. */
+            for(SgAsmExpressionPtrList::iterator opIter = operandList.begin();
+                opIter != operandList.end(); ++opIter) {
+                /*  Check if it is the constant. */
+                if (V_SgAsmIntegerValueExpression == (*opIter)->variantT()) {
+                    /*  cast to pointer. */
+                    SgAsmIntegerValueExpression* valExpr = isSgAsmIntegerValueExpression(*opIter);
+                    /*  Get the constant value. */
+                    uint64_t constant = valExpr->get_absoluteValue();
+                    /*  Adjust the value so all the stack space is returned. */
+                    constant += (stackOffset + maxSpillOffset);
+                    /*  Set this new value in the instruction. */
+                    valExpr->set_absoluteValue(constant);
+                }
             }
         }
     }
