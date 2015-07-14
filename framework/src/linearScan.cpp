@@ -32,7 +32,7 @@ void linearScanHandler::initializeRegisterPool() {
     /*  t0-t7 */
     registerPool.push_front(t0);
     registerPool.push_front(t1);
-    //registerPool.push_front(t2);
+    registerPool.push_front(t2);
     //registerPool.push_front(t3);
     //registerPool.push_front(t4);
     //registerPool.push_front(t5);
@@ -91,6 +91,8 @@ void linearScanHandler::applyLinearScan() {
     will be used in the whole CFG. This could be considered a greedy method
     since it will result in long live ranges for these registers. */
 void linearScanHandler::replaceHardRegisters() {
+    /*  Reset the register pool. */
+    initializeRegisterPool();
     /*  mapping between physical register and symbolic name */
     std::map<mipsRegisterName, registerStruct> physicalToSymbolic;
     /*  CFG pointer */
