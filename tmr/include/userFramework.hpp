@@ -20,7 +20,11 @@ class userFramework : public BinaryRewriter {
         //Hide default constructor again.
         userFramework();
         /*  Function that applies transformation    */
-        void applyTMR();
+        /*  TMR for addition, subtraction. */
+        void arithmeticTMR();
+
+        /*  Variables. */
+        instructionStruct currentInst;
 };
 
 #endif
