@@ -59,6 +59,13 @@ void linearScanHandler::applyLinearScan() {
     }
     replaceHardRegisters();
 
+    //TODO here i need to check if any of the original instructions uses the accumulator.
+    //if so i have to save it when needed. */
+    if (debuging) {
+        std::cout << "Checking for use of accumulator in original instructions." << std::endl;
+    }
+    checkAccumulatorAndFix();
+
     /*  Get live-range analysis done before performing register allocation. */
     if (debuging) {
         std::cout << "Starting the live-range analysis." << std::endl;
@@ -167,6 +174,220 @@ void linearScanHandler::replaceHardRegisters() {
             /*  Print the basic block if debuging */
             printBasicBlockInstructions(block);
         }
+    }
+}
+
+
+/*  Checks the original instructions if there is an instruction that
+    uses the accumulator. */
+void linearScanHandler::checkAccumulatorAndFix() {
+    /*  Bool set if a original instruction uses acc. */
+    bool originalUsesAcc = false;
+    /*  CFG pointer */
+    CFG* functionCFG = cfgHandlerPtr->getFunctionCFG();
+    /*  Iterate through the vertices */
+    for(std::pair<CFGVIter, CFGVIter> vertPair = vertices(*functionCFG);
+        vertPair.first != vertPair.second; ++vertPair.first) {
+        /*  Get the block pointer */
+        SgAsmBlock* block = get(boost::vertex_name, *functionCFG, *vertPair.first);
+        /*  Retrieve the statement list */
+        SgAsmStatementPtrList& stmtList = block->get_statementList();
+        /*  Go through the statement list and look at original instructions (has address)
+            and see if they are a type that uses the accumulator register. */
+        for(SgAsmStatementPtrList::iterator stmtIter = stmtList.begin();
+            stmtIter != stmtList.end(); ++stmtIter) {
+            /*  Verify that the statement is a mips instruction */
+            if (V_SgAsmMipsInstruction == (*stmtIter)->variantT()) {
+                /*  Cast to mips instruction pointer */
+                SgAsmMipsInstruction* mips = isSgAsmMipsInstruction(*stmtIter);
+                /*  Check if it is a original instruction. */
+                if (0 != mips->get_address()) {
+                    /*  Check the instruction kind and see if the instruction
+                        writes to accumulator registers. */
+                    switch(mips->get_kind()) {
+                        case mips_div:
+                        case mips_divu:
+                        case mips_madd:
+                        case mips_maddu:
+                        case mips_msub:
+                        case mips_msubu:
+                        case mips_mult:
+                        case mips_multu:{
+                            /*  These instructions writes to accumulator register. */
+                            originalUsesAcc = true;
+                            if (debuging) {
+                                std::cout << "An original instruction writes to accumulator register." << std::endl;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /*  If a original instruction uses the accumulator register i need
+        to save accumulator before using it in inserted instructions and then restore it. */
+    if (true == originalUsesAcc) {
+        /*  Iterate through the vertices */
+        for(std::pair<CFGVIter, CFGVIter> vertPair = vertices(*functionCFG);
+            vertPair.first != vertPair.second; ++vertPair.first) {
+            /*  Get the block pointer */
+            SgAsmBlock* block = get(boost::vertex_name, *functionCFG, *vertPair.first);
+            /*  Retrieve the statement list */
+            SgAsmStatementPtrList& stmtList = block->get_statementList();
+            /*  Shadow statement list. */
+            //TODO consider other type of list. to push in front and end.
+            std::list<SgAsmStatement*> shadowList;
+            /*  Lists to temporary store load, stores and moves. */
+            SgAsmStatementPtrList beforeInserts;
+            SgAsmStatementPtrList afterInserts;
+            /*  First instruction in region and a iterator for it. */
+            bool firstInRegion = true;
+            std::list<SgAsmStatement*>::iterator firstInst;
+            /*  List of instruction for a region of inserted instructions. */
+            std::list<SgAsmStatement*> regionList;
+            /*  Go through the statement list and look at original instructions (has address)
+                and see if they are a type that uses the accumulator register. */
+            for(SgAsmStatementPtrList::iterator stmtIter = stmtList.begin();
+                stmtIter != stmtList.end(); ++stmtIter) {
+                /*  Verify that the statement is a mips instruction */
+                if (V_SgAsmMipsInstruction == (*stmtIter)->variantT()) {
+                    /*  Cast to mips instruction pointer */
+                    SgAsmMipsInstruction* mips = isSgAsmMipsInstruction(*stmtIter);
+                    /*  Check if it is an inserted instruction. */
+                    if (0 == mips->get_address()) {
+                        /*  Check the instruction kind and see if the instruction
+                            writes to accumulator registers. */
+                        switch(mips->get_kind()) {
+                            case mips_div:
+                            case mips_divu:
+                            case mips_madd:
+                            case mips_maddu:
+                            case mips_msub:
+                            case mips_msubu:
+                            case mips_mult:
+                            case mips_multu:{
+                                /*  These instructions writes to accumulator register. */
+                                //TODO set a bool here to say that we need to save acc in this region?
+                                //TODO move below thoughts to a different instruction.
+
+                                //TODO move lo to a register.
+                                instructionStruct mflo;
+                                mflo.kind = mips_mflo;
+                                mflo.mnemonic = "mflo";
+                                mflo.format = getInstructionFormat(mips_mflo);
+                                /*  Get a destination symbolic. */
+                                registerStruct fromLoReg = generateSymbolicRegister();
+                                mflo.destinationRegisters.push_back(fromLoReg);
+                                /*  Build instruction and save it. */
+                                SgAsmMipsInstruction* mipsmflo = buildInstruction(&mflo);
+                                beforeInserts.push_back(mipsmflo);
+                                //TODO store it on the stack.
+                                SgAsmMipsInstruction* mipsLoStore = buildLoadOrStoreSpillInstruction(mips_sw, fromLoReg, 0);
+                                beforeInserts.push_back(mipsLoStore);
+
+                                //TODO move hi to a register.
+                                instructionStruct mfhi;
+                                mfhi.kind = mips_mfhi;
+                                mfhi.mnemonic = "mfhi";
+                                mfhi.format = getInstructionFormat(mips_mfhi);
+                                /*  Get a destination symbolic. */
+                                registerStruct fromHiReg = generateSymbolicRegister();
+                                mfhi.destinationRegisters.push_back(fromHiReg);
+                                /*  Build instruction and save it. */
+                                SgAsmMipsInstruction* mipsmfhi = buildInstruction(&mfhi);
+                                beforeInserts.push_back(mipsmfhi);
+                                //TODO store it on the stack.
+                                SgAsmMipsInstruction* mipsHiStore = buildLoadOrStoreSpillInstruction(mips_sw, fromHiReg, 4);
+                                beforeInserts.push_back(mipsHiStore);
+
+                                //TODO prepare a load instruction to insert after.
+                                registerStruct toLoReg = generateSymbolicRegister();
+                                SgAsmMipsInstruction* mipsLoLoad = buildLoadOrStoreSpillInstruction(mips_lw, toLoReg, 0);
+                                afterInserts.push_back(mipsLoLoad);
+                                //TODO prepare a move register to acc instruction.
+                                instructionStruct mtlo;
+                                mtlo.kind = mips_mtlo;
+                                mtlo.mnemonic = "mtlo";
+                                mtlo.format = getInstructionFormat(mips_mtlo);
+                                /*  Get a destination symbolic. */
+                                mtlo.sourceRegisters.push_back(toLoReg);
+                                /*  Build instruction and save it. */
+                                SgAsmMipsInstruction* mipsmtlo = buildInstruction(&mtlo);
+                                afterInserts.push_back(mipsmtlo);
+                                //TODO prepare a load instruction to insert after.
+                                registerStruct toHiReg = generateSymbolicRegister();
+                                SgAsmMipsInstruction* mipsHiLoad = buildLoadOrStoreSpillInstruction(mips_lw, toHiReg, 4);
+                                afterInserts.push_back(mipsHiLoad);
+                                //TODO prepare a move register to acc instruction.
+                                instructionStruct mthi;
+                                mthi.kind = mips_mthi;
+                                mthi.mnemonic = "mthi";
+                                mthi.format = getInstructionFormat(mips_mthi);
+                                mthi.sourceRegisters.push_back(toHiReg);
+                                SgAsmMipsInstruction* mipsmthi = buildInstruction(&mthi);
+                                afterInserts.push_back(mipsmthi);
+                                //the instructions restoring acc need to be placed in a list for insertion
+                                //when the next original instruction is found.
+                                }
+                        }
+                        /*  It is an instruction that does not use acc. Just store it. */
+                        //If it is the first inserted in a region then save an iterator to it. 
+                        //Im refering to an iterator in the shadow list.
+                        //could be used to insert move and stores to the beginning of the region in the shadow list.
+                        if (true == firstInRegion) {
+                            firstInRegion = false;
+                            firstInst = shadowList.insert(shadowList.end(), *stmtIter);
+                        } else {
+                            /*  not first in region but needs to be saved. */
+                            shadowList.push_back(*stmtIter);
+                        }
+                    } else {
+                        /*  The address is not 0 so it is an original instruction. */
+                        /*  Check if the before and after region lists are empty or not */
+                        if (!beforeInserts.empty()) {
+                            /*  Insert instructions at the start of the region using the
+                                saved iterator. */
+                            shadowList.insert(firstInst, beforeInserts.begin(), beforeInserts.end());
+                            beforeInserts.clear();
+                        }
+                        if (!afterInserts.empty()) {
+                            /*  Insert instructions at the end of the region. */
+                            shadowList.insert(shadowList.end(), afterInserts.begin(), afterInserts.end());
+                            afterInserts.clear();
+                        }
+                        /*  Save this original instruction. */
+                        shadowList.push_back(*stmtIter);
+                        /*  Set first in region bool to true again. */
+                        firstInRegion = true;
+                    }
+                } else {
+                    /*  It is not a instruction but needs to be saved. */
+                    shadowList.push_back(*stmtIter);
+                }
+            }
+            /*  Check here if the before and after insert lists are not empty.
+                If they are not there are instructions to be inserted. */
+            if (!beforeInserts.empty()) {
+                /*  Insert instructions at the start of the region using the
+                    saved iterator. */
+                shadowList.insert(firstInst, beforeInserts.begin(), beforeInserts.end());
+                beforeInserts.clear();
+            }
+            if (!afterInserts.empty()) {
+                /*  Insert instructions at the end of the region. */
+                shadowList.insert(shadowList.end(), afterInserts.begin(), afterInserts.end());
+                afterInserts.clear();
+            }
+
+            /*  The statement list has been iterated and the shadowList needs
+                to be exhanged with the statement list. */
+                //TODO clear the statement list? then do insert?
+                SgAsmStatementPtrList temp(shadowList.begin(), shadowList.end());
+                stmtList.swap(temp);
+        }
+        /*  Increase the stack value so we dont overwrite the acc values. */
+        stackOffset += 8;
     }
 }
 
@@ -436,8 +657,11 @@ void linearScanHandler::replaceSymbolicRegisters() {
                             /*  Map the register to the symbolic. */
                             spillRegs.insert(std::pair<unsigned, mipsRegisterName>((*sIter).symbolicNumber, spillReg));
                             /*  Create a store instruction to save the value of the register temporarily. */
+                            /*  Struct for the spill register. */
+                            registerStruct spillStruct;
+                            spillStruct.regName = spillReg;
                             SgAsmMipsInstruction* store = buildLoadOrStoreSpillInstruction
-                                (mips_sw, spillReg, stackOffset+spillOffset);
+                                (mips_sw, spillStruct, stackOffset+spillOffset);
                             beforeSpillInst.push_back(store);
                             /*  The value residing in the register is temporarily stored, now the spilled
                                 value can be loaded and used in the instruction. Afterwards it is saved in memeory. */
@@ -445,14 +669,14 @@ void linearScanHandler::replaceSymbolicRegisters() {
                             uint64_t memVariableOffset = spillMap.find((*sIter).symbolicNumber)->second;
                             /*  Build load and store instructions using the offset. */
                             SgAsmMipsInstruction* memVarLoad = buildLoadOrStoreSpillInstruction
-                                (mips_lw, spillReg, memVariableOffset);
+                                (mips_lw, spillStruct, memVariableOffset);
                             beforeSpillInst.push_back(memVarLoad);
                             SgAsmMipsInstruction* memVarStore = buildLoadOrStoreSpillInstruction
-                                (mips_sw, spillReg, memVariableOffset);
+                                (mips_sw, spillStruct, memVariableOffset);
                             afterSpillInst.push_back(memVarStore);
                             /*  Create a load instruction to retrieve the temporary stored value. */
                             SgAsmMipsInstruction* load = buildLoadOrStoreSpillInstruction
-                                (mips_lw, spillReg, stackOffset+spillOffset);
+                                (mips_lw, spillStruct, stackOffset+spillOffset);
                             afterSpillInst.push_back(load);
                             /*  Increase the spill offset. */
                             spillOffset += 4;
@@ -488,8 +712,10 @@ void linearScanHandler::replaceSymbolicRegisters() {
                             /*  Map the register to the symbolic. */
                             spillRegs.insert(std::pair<unsigned, mipsRegisterName>((*dIter).symbolicNumber, spillReg));
                             /*  Create a store instruction to save the value of the register temporarily. */
+                            registerStruct spillStruct;
+                            spillStruct.regName = spillReg;
                             SgAsmMipsInstruction* store = buildLoadOrStoreSpillInstruction
-                                (mips_sw, spillReg, stackOffset+spillOffset);
+                                (mips_sw, spillStruct, stackOffset+spillOffset);
                             beforeSpillInst.push_back(store);
                             /*  The value residing in the register is temporarily stored, now the spilled
                                 value can be stored after it has recieved its new value. */
@@ -497,11 +723,11 @@ void linearScanHandler::replaceSymbolicRegisters() {
                             uint64_t memVariableOffset = spillMap.find((*dIter).symbolicNumber)->second;
                             /*  Create a store instruction using the offset. */
                             SgAsmMipsInstruction* memVariableStore = buildLoadOrStoreSpillInstruction
-                                (mips_sw, spillReg, memVariableOffset);
+                                (mips_sw, spillStruct, memVariableOffset);
                             afterSpillInst.push_back(memVariableStore);
                             /*  Create a load instruction to retrieve the temporary stored value. */
                             SgAsmMipsInstruction* load = buildLoadOrStoreSpillInstruction
-                                (mips_lw, spillReg, stackOffset+spillOffset);
+                                (mips_lw, spillStruct, stackOffset+spillOffset);
                             afterSpillInst.push_back(load);
                             /*  Increase the spill offset. */
                             spillOffset += 4;
@@ -560,13 +786,13 @@ void linearScanHandler::replaceSymbolicRegisters() {
 
 /* help functions to build load/store instructions */
 SgAsmMipsInstruction* linearScanHandler::buildLoadOrStoreSpillInstruction
-        (MipsInstructionKind kind, mipsRegisterName regname, uint64_t offset) {
+        (MipsInstructionKind kind, registerStruct destinationOrSource, uint64_t offset) {
     /* Stack pointer register that can be used */
     registerStruct spStruct;
     spStruct.regName = sp; 
     /* a destination register or source register */
-    registerStruct destinationOrSource;
-    destinationOrSource.regName = regname;
+//    registerStruct destinationOrSource;
+//    destinationOrSource.regName = regname;
     /* Create instruction struct accordingly then build instruction */
     instructionStruct loadstoreStruct;
 
@@ -585,7 +811,7 @@ SgAsmMipsInstruction* linearScanHandler::buildLoadOrStoreSpillInstruction
         loadstoreStruct.mnemonic = "sw";
         loadstoreStruct.format = getInstructionFormat(mips_sw);
         /*  Set the sp to the source register. */
-        loadstoreStruct.destinationRegisters.push_back(spStruct);
+        loadstoreStruct.sourceRegisters.push_back(spStruct);
         /*  set the source register which is being saved. */
         loadstoreStruct.sourceRegisters.push_back(destinationOrSource);
     } else {

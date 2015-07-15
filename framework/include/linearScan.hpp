@@ -68,7 +68,10 @@ class linearScanHandler {
     /*  Go through the instructions and replace the symbolic registers. */
     void replaceSymbolicRegisters();
     /*  help function to build load and store instructions for spilled registers. */
-    SgAsmMipsInstruction* buildLoadOrStoreSpillInstruction(MipsInstructionKind, mipsRegisterName, uint64_t);
+    SgAsmMipsInstruction* buildLoadOrStoreSpillInstruction(MipsInstructionKind, registerStruct, uint64_t);
+    /*  Check if any original instruction is using the accumulator register.
+        If it so then it needs to be saved before use by inserted instructions. */
+    void checkAccumulatorAndFix();
 };
 
 #endif
