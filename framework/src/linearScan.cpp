@@ -671,9 +671,13 @@ void linearScanHandler::replaceSymbolicRegisters() {
                             SgAsmMipsInstruction* memVarLoad = buildLoadOrStoreSpillInstruction
                                 (mips_lw, spillStruct, memVariableOffset);
                             beforeSpillInst.push_back(memVarLoad);
-                            SgAsmMipsInstruction* memVarStore = buildLoadOrStoreSpillInstruction
-                                (mips_sw, spillStruct, memVariableOffset);
-                            afterSpillInst.push_back(memVarStore);
+
+                            //TODO Is it really right to save the variable if it is only used as source?
+                            //TODO it is not being changed unless it is also a destination.
+                            //SgAsmMipsInstruction* memVarStore = buildLoadOrStoreSpillInstruction
+                            //    (mips_sw, spillStruct, memVariableOffset);
+                            //afterSpillInst.push_back(memVarStore);
+                            
                             /*  Create a load instruction to retrieve the temporary stored value. */
                             SgAsmMipsInstruction* load = buildLoadOrStoreSpillInstruction
                                 (mips_lw, spillStruct, stackOffset+spillOffset);

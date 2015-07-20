@@ -10,6 +10,7 @@
 #include "symbolicRegisters.hpp"
 #include "naiveTransform.hpp"
 #include "linearScan.hpp"
+#include "listScheduler.hpp"
 
 // Boost lib headers
 #include <boost/graph/adjacency_list.hpp>

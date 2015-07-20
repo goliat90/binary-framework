@@ -17,6 +17,14 @@ VPATH = src:include:objectfiles
 
 all: libConvenience.la
 
+graphDAG.lo: graphDAG.cpp graphDAG.hpp
+	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o $(OBJDIR)/graphDAG.lo \
+	$(SRCDIR)/graphDAG.cpp
+
+listScheduler.lo: listScheduler.cpp listScheduler.hpp
+	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o $(OBJDIR)/listScheduler.lo \
+	$(SRCDIR)/listScheduler.cpp
+
 liveVariableAnalysis.lo: liveVariableAnalysis.cpp liveVariableAnalysis.hpp
 	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o $(OBJDIR)/liveVariableAnalysis.lo \
 	$(SRCDIR)/liveVariableAnalysis.cpp
@@ -56,7 +64,7 @@ test.lo: test.cpp
 
 # Compile a library object file
 libConvenience.la: binaryRewriter.lo symbolicRegisters.lo mipsISA.lo binaryDebug.lo cfgHandler.lo naiveTransform.lo \
-		linearScan.lo liveVariableAnalysis.lo
+		linearScan.lo liveVariableAnalysis.lo listScheduler.lo  graphDAG.lo
 	libtool --mode=link g++ $(ROSE_LIBS) -o libConvenience.la $(OBJDIR)/*.lo
 
 # Executable rule that can be used in case

@@ -95,15 +95,20 @@ void BinaryRewriter::transformBinary() {
 
     /*  Apply naivetransform or optimized. */
     if (true == useOptimized) {
-        /* Optimized, linear scan and list scheduling. */
+        /*  Optimized, linear scan and list scheduling. */
         linearScanHandler linearObject(cfgContainer);
-        /* if debuging is set pass it on. */
+        /*  if debuging is set pass it on. */
         linearObject.selectDebuging(debugging);
-        /* Call optimized transform */
+        /*  Call optimized transform */
         linearObject.applyLinearScan();
+        
+        /*  Build list scheduler. */
+        listScheduler listObject(cfgContainer);
+        /*  Perform scheduling. */
+        listObject.performScheduling();
 
     } else {
-        /* Apply naive or optimized transformation. Currently just naive. */
+        /* Apply naive transformation. */
         naiveHandler naiveObject(cfgContainer);
         /* Start naive framework transformation */
         naiveObject.applyTransformation();
