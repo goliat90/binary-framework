@@ -9,11 +9,17 @@
 
 /*  Includes */
 #include "rose.h"
+#include "boost/bimap.hpp"
+#include "boost/bimap/set_of.hpp"
+#include "boost/bimap/multiset_of.hpp"
+#include "boost/graph/graph_utility.hpp"
 
 /*  Typedef for the DAG graph. */
 
 /*  Properties for the properties of the vertices. */
-typedef boost::property<boost::vertex_name_t, SgAsmInstruction*> vertexProperties_DAG;
+/*  NOTE! I'm using vertex_index2 instead of vertex_index because the later
+    seems to be used/instantiated by something and becomes unusable. */
+typedef boost::property<boost::vertex_name_t, SgAsmInstruction*, boost::property<boost::vertex_index2_t, std::string> > vertexProperties_DAG;
 
 /*  Properties for the edges in the graph. The weight is intended to be the latency
     of the instruction. */
@@ -33,6 +39,8 @@ typedef boost::graph_traits<frameworkDAG>::vertex_iterator DAGVIter;
 typedef boost::graph_traits<frameworkDAG>::vertex_descriptor DAGVertexDescriptor;
 typedef boost::graph_traits<frameworkDAG>::edge_iterator DAGEIter;
 
+//propertymap
+typedef boost::property_map<frameworkDAG, boost::vertex_index2_t>::type vertexIndexNameMap;
 
 //TODO Create some kind of definition for resources that is used when building the dag.
 /*  Enums used for tracking which resources are being used. */
@@ -52,6 +60,7 @@ namespace DAGresources {
         fp,
         ra,
         /*  Special registers, accumulator. */
+        //TODO might merge these to one enum.
         highAcc, lowAcc,
         /*  Memory resource. I do not think i can change the order which load and
             stores are encountered. */
@@ -59,6 +68,12 @@ namespace DAGresources {
     };
 }
 
+/*  Typedefs for maps. */
+typedef std::map<DAGresources::resourceEnum, DAGVertexDescriptor> definitionContainer;
+//typedef std::map<DAGresources::resourceEnum, std::set<DAGVertexDescriptor> > useContainer;
+typedef boost::bimap<boost::bimaps::multiset_of<DAGresources::resourceEnum>, boost::bimaps::set_of<DAGVertexDescriptor> > useContainer;
+
+/*  DAG graph class. */
 class graphDAG {
     public:
         /*  Constructor. */
@@ -75,10 +90,12 @@ class graphDAG {
         void buildBackwardDAG();
         /*  Resource definition function. */
         //TODO determine arguments, is probably the node and the resource checked.
-        void resourceDefined();
+        void resourceDefined(DAGVertexDescriptor*, DAGresources::resourceEnum);
         /*  Resource use function. */
         //TODO determine arguments, is probably the node and the resource checked.
-        void resourceUsed();
+        void resourceUsed(DAGVertexDescriptor*);
+        /*  Gets resource enum from register name. */
+        DAGresources::resourceEnum getRegisterResource(mipsRegisterName);
 
         /*  Variables. */
         /*  DAG graphs. */
@@ -91,7 +108,9 @@ class graphDAG {
         /*  Map for which definition is set. */
         std::map<DAGresources::resourceEnum, DAGVertexDescriptor>  definitionMap;
         /*  Map for which vertices are using a resource. */
-        std::map<DAGresources::resourceEnum, std::set<DAGVertexDescriptor> > useMap;
+        //std::map<DAGresources::resourceEnum, std::set<DAGVertexDescriptor> > useMap;
+        /*  use container boost. */
+        useContainer useBiMap;
 };
 
 

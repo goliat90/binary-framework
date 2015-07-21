@@ -33,5 +33,9 @@ void listScheduler::performScheduling() {
 /*  Handles scheduling a block according to scheduling variables.
     A DAG is built for the block and with it it is scheduled. */
 void listScheduler::scheduleBlock(SgAsmBlock* basic) {
+    /*  Build dag object. */
+    graphDAG blockDAG(basic);
+    /*  Let it build DAGs. */
+    blockDAG.buildDAGs();
     
 }

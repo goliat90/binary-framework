@@ -11,6 +11,9 @@
 /* forward declarations */
 struct instructionStruct;
 
+/*  Typedefs. */
+typedef std::vector<registerStruct> regStructVector;
+
 //Type of instruction syntax
 //RD = Destiniation register
 //RS,RT = Source operand registers

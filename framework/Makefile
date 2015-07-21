@@ -64,7 +64,7 @@ test.lo: test.cpp
 
 # Compile a library object file
 libConvenience.la: binaryRewriter.lo symbolicRegisters.lo mipsISA.lo binaryDebug.lo cfgHandler.lo naiveTransform.lo \
-		linearScan.lo liveVariableAnalysis.lo listScheduler.lo  graphDAG.lo
+		linearScan.lo liveVariableAnalysis.lo listScheduler.lo graphDAG.lo
 	libtool --mode=link g++ $(ROSE_LIBS) -o libConvenience.la $(OBJDIR)/*.lo
 
 # Executable rule that can be used in case
