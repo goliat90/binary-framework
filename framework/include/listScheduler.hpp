@@ -9,6 +9,7 @@
 /*  Framework includes. */
 #include "graphDAG.hpp"
 #include "cfgHandler.hpp"
+#include "binaryDebug.hpp"
 
 
 class listScheduler {
@@ -17,6 +18,8 @@ class listScheduler {
         listScheduler(CFGhandler*);
         /*  Call to start scheduling. */
         void performScheduling();
+        /*  Enable debuging. */
+        void setDebuging(bool);
 
     private:
         /*  Hidden default constructor. */
@@ -29,6 +32,8 @@ class listScheduler {
         CFGhandler* cfgObject;
         /*  graph DAG object. */
         graphDAG* DAGobject;
+        /*  Debuging variable. */
+        bool debuging;
 
 
 };

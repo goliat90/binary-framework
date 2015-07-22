@@ -7,17 +7,25 @@
 graphDAG::graphDAG(SgAsmBlock* block) {
     /*  Save the pointer to the function cfg. */
     basicBlock = block;
+    /*  Set debuging. */
+    debuging = false;
 }
 
+/*  Set debuging. */
+void graphDAG::setDebuging(bool mode) {
+    debuging = mode;
+}
 
 /*  Builds the DAGs used when scheduling. */
 void graphDAG::buildDAGs() {
     /*  Build the backward DAG. */
     buildBackwardDAG();
     //testing to print
-    std::cout << std::endl << "graph" << std::endl;
-    print_graph(*backwardDAG, get(boost::vertex_index2, *backwardDAG));
-    std::cout << "graph end" << std::endl;
+    if (debuging) {
+        std::cout << std::endl << "graph" << std::endl;
+        print_graph(*backwardDAG, get(boost::vertex_index2, *backwardDAG));
+        std::cout << "graph end" << std::endl << std::endl;
+    }
     /*  Build the forward DAG. */
     //TODO use the reverse graph function instead.
     buildForwardDAG();
@@ -38,7 +46,7 @@ void graphDAG::buildBackwardDAG() {
     /*  Get the statement list. */
     SgAsmStatementPtrList& stmtList = basicBlock->get_statementList();
 
-    boost::property_map<frameworkDAG, boost::vertex_index2_t>::type nameMap = get(boost::vertex_index2, *backwardDAG);
+    vertexIndexNameMap nameMap = get(boost::vertex_index2, *backwardDAG);
     int count = 0;
 
     //TODO need to fix so i have the first and last instruction
@@ -60,6 +68,7 @@ void graphDAG::buildBackwardDAG() {
             std::stringstream strStream;
             strStream << mips->get_mnemonic() << " " << count;
             count++;
+            /*  Save the string as a property of the node. */
             put(nameMap, newNode, strStream.str());
             /*  Check destination registers. */
             //TODO take each destination register and get the resource name for it.
@@ -67,6 +76,10 @@ void graphDAG::buildBackwardDAG() {
             //or a accumulator instruction!
             for(regStructVector::iterator iter = currentInst.destinationRegisters.begin();
                 iter != currentInst.destinationRegisters.end(); ++iter) {
+                /*  Debug print. */
+                if (debuging) {
+                    std::cout << "Definition check for reg: " << getRegisterString((*iter).regName) << std::endl;
+                }
                 /*  Get the resource enum. */
                 DAGresources::resourceEnum regResource = getRegisterResource((*iter).regName);
                 /*  Do resource definition on it. */
@@ -76,8 +89,21 @@ void graphDAG::buildBackwardDAG() {
             /*  Check source registers. */
             //TODO take each register and get the resource for it.
             //also check if the instruction is a memory instruction (from memory);
+            for(regStructVector::iterator iter = currentInst.sourceRegisters.begin();
+                iter != currentInst.sourceRegisters.end(); ++iter) {
+                /*  Debug print. */
+                if (debuging) {
+                    std::cout << "Use check for reg: " << getRegisterString((*iter).regName) << std::endl;
+                }
+                /*  Get the resource enum. */
+                DAGresources::resourceEnum regResource = getRegisterResource((*iter).regName);
+                /*  Do resource used on it. */
+                resourceUsed(&newNode, regResource);
+            }
         }
-        
+        if (debuging) {
+            std::cout << std::endl;
+        }
     }
     /*  The backward dag has been built. */
 }
@@ -86,6 +112,7 @@ void graphDAG::buildBackwardDAG() {
 /*  Function that handles definition of resources. */
 //TODO i believe i need the instruction struct here.
 //TODO add argument for backward or forward. boolean? different add edge call?
+//TODO there is a function in boost that reverses all the edges of the graph.
 void graphDAG::resourceDefined(DAGVertexDescriptor* newNode, DAGresources::resourceEnum newResource) {
     /*
         if (resource is defined AND no use of the resource)
@@ -108,6 +135,10 @@ void graphDAG::resourceDefined(DAGVertexDescriptor* newNode, DAGresources::resou
         //TODO do i need to distinguish the types of arcs?
         //TODO could be that i need to set the latency values here. 
         add_edge(lastDefinitionVertex, *newNode, *backwardDAG);
+        /*  debug printout. */
+        if (debuging) {
+            std::cout << "adding WAW edge." << std::endl;
+        }
     }
 
     /*  for each node using the definition. */
@@ -122,13 +153,19 @@ void graphDAG::resourceDefined(DAGVertexDescriptor* newNode, DAGresources::resou
                 //TODO do i need to distinguish the types of arcs?
                 //TODO could be that i need to set the latency values here. 
                 add_edge(useIter->second, *newNode, *backwardDAG);
+                if (debuging) {
+                    std::cout << "Adding RAW edge." << std::endl;
+                }
                 /*  Set bool so entries are removed after iteration of list. */
                 removeUseEntries = true;
             }
     }
     /*  Remove the entry from the useBiMap if there are any. */
     if (true == removeUseEntries) {
-        useBiMap.left.erase(newResource);
+        int entries = useBiMap.left.erase(newResource);
+        if (debuging) {
+            std::cout << entries << " removed." << std::endl;
+        }
     }
     /*  insert the new node in the definition entry. */
     definitionMap[newResource] = *newNode;
@@ -136,14 +173,29 @@ void graphDAG::resourceDefined(DAGVertexDescriptor* newNode, DAGresources::resou
 
 
 /*  Resource used. */
-void graphDAG::resourceUsed(DAGVertexDescriptor* newNode) {
+void graphDAG::resourceUsed(DAGVertexDescriptor* newNode, DAGresources::resourceEnum newResource) {
     /*
         //TODO need to consider here that i cant have the newly made definition here. 
         if (resource is defined)
             add WAR arc between newnode and resource defined entry.
         add newnode as a uselist entry in resource uselist.
     */
-
+    if (1 == definitionMap.count(newResource)) {
+        /*  Add WAR arc between newnode and defined node. */
+        /*  Get the node that is defining the resource. */
+        DAGVertexDescriptor definitionNode = definitionMap.find(newResource)->second;
+        //TODO here do a check so target and source node is not the same.
+        //TODO will that work?
+        if (definitionNode != *newNode) {
+            /*  The nodes are not the same, create the edge. */
+            add_edge(definitionNode, *newNode, *backwardDAG);
+        }
+        if (debuging) {
+            std::cout << "adding WAR edge" << std::endl;
+        }
+    }
+    /*  Insert the new node in the use list. */
+    useBiMap.insert(useContainer::value_type(newResource, *newNode));
 }
 
 

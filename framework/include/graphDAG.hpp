@@ -6,6 +6,7 @@
 /*  Framework includes. */
 #include "mipsISA.hpp"
 #include "cfgHandler.hpp"
+#include "binaryDebug.hpp"
 
 /*  Includes */
 #include "rose.h"
@@ -67,11 +68,13 @@ namespace DAGresources {
         memoryResource
     };
 }
+/*  Typedef the resources for better code looks. */
+typedef DAGresources::resourceEnum mipsResource;
 
 /*  Typedefs for maps. */
 typedef std::map<DAGresources::resourceEnum, DAGVertexDescriptor> definitionContainer;
 //typedef std::map<DAGresources::resourceEnum, std::set<DAGVertexDescriptor> > useContainer;
-typedef boost::bimap<boost::bimaps::multiset_of<DAGresources::resourceEnum>, boost::bimaps::set_of<DAGVertexDescriptor> > useContainer;
+typedef boost::bimap<boost::bimaps::multiset_of<DAGresources::resourceEnum>, boost::bimaps::multiset_of<DAGVertexDescriptor> > useContainer;
 
 /*  DAG graph class. */
 class graphDAG {
@@ -80,6 +83,8 @@ class graphDAG {
         graphDAG(SgAsmBlock*);
         /*  Build DAGS. */
         void buildDAGs();
+        /*  Enable debuging. */
+        void setDebuging(bool);
 
     private:
         /*  Hide default constructor. */
@@ -93,11 +98,13 @@ class graphDAG {
         void resourceDefined(DAGVertexDescriptor*, DAGresources::resourceEnum);
         /*  Resource use function. */
         //TODO determine arguments, is probably the node and the resource checked.
-        void resourceUsed(DAGVertexDescriptor*);
+        void resourceUsed(DAGVertexDescriptor*, DAGresources::resourceEnum);
         /*  Gets resource enum from register name. */
         DAGresources::resourceEnum getRegisterResource(mipsRegisterName);
 
         /*  Variables. */
+        /*  Debuging variable. */
+        bool debuging;
         /*  DAG graphs. */
         frameworkDAG* forwardDAG;
         frameworkDAG* backwardDAG;
@@ -107,9 +114,7 @@ class graphDAG {
 
         /*  Map for which definition is set. */
         std::map<DAGresources::resourceEnum, DAGVertexDescriptor>  definitionMap;
-        /*  Map for which vertices are using a resource. */
-        //std::map<DAGresources::resourceEnum, std::set<DAGVertexDescriptor> > useMap;
-        /*  use container boost. */
+        /*  BiMap for which vertices are using a resource. */
         useContainer useBiMap;
 };
 

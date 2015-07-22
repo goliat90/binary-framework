@@ -104,6 +104,8 @@ void BinaryRewriter::transformBinary() {
         
         /*  Build list scheduler. */
         listScheduler listObject(cfgContainer);
+        /*  Set debuging. */
+        listObject.setDebuging(debugging);
         /*  Perform scheduling. */
         listObject.performScheduling();
 
