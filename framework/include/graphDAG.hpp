@@ -69,7 +69,7 @@ namespace DAGresources {
     };
 }
 /*  Typedef the resources for better code looks. */
-typedef DAGresources::resourceEnum mipsResource;
+//typedef DAGresources::resourceEnum mipsResource;
 
 /*  Typedefs for maps. */
 typedef std::map<DAGresources::resourceEnum, DAGVertexDescriptor> definitionContainer;

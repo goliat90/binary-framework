@@ -100,6 +100,24 @@ void graphDAG::buildBackwardDAG() {
                 /*  Do resource used on it. */
                 resourceUsed(&newNode, regResource);
             }
+
+            /*  Check the format the instruction has. If it is a format for 
+                store or load instructions we hande the memory resource. */
+            if (I_RS_MEM_RT_C == currentInst.format) {
+                /*  degbug print. */
+                if (debuging) {
+                    std::cout << strStream.str() << " writes to memory" << std::endl;
+                }
+                /*  store instruction. Writing to memory. can be called defining. */
+                resourceDefined(&newNode, DAGresources::memoryResource);
+            } else if (I_RD_MEM_RS_C == currentInst.format) {
+                /*  degbug print. */
+                if (debuging) {
+                    std::cout << strStream.str() << " reads from memory" << std::endl;
+                }
+                /*  load instruction. This means we are reading from memory or using it. */
+                resourceUsed(&newNode, DAGresources::memoryResource);
+            }
         }
         if (debuging) {
             std::cout << std::endl;
