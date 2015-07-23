@@ -70,10 +70,11 @@ void graphDAG::buildBackwardDAG() {
             count++;
             /*  Save the string as a property of the node. */
             put(nameMap, newNode, strStream.str());
+
             /*  Check destination registers. */
-            //TODO take each destination register and get the resource name for it.
-            //also check if the instructions are memory instructions (to memory);
-            //or a accumulator instruction!
+            if (debuging) {
+                std::cout << "--------------------" << std::endl;
+            }
             for(regStructVector::iterator iter = currentInst.destinationRegisters.begin();
                 iter != currentInst.destinationRegisters.end(); ++iter) {
                 /*  Debug print. */
@@ -85,10 +86,19 @@ void graphDAG::buildBackwardDAG() {
                 /*  Do resource definition on it. */
                 resourceDefined(&newNode, regResource);
             }
+            /*  If the instruction reads or write to accumulator register
+                it is handled here. */
+            if (true == involvesAcc(currentInst.kind)) {
+                /*  Debug print. */
+                if (debuging) {
+                    std::cout << "Instruction defines or uses accumulator. " << std::endl;
+                }
+                /*  The instruction writes or reads to the accumulator register.
+                    Handle the resource. */
+                manageAccumulator(&newNode, currentInst.kind);
+            }
 
             /*  Check source registers. */
-            //TODO take each register and get the resource for it.
-            //also check if the instruction is a memory instruction (from memory);
             for(regStructVector::iterator iter = currentInst.sourceRegisters.begin();
                 iter != currentInst.sourceRegisters.end(); ++iter) {
                 /*  Debug print. */
@@ -118,9 +128,9 @@ void graphDAG::buildBackwardDAG() {
                 /*  load instruction. This means we are reading from memory or using it. */
                 resourceUsed(&newNode, DAGresources::memoryResource);
             }
-        }
-        if (debuging) {
-            std::cout << std::endl;
+            if (debuging) {
+                std::cout << "--------------------" << std::endl;
+            }
         }
     }
     /*  The backward dag has been built. */
@@ -190,6 +200,7 @@ void graphDAG::resourceDefined(DAGVertexDescriptor* newNode, DAGresources::resou
 }
 
 
+
 /*  Resource used. */
 void graphDAG::resourceUsed(DAGVertexDescriptor* newNode, DAGresources::resourceEnum newResource) {
     /*
@@ -214,6 +225,71 @@ void graphDAG::resourceUsed(DAGVertexDescriptor* newNode, DAGresources::resource
     }
     /*  Insert the new node in the use list. */
     useBiMap.insert(useContainer::value_type(newResource, *newNode));
+}
+
+/*  This function handles the definition and use of the accumulator register. */
+void graphDAG::manageAccumulator(DAGVertexDescriptor* newNode, MipsInstructionKind instKind) {
+    /*  Depending on the kind of the resource make appropriate calls
+        to the resourceDefined and resourceUsed functions. */
+    switch(instKind) {
+        case mips_div:
+        case mips_divu:
+        case mips_madd:
+        case mips_maddu:
+        case mips_msub:
+        case mips_msubu:
+        case mips_mult:
+        case mips_multu:{
+            /*  All the above instructions write to the accumulator register.
+                Call on resourceDefined with Hi and Low as resources. */
+            resourceDefined(newNode, DAGresources::highAcc);
+            resourceDefined(newNode, DAGresources::lowAcc);
+            break;
+        }
+        case mips_mfhi:{
+            /* Reads high to a register. */
+            resourceUsed(newNode, DAGresources::highAcc);
+            break;
+        }
+        case mips_mflo:{
+            /* Reads low to a register. */
+            resourceUsed(newNode, DAGresources::highAcc);
+            break;
+        }
+        case mips_mthi:{
+            /*  Writes to the high register. */
+            resourceDefined(newNode, DAGresources::highAcc);
+            break;
+        }
+        case mips_mtlo: {
+            /*  Writes to the low register. */
+            resourceDefined(newNode, DAGresources::lowAcc);
+            break;
+        }
+    }
+}
+
+/*  Check if the instructionkind matches that of an instruction using the accumulator. */
+bool graphDAG::involvesAcc(MipsInstructionKind kind) {
+    /* If the instruction reads or writes to acc then return true. */
+    switch(kind) {
+        case mips_div:
+        case mips_divu:
+        case mips_madd:
+        case mips_maddu:
+        case mips_msub:
+        case mips_msubu:
+        case mips_mult:
+        case mips_multu:
+        /*  Acc move instructions. */
+        case mips_mfhi:
+        case mips_mflo:
+        case mips_mthi:
+        case mips_mtlo:
+            return true;
+        default:
+            return false;
+    }
 }
 
 

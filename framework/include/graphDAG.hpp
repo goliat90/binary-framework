@@ -68,8 +68,6 @@ namespace DAGresources {
         memoryResource
     };
 }
-/*  Typedef the resources for better code looks. */
-//typedef DAGresources::resourceEnum mipsResource;
 
 /*  Typedefs for maps. */
 typedef std::map<DAGresources::resourceEnum, DAGVertexDescriptor> definitionContainer;
@@ -101,6 +99,10 @@ class graphDAG {
         void resourceUsed(DAGVertexDescriptor*, DAGresources::resourceEnum);
         /*  Gets resource enum from register name. */
         DAGresources::resourceEnum getRegisterResource(mipsRegisterName);
+        /*  Handle instructions that use accumulator register. */
+        bool involvesAcc(MipsInstructionKind);
+        /*  Function that handles the accumulator resource. */
+        void manageAccumulator(DAGVertexDescriptor*, MipsInstructionKind);
 
         /*  Variables. */
         /*  Debuging variable. */
