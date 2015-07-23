@@ -20,7 +20,7 @@
 /*  Properties for the properties of the vertices. */
 /*  NOTE! I'm using vertex_index2 instead of vertex_index because the later
     seems to be used/instantiated by something and becomes unusable. */
-typedef boost::property<boost::vertex_name_t, SgAsmInstruction*, boost::property<boost::vertex_index2_t, std::string> > vertexProperties_DAG;
+typedef boost::property<boost::vertex_name_t, SgAsmMipsInstruction*, boost::property<boost::vertex_index2_t, std::string> > vertexProperties_DAG;
 
 /*  Properties for the edges in the graph. The weight is intended to be the latency
     of the instruction. */
@@ -40,8 +40,9 @@ typedef boost::graph_traits<frameworkDAG>::vertex_iterator DAGVIter;
 typedef boost::graph_traits<frameworkDAG>::vertex_descriptor DAGVertexDescriptor;
 typedef boost::graph_traits<frameworkDAG>::edge_iterator DAGEIter;
 
-//propertymap
+//propertymaps
 typedef boost::property_map<frameworkDAG, boost::vertex_index2_t>::type vertexIndexNameMap;
+typedef boost::property_map<frameworkDAG, boost::vertex_name_t>::type vertexInstructionMap;
 
 //TODO Create some kind of definition for resources that is used when building the dag.
 /*  Enums used for tracking which resources are being used. */
@@ -103,6 +104,8 @@ class graphDAG {
         bool involvesAcc(MipsInstructionKind);
         /*  Function that handles the accumulator resource. */
         void manageAccumulator(DAGVertexDescriptor*, MipsInstructionKind);
+        /*  Check if an instruction is a jump instruction. */
+        bool isBranchInstruction(SgAsmStatement*);
 
         /*  Variables. */
         /*  Debuging variable. */
@@ -112,6 +115,12 @@ class graphDAG {
         frameworkDAG* backwardDAG;
         /*  Basic block that is being schedules. */
         SgAsmBlock* basicBlock;
+        /*  Pointer to last instruction in block. */
+        SgAsmMipsInstruction* lastInstruction;
+        DAGVertexDescriptor lastInstructionVertice;
+        /*  Pointer to first instruction in block. */
+        SgAsmMipsInstruction* firstInstruction;
+        DAGVertexDescriptor firstInstructionVertice;
         //TODO some kind of storage for the variables used when scheduling. map with instructions as keys?
 
         /*  Map for which definition is set. */

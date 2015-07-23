@@ -53,5 +53,11 @@ void listScheduler::scheduleBlock(SgAsmBlock* basic) {
     }
     /*  Let it build DAGs. */
     blockDAG.buildDAGs();
+
+    //TODO create and calculate the variables used for scheduling.
+
+    //TODO do the actual scheduling.
     
 }
+
+

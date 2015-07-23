@@ -9,6 +9,9 @@ graphDAG::graphDAG(SgAsmBlock* block) {
     basicBlock = block;
     /*  Set debuging. */
     debuging = false;
+    /*  Set instruction pointers to null. */
+    lastInstruction = NULL;
+    firstInstruction = NULL;
 }
 
 /*  Set debuging. */
@@ -33,7 +36,7 @@ void graphDAG::buildDAGs() {
 
 /*  Constructs a DAG traversing forward. */
 void graphDAG::buildForwardDAG() {
-
+    /*  Constructed by reversing the backward DAG. */
 }
 
 /*  Constructs DAG traversing backwards. */
@@ -46,11 +49,37 @@ void graphDAG::buildBackwardDAG() {
     /*  Get the statement list. */
     SgAsmStatementPtrList& stmtList = basicBlock->get_statementList();
 
+    /*  Property map for the vertex_name, which is an instruction pointer. */
+    vertexInstructionMap instructionMap = get(boost::vertex_name, *backwardDAG);
+
+    /*  Property map for the naming of nodes. */
     vertexIndexNameMap nameMap = get(boost::vertex_index2, *backwardDAG);
+    /*  Counter to number the nodes in order of inserted. */
     int count = 0;
 
-    //TODO need to fix so i have the first and last instruction
-    //TODO as root and sink node. To guarantee that jumps are last and first instruction is never moved.
+    /*  Check how many instructions there are. Depending on this examine
+        if the last instruction is a jump. Also save the first instruction.
+        1 instruction = cant change order.
+        2 instructions = first cant move so only one instrution to schedule.
+        3 instructions = first fixed, potential to schedule the two other if last is not a branch. */
+    if (2 < stmtList.size()) {
+        /*  Debug print. */
+        if (debuging) {
+            std::cout << "Saving the first instruction." << std::endl;
+        }
+        /*  Save a reference to the first instruction. */
+        firstInstruction = isSgAsmMipsInstruction(stmtList.front());
+        /*  Check if the last instruction is a branch instruction, if true then save
+            a reference to it. */
+        if (true == isBranchInstruction(stmtList.back())) {
+            /*  Debug print. */
+            if (debuging) {
+                std::cout << "Saving last instruction, it is a branch." << std::endl;
+            }
+            /* The last instruction is recognized as a branch instruction. */
+            lastInstruction = isSgAsmMipsInstruction(stmtList.back());
+        }
+    }
 
     /*  iterate through the statement list backwards. */
     for(SgAsmStatementPtrList::reverse_iterator rIter = stmtList.rbegin();
@@ -64,17 +93,27 @@ void graphDAG::buildBackwardDAG() {
             instructionStruct currentInst = decodeInstruction(mips);
             /*  Create a new node in the graph. */
             DAGVertexDescriptor newNode = add_vertex(*backwardDAG);
+            /*  Check if the instruction is the first or last. */
+            if ((*rIter) == firstInstruction) {
+                firstInstructionVertice = newNode;
+            } else if ((*rIter) == lastInstruction) {
+                lastInstructionVertice = newNode;
+            }
+
             /*  Set a string name to it. Can be used when printing. */
             std::stringstream strStream;
             strStream << mips->get_mnemonic() << " " << count;
             count++;
             /*  Save the string as a property of the node. */
             put(nameMap, newNode, strStream.str());
+            /*  Save the instruction pointer as a property of the vertex. */
+            put(instructionMap, newNode, mips);
 
-            /*  Check destination registers. */
+            /*  debug print. */
             if (debuging) {
                 std::cout << "--------------------" << std::endl;
             }
+            /*  Check destination registers. */
             for(regStructVector::iterator iter = currentInst.destinationRegisters.begin();
                 iter != currentInst.destinationRegisters.end(); ++iter) {
                 /*  Debug print. */
@@ -133,7 +172,36 @@ void graphDAG::buildBackwardDAG() {
             }
         }
     }
-    /*  The backward dag has been built. */
+    /*  The backward dag has been built. Now ensure that the last
+        instruction will be a jump if there is one in the block.
+        Also ensure that the first instruction in the block will not be moved. */
+    if (NULL != firstInstruction) {
+        /*  There is a reference to the first instruction. Go through the 
+            graph and connect nodes without in edges to the first instructions
+            node. This is to make sure the first instruction will not be moved. */
+        /*  Set to store the vertices that do not have any in-edges. */
+        std::set<DAGVertexDescriptor> startVertices;
+        for(std::pair<DAGVIter, DAGVIter> iterPair = vertices(*backwardDAG);
+            iterPair.first != iterPair.second; ++iterPair.first) {
+            /*  Check if the vertice has any in edges. */
+            if (0 == out_degree(*iterPair.first, *backwardDAG)) {
+                /*  debug print. */
+                if (debuging) {
+                    std::cout << get(boost::vertex_index2, *backwardDAG, *iterPair.first)
+                        << " has no out-edges." << std::endl;
+                }
+                /*  Save the vertice. */
+                startVertices.insert(*iterPair.first);
+            }
+        }
+        /*  Go through the vertice set and add an edge between the vertice for
+            the first instruction and the vertices in the set. */
+        for(std::set<DAGVertexDescriptor>::iterator vIter = startVertices.begin();
+            vIter != startVertices.end(); ++vIter) {
+            /*  Add an edge between the vertice and the first instruction vertice. */
+            //add_edge(*vIter, firstInstructionVertice , *backwardDAG);
+        }
+    }
 }
 
 
@@ -173,20 +241,20 @@ void graphDAG::resourceDefined(DAGVertexDescriptor* newNode, DAGresources::resou
     bool removeUseEntries = false;
     for(useContainer::left_iterator useIter = useBiMap.left.begin();
         useIter != useBiMap.left.end(); ++useIter) {
+        //TODO do i need to distinguish the types of arcs?
+        //TODO could be that i need to set the latency values here. 
+        /*  Check if the entry uses the new resource. */
+        if (newResource == useIter->first) {
+            /*  add RAW arc between that node and the newnode. */
             //TODO do i need to distinguish the types of arcs?
             //TODO could be that i need to set the latency values here. 
-            /*  Check if the entry uses the new resource. */
-            if (newResource == useIter->first) {
-                /*  add RAW arc between that node and the newnode. */
-                //TODO do i need to distinguish the types of arcs?
-                //TODO could be that i need to set the latency values here. 
-                add_edge(useIter->second, *newNode, *backwardDAG);
-                if (debuging) {
-                    std::cout << "Adding RAW edge." << std::endl;
-                }
-                /*  Set bool so entries are removed after iteration of list. */
-                removeUseEntries = true;
+            add_edge(useIter->second, *newNode, *backwardDAG);
+            if (debuging) {
+                std::cout << "Adding RAW edge." << std::endl;
             }
+            /*  Set bool so entries are removed after iteration of list. */
+            removeUseEntries = true;
+        }
     }
     /*  Remove the entry from the useBiMap if there are any. */
     if (true == removeUseEntries) {
@@ -226,6 +294,7 @@ void graphDAG::resourceUsed(DAGVertexDescriptor* newNode, DAGresources::resource
     /*  Insert the new node in the use list. */
     useBiMap.insert(useContainer::value_type(newResource, *newNode));
 }
+
 
 /*  This function handles the definition and use of the accumulator register. */
 void graphDAG::manageAccumulator(DAGVertexDescriptor* newNode, MipsInstructionKind instKind) {
@@ -267,6 +336,30 @@ void graphDAG::manageAccumulator(DAGVertexDescriptor* newNode, MipsInstructionKi
             break;
         }
     }
+}
+
+/*  Check if an instruction is a branch. */
+bool graphDAG::isBranchInstruction(SgAsmStatement* inst) {
+    /*  Check if it is a mips instruction and cast it. */
+    if (V_SgAsmMipsInstruction == inst->variantT()) {
+        SgAsmMipsInstruction* mips = isSgAsmMipsInstruction(inst);
+        /*  Check if the instruction kind matches a branch instruction. */
+        switch(mips->get_kind()) {
+            case mips_j:
+            case mips_jal:
+            case mips_jalr:
+            case mips_beq:
+            case mips_bne:
+            case mips_bgez:
+            case mips_bgezal:
+            case mips_bgtz:
+            case mips_blez:
+            case mips_bltz:
+            return true;
+        }
+    }
+    /*  It was not an instruction or not a branch instruction. */
+    return false;
 }
 
 /*  Check if the instructionkind matches that of an instruction using the accumulator. */
