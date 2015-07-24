@@ -179,6 +179,10 @@ void graphDAG::buildBackwardDAG() {
         /*  There is a reference to the first instruction. Go through the 
             graph and connect nodes without in edges to the first instructions
             node. This is to make sure the first instruction will not be moved. */
+        if (debuging) {
+            std::cout << get(boost::vertex_index2, *backwardDAG, firstInstructionVertice)
+                << " is the root instruction." << std::endl;
+        }
         /*  Set to store the vertices that do not have any in-edges. */
         std::set<DAGVertexDescriptor> startVertices;
         for(std::pair<DAGVIter, DAGVIter> iterPair = vertices(*backwardDAG);
@@ -190,16 +194,67 @@ void graphDAG::buildBackwardDAG() {
                     std::cout << get(boost::vertex_index2, *backwardDAG, *iterPair.first)
                         << " has no out-edges." << std::endl;
                 }
-                /*  Save the vertice. */
-                startVertices.insert(*iterPair.first);
+                /*  Save the vertice only if it is not the first instruction vertice. */
+                if ((*iterPair.first) != firstInstructionVertice) {
+                    startVertices.insert(*iterPair.first);
+                }
             }
         }
         /*  Go through the vertice set and add an edge between the vertice for
             the first instruction and the vertices in the set. */
         for(std::set<DAGVertexDescriptor>::iterator vIter = startVertices.begin();
             vIter != startVertices.end(); ++vIter) {
+            /*  debug print. */
+            if (debuging) {
+                std::cout << get(boost::vertex_index2, *backwardDAG, *vIter)
+                    << " gets an edge to root vertice." << std::endl;
+            }
             /*  Add an edge between the vertice and the first instruction vertice. */
-            //add_edge(*vIter, firstInstructionVertice , *backwardDAG);
+            add_edge(*vIter, firstInstructionVertice , *backwardDAG);
+        }
+    }
+    if (debuging) {
+        std::cout << std::endl;
+    }
+
+    /*  If the last instruction is a branch fix the graph to make
+        it the sink node, thus the last instruction. */
+    if (NULL != lastInstruction) {
+        /*  The last instruction is a branch. */
+        if (debuging) {
+            std::cout << get(boost::vertex_index2, *backwardDAG, lastInstructionVertice)
+                << " is the sink instruction." << std::endl;
+        }
+        /*  Find the vertice that do not have any in-edges. Which means that
+            these vertices are the last in a chain of dependant instructions. */
+        /*  Endvertice container set. */
+        std::set<DAGVertexDescriptor> endVertices;
+        for(std::pair<DAGVIter, DAGVIter> iterPair = vertices(*backwardDAG);
+            iterPair.first != iterPair.second; ++iterPair.first) {
+            /*  Check if the vertice has no in-edges. */
+            if (0 == in_degree(*iterPair.first, *backwardDAG)) {
+                /*  debug print. */
+                if (debuging) {
+                    std::cout << get(boost::vertex_index2, *backwardDAG, *iterPair.first)
+                        << " has no in-edges." << std::endl;
+                }
+                /*  Save the vertice as long as it is not the first instruction. */
+                if ((*iterPair.first) != lastInstructionVertice) {
+                    endVertices.insert(*iterPair.first);
+                }
+            }
+        }
+        /*  Go through the vertice set and add edges between these instruction
+            and the last instruction vertice. */
+        for(std::set<DAGVertexDescriptor>::iterator vIter = endVertices.begin();
+            vIter != endVertices.end(); ++vIter) {
+            /*  debug print. */
+            if (debuging) {
+                std::cout << get(boost::vertex_index2, *backwardDAG, *vIter)
+                    << " gets an edge to sink vertice." << std::endl;
+            }
+            /*  add edge call. */
+            add_edge(*vIter, lastInstructionVertice, *backwardDAG);
         }
     }
 }
