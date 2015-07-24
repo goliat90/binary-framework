@@ -487,6 +487,7 @@ instructionType getInstructionFormat(MipsInstructionKind mipsKind) {
 
         //conditional move
         case mips_movn  :
+        case mips_movz  :
 
         //multiply and div
         case mips_mul   : return R_RD_RS_RT;
