@@ -101,7 +101,7 @@ void userFramework::arithmeticTMR() {
             insertInstruction(secondMipsDup);
             //std::cout << "Second insertion" << std::endl;
 
-            /* another add to combine the result of two inserted adds,
+            /*  Another add to combine the result of two inserted adds,
                 one more to combine the result of the original instruction
                 result and the combined result. */
             instructionStruct accumulationOne;
@@ -181,6 +181,136 @@ void userFramework::arithmeticTMR() {
             //std::cout << "Seventh insertion" << std::endl;
 }
 
+/*  Create TMR for condition testing instructions. */
+void userFramework::conditionTMR() {
+    /* This function should be able to apply common tmr to many functions */
+    /* Save the original instruction */
+    saveInstruction();
+    /*  Depending on the instruction kind i select what kind
+        the TMR instructions should be. */
+    MipsInstructionKind duplicateKind = currentInst.kind;
+    std::string tmrMnemonic = currentInst.mnemonic;
+
+    /* Add two new add instructions using the original input operands */
+    instructionStruct firstDup;
+    instructionStruct secondDup;
+
+    /* Transfer relevant information to the duplicated instructions  */
+    firstDup.kind = duplicateKind;
+    firstDup.mnemonic = tmrMnemonic;
+    firstDup.format = getInstructionFormat(duplicateKind);
+    firstDup.sourceRegisters = currentInst.sourceRegisters;
+    //Destination will be different.
+    firstDup.instructionConstant = currentInst.instructionConstant;
+    firstDup.significantBits = currentInst.significantBits;
+    firstDup.memoryReferenceSize = currentInst.memoryReferenceSize;
+    firstDup.isSignedMemory = currentInst.isSignedMemory;
+    //the address is not copied.
+    /* Transfer relevant information to the duplicated instructions  */
+    secondDup.kind = duplicateKind;
+    secondDup.mnemonic = tmrMnemonic;
+    secondDup.format = getInstructionFormat(duplicateKind);
+    secondDup.sourceRegisters = currentInst.sourceRegisters;
+    //Destination will be different.
+    secondDup.instructionConstant = currentInst.instructionConstant;
+    secondDup.significantBits = currentInst.significantBits;
+    secondDup.memoryReferenceSize = currentInst.memoryReferenceSize;
+    secondDup.isSignedMemory = currentInst.isSignedMemory;
+    //the address is not copied.
+    /* Generate symbolic destination registers and add them */
+    registerStruct regOne = generateSymbolicRegister();
+    registerStruct regTwo = generateSymbolicRegister();
+    
+    firstDup.destinationRegisters.push_back(regOne);
+    secondDup.destinationRegisters.push_back(regTwo);
+    /* Build instructions and insert them */
+    SgAsmMipsInstruction* firstMipsDup = buildInstruction(&firstDup);
+    SgAsmMipsInstruction* secondMipsDup = buildInstruction(&secondDup);
+
+    /* insert the duplicated instructions. */
+    insertInstruction(firstMipsDup);
+    //std::cout << "First insertion" << std::endl;
+    insertInstruction(secondMipsDup);
+    //std::cout << "Second insertion" << std::endl;
+
+    /*  AND the first and second instructions result, original & regOne (1) */
+    instructionStruct firstAND;
+    firstAND.kind = mips_and;
+    firstAND.mnemonic = "and";
+    firstAND.format = getInstructionFormat(mips_and);
+    /* Set the source registers from duplicated instructions as source */
+    firstAND.sourceRegisters = currentInst.destinationRegisters;
+    firstAND.sourceRegisters.push_back(regOne);
+    /*  Create a destination register for the accumulated sum.*/
+    registerStruct andResOne = generateSymbolicRegister();
+    /*  Set the regAcc as destination register. */
+    firstAND.destinationRegisters.push_back(andResOne);
+    SgAsmMipsInstruction* andOne= buildInstruction(&firstAND);
+    insertInstruction(andOne);
+
+    /*  AND the second and third instructions result, regOne & regTwo (2) */
+    instructionStruct secondAND;
+    secondAND.kind = mips_and;
+    secondAND.mnemonic = "and";
+    secondAND.format = getInstructionFormat(mips_and);
+    /* Set the source registers from duplicated instructions as source */
+    secondAND.sourceRegisters.push_back(regOne);
+    secondAND.sourceRegisters.push_back(regTwo);
+    /*  Create a destination register for the accumulated sum.*/
+    registerStruct andResTwo = generateSymbolicRegister();
+    /*  Set the regAcc as destination register. */
+    secondAND.destinationRegisters.push_back(andResTwo);
+    SgAsmMipsInstruction* andTwo = buildInstruction(&secondAND);
+    insertInstruction(andTwo);
+
+    /*  AND the thirds and first instructions result, regTwo & original (3) */
+    instructionStruct thirdAND;
+    thirdAND.kind = mips_and;
+    thirdAND.mnemonic = "and";
+    thirdAND.format = getInstructionFormat(mips_and);
+    /*  Set the source registers. */
+    thirdAND.sourceRegisters = currentInst.destinationRegisters;
+    thirdAND.sourceRegisters.push_back(regTwo);
+    /*  Create a destination registers. */
+    registerStruct andResThird = generateSymbolicRegister();
+    /*  Set the destination register. */
+    thirdAND.destinationRegisters.push_back(andResThird);
+    SgAsmMipsInstruction* andThree = buildInstruction(&thirdAND);
+    insertInstruction(andThree);
+
+    /*  OR the results of (1) and (2). (4) */
+    instructionStruct firstOR;
+    firstOR.kind = mips_or;
+    firstOR.mnemonic = "or";
+    firstOR.format = getInstructionFormat(mips_or);
+    /*  Set the source registers, result of (1) and (2). */
+    firstOR.sourceRegisters.push_back(andResOne);
+    firstOR.sourceRegisters.push_back(andResTwo);
+    /*  Create a destination register. */
+    registerStruct orResOne = generateSymbolicRegister();
+    /*  Set the destination registers. */
+    firstOR.destinationRegisters.push_back(orResOne);
+    SgAsmMipsInstruction* orFirst = buildInstruction(&firstOR);
+    insertInstruction(orFirst);
+
+    /*  OR the result of (3) and (4). (5). Put this result in the original register. */
+    instructionStruct secondOR;
+    secondOR.kind = mips_or;
+    secondOR.mnemonic = "or";
+    secondOR.format = getInstructionFormat(mips_or);
+    /*  Set source registers, destination regs of (3) and (4). */
+    secondOR.sourceRegisters.push_back(andResThird);
+    secondOR.sourceRegisters.push_back(orResOne);
+    /*  Create a destination register. */
+    registerStruct orResTwo = generateSymbolicRegister();
+    /*  Set the destination register. */
+    secondOR.destinationRegisters = currentInst.destinationRegisters;
+    //secondOR.destinationRegisters.push_back(orResTwo);
+    SgAsmMipsInstruction* orSecond = buildInstruction(&secondOR);
+    insertInstruction(orSecond);
+
+}
+
 /* The user defined decision function */
 void userFramework::transformDecision(SgAsmMipsInstruction* inst) {
     /* Decode the instruction to get the information  */
@@ -198,6 +328,9 @@ void userFramework::transformDecision(SgAsmMipsInstruction* inst) {
             arithmeticTMR();
             break;
         }
+        case mips_slt:
+            conditionTMR();
+            break;
         default: {
             saveInstruction();
         }

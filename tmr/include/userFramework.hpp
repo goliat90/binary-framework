@@ -22,6 +22,8 @@ class userFramework : public BinaryRewriter {
         /*  Function that applies transformation    */
         /*  TMR for addition, subtraction. */
         void arithmeticTMR();
+        /*  TMR for condition testing. */
+        void conditionTMR();
 
         /*  Variables. */
         instructionStruct currentInst;
