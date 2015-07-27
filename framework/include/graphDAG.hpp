@@ -14,6 +14,7 @@
 #include "boost/bimap/set_of.hpp"
 #include "boost/bimap/multiset_of.hpp"
 #include "boost/graph/graph_utility.hpp"
+#include "boost/graph/transpose_graph.hpp"
 
 /*  Typedef for the DAG graph. */
 
@@ -84,6 +85,14 @@ class graphDAG {
         void buildDAGs();
         /*  Enable debuging. */
         void setDebuging(bool);
+        /*  Return pointer to the backwardDAG. */
+        frameworkDAG* getBackwardDAG() {return backwardDAG;};
+        /*  Return pointer to the forwardDAG. */
+        frameworkDAG* getForwardDAG() {return forwardDAG;};
+        /*  Return a reference to the first instruction vertex. */
+        DAGVertexDescriptor* getFirstInstructionVertex() {return &firstInstructionVertice;};
+        /*  Return a reference to the last instruction vertex. */
+        DAGVertexDescriptor* getLastInstructionVertex() {return &lastInstructionVertice;};
 
     private:
         /*  Hide default constructor. */

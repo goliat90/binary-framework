@@ -30,13 +30,26 @@ void listScheduler::performScheduling() {
         iterPair.first != iterPair.second; ++iterPair.first) {
         /*  Get the basic block from the vertex. */
         SgAsmBlock* blockToSchedule = get(boost::vertex_name, *functionCFG, *iterPair.first);
-        /*  Print block if debuging. */
-        if (debuging) {
-            std::cout << "Scheduling block." << std::endl;
-            printBasicBlockInstructions(blockToSchedule);
+        /*  get statement list to check size. */
+        SgAsmStatementPtrList& stmtList = blockToSchedule->get_statementList();
+        /*  Check if the size of the block is more than 2. If it is lower do not schedule. */
+        if (2 < blockToSchedule->get_statementList().size()) {
+            /*  Print block if debuging. */
+            if (debuging) {
+                std::cout << "Scheduling block." << std::endl;
+                printBasicBlockInstructions(blockToSchedule);
+                std::cout << std::endl;
+            }
+            /*  Call block scheduling function. */
+            scheduleBlock(blockToSchedule);
+        } else {
+            /*  debug print. */
+            if (debuging) {
+                std::cout << "Skipped scheduling block due to size." << std::endl;
+                printBasicBlockInstructions(blockToSchedule);
+                std::cout << std::endl;
+            }
         }
-        /*  Call block scheduling function. */
-        scheduleBlock(blockToSchedule);
     }
 }
 
@@ -55,8 +68,32 @@ void listScheduler::scheduleBlock(SgAsmBlock* basic) {
     blockDAG.buildDAGs();
 
     //TODO create and calculate the variables used for scheduling.
+    /*  Visitor object. */
+    listBFSVisitor listVariableBuilder;
+    /*  Get forward DAG. */
+    frameworkDAG* forwardDAG = blockDAG.getForwardDAG();
+    /*  In the forward pass the first instruction is the root. */
+    DAGVertexDescriptor* forwardRoot = blockDAG.getFirstInstructionVertex();
+    /*  Perform a forward pass in the DAG. */
+    if (debuging) {
+        std::cout << "Performing forward pass on DAG." << std::endl;
+    }
+    breadth_first_search(*forwardDAG, *forwardRoot,
+        boost::visitor(listVariableBuilder));
 
-    //TODO do the actual scheduling.
+    /*  Perform a backward pass in the DAG. */
+    /*  Get the backward DAG. */
+    frameworkDAG* backwardDAG = blockDAG.getBackwardDAG();
+    /*  In the backward pass the last instruction is the root. */
+    DAGVertexDescriptor* backwardRoot = blockDAG.getLastInstructionVertex();
+    /*  Perform the backward pass. */
+    if (debuging) {
+        std::cout << "Performing backward pass on DAG." << std::endl;
+    }
+//    breadth_first_search(*backwardDAG, *backwardRoot,
+//        boost::visitor(listVariableBuilder));
+
+    //TODO do the actuall scheduling.
     
 }
 

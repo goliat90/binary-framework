@@ -25,18 +25,29 @@ void graphDAG::buildDAGs() {
     buildBackwardDAG();
     //testing to print
     if (debuging) {
-        std::cout << std::endl << "graph" << std::endl;
+        std::cout << std::endl << "backward graph" << std::endl;
         print_graph(*backwardDAG, get(boost::vertex_index2, *backwardDAG));
         std::cout << "graph end" << std::endl << std::endl;
     }
     /*  Build the forward DAG. */
     //TODO use the reverse graph function instead.
     buildForwardDAG();
+    /*  Debug print. */
+    if (debuging) {
+        std::cout << std::endl << "forward graph" << std::endl;
+        print_graph(*forwardDAG, get(boost::vertex_index2, *forwardDAG));
+        std::cout << "graph end" << std::endl << std::endl;
+    }
 }
 
-/*  Constructs a DAG traversing forward. */
+/*  Constructs a DAG traversing forward. It is constructed by reversing
+    the backward dag. */
 void graphDAG::buildForwardDAG() {
-    /*  Constructed by reversing the backward DAG. */
+    /*  New graph for the forward dag. */
+    forwardDAG = new frameworkDAG;
+    /*  Use the function transpost graph. */
+    //TODO need to verify that the property maps are moved over.
+    transpose_graph(*backwardDAG, *forwardDAG);
 }
 
 /*  Constructs DAG traversing backwards. */
@@ -60,7 +71,8 @@ void graphDAG::buildBackwardDAG() {
     /*  Check how many instructions there are. Depending on this examine
         if the last instruction is a jump. Also save the first instruction.
         1 instruction = cant change order.
-        2 instructions = first cant move so only one instrution to schedule.
+        2 instructions = first cant move so only only last instruction can be scheduled alone.
+                            If it is a branch then we can not move it anyways so no scheduling possibilities.
         3 instructions = first fixed, potential to schedule the two other if last is not a branch. */
     if (2 < stmtList.size()) {
         /*  Debug print. */
