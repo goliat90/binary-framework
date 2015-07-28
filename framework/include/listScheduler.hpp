@@ -8,7 +8,6 @@
 
 /*  Boost library. */
 #include "boost/graph/breadth_first_search.hpp"
-#include "boost/graph/reverse_graph.hpp"
 
 /*  Framework includes. */
 #include "graphDAG.hpp"
@@ -21,6 +20,9 @@
 /*  Struct for saving information regarding an instructions
     values used when scheduling. */
 struct instructionVariables {
+//TODO constructor for this struct
+    instructionVariables():earliestStart(-1), latestStart(-1), slack(-1),
+        sumOfExecutions(-1), executionTime(-1) {};
     int earliestStart;
     int latestStart;
     int slack;
@@ -28,6 +30,8 @@ struct instructionVariables {
     int executionTime;
 };
 
+/*  Typedef. */
+typedef std::map<SgAsmMipsInstruction*, instructionVariables> nodeMap;
 
 class listScheduler {
     public:
@@ -53,7 +57,7 @@ class listScheduler {
         bool debuging;
 
         //TODO create a storage medium for the instruction information, struct?
-        //TODO create a mapping linking instruction and said information, suggest std::map.
+        /*  Storage medium to map the instructions. */
         std::map<SgAsmMipsInstruction*, instructionVariables> variableMap;
 };
 
@@ -62,21 +66,25 @@ class listScheduler {
     With it i can use boost already implemented algorithm
     to traverse the graphs and perform calculations for
     priority information. */
-class listBFSVisitor : public boost::default_bfs_visitor {
+class listForwardBFSVisitor : public boost::default_bfs_visitor {
     public:
+        /*  Initialize vertex function. */
+        void initialize_vertex(DAGVertexDescriptor, const frameworkDAG&);
         /* set debug mode. */
-        void setDebugMode(bool);
+        void setDebugMode(bool mode) {debuging = mode;} ;
         /*  Set the traversal mode, forward or backward. */
-        void setForwardTraversal();
-        void setBackwardTraversal();
+        //void setForwardTraversal() {backwardTraversal = false; };
+        //void setBackwardTraversal() {backwardTraversal = true; };
+        /*  Function to pass a reference to the variableMap pointer. */
+        void passVariableMapReference(nodeMap*);
     private:
         /*  Private variables. */
         /*  debug print mode. */
         bool debuging;
         /*  Indicator if it is a backward or forward traversal. */
-        bool backwardTraversal;
+        //bool backwardTraversal;
         /*  Have a pointer to the container for all the info. */
-
+        nodeMap* variableMapPtr;
 };
 
 #endif 

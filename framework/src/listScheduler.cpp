@@ -69,7 +69,7 @@ void listScheduler::scheduleBlock(SgAsmBlock* basic) {
 
     //TODO create and calculate the variables used for scheduling.
     /*  Visitor object. */
-    listBFSVisitor listVariableBuilder;
+    listForwardBFSVisitor listVariableBuilder;
     /*  Get forward DAG. */
     frameworkDAG* forwardDAG = blockDAG.getForwardDAG();
     /*  In the forward pass the first instruction is the root. */
@@ -90,11 +90,28 @@ void listScheduler::scheduleBlock(SgAsmBlock* basic) {
     if (debuging) {
         std::cout << "Performing backward pass on DAG." << std::endl;
     }
+    //TODO exchange for backward visitor.
     breadth_first_search(*backwardDAG, *backwardRoot,
         boost::visitor(listVariableBuilder));
 
     //TODO do the actuall scheduling.
     
 }
+
+
+/*  Pass the variable reference. */
+void listForwardBFSVisitor::passVariableMapReference(nodeMap* ptr) {
+    /*  Save the reference. */
+    variableMapPtr = ptr;
+}
+
+
+/*  When initializing the vertices in the forward pass an entry is made
+    for the instruction in the container and the execution time is set. */
+void listForwardBFSVisitor::initialize_vertex(DAGVertexDescriptor node, const frameworkDAG& graph) {
+    /*  Get the instruction pointer from the propertymap. */
+//    SgAsmMipsInstruction* nodeInst = get(boost::vertex_name, graph, node, 
+}
+
 
 

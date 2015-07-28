@@ -110,7 +110,7 @@ void graphDAG::buildBackwardDAG() {
     int count = 0;
     /*  Vertex variable. */
     DAGVertexDescriptor firstInstructionVertice;
-    DAGVertexDescriptor lastInstructionVertice; 
+    DAGVertexDescriptor lastInstructionVertice;
 
     /*  Check how many instructions there are. Depending on this examine
         if the last instruction is a jump. Also save the first instruction.
