@@ -90,9 +90,9 @@ class graphDAG {
         /*  Return pointer to the forwardDAG. */
         frameworkDAG* getForwardDAG() {return forwardDAG;};
         /*  Return a reference to the first instruction vertex. */
-        DAGVertexDescriptor* getFirstInstructionVertex() {return &firstInstructionVertice;};
+        DAGVertexDescriptor* getForwardDAGRoot() {return &forwardDAGRootVertice;};
         /*  Return a reference to the last instruction vertex. */
-        DAGVertexDescriptor* getLastInstructionVertex() {return &lastInstructionVertice;};
+        DAGVertexDescriptor* getBackwardDAGRoot() {return &backwardDAGRootVertice;};
 
     private:
         /*  Hide default constructor. */
@@ -115,6 +115,8 @@ class graphDAG {
         void manageAccumulator(DAGVertexDescriptor*, MipsInstructionKind);
         /*  Check if an instruction is a jump instruction. */
         bool isBranchInstruction(SgAsmStatement*);
+        /*  Identify the root vertices of the DAGs. */
+        void findRootVertices();
 
         /*  Variables. */
         /*  Debuging variable. */
@@ -126,10 +128,10 @@ class graphDAG {
         SgAsmBlock* basicBlock;
         /*  Pointer to last instruction in block. */
         SgAsmMipsInstruction* lastInstruction;
-        DAGVertexDescriptor lastInstructionVertice;
+        DAGVertexDescriptor backwardDAGRootVertice;
         /*  Pointer to first instruction in block. */
         SgAsmMipsInstruction* firstInstruction;
-        DAGVertexDescriptor firstInstructionVertice;
+        DAGVertexDescriptor forwardDAGRootVertice;
         //TODO some kind of storage for the variables used when scheduling. map with instructions as keys?
 
         /*  Map for which definition is set. */

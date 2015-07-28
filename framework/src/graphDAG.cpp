@@ -38,6 +38,47 @@ void graphDAG::buildDAGs() {
         print_graph(*forwardDAG, get(boost::vertex_index2, *forwardDAG));
         std::cout << "graph end" << std::endl << std::endl;
     }
+
+    /*  Identify the root nodes of each DAG. */
+    if (debuging) {
+        std::cout << "Identifying the root vertices in the DAGs." << std::endl;
+    }
+    findRootVertices();
+
+}
+
+
+/*  This function finds the root vertices in both DAGs. */
+void graphDAG::findRootVertices() {
+    /*  Get a reference for the root vertice.
+        The root vertice is the vertex that has no inbound edges. */
+    for(std::pair<DAGVIter, DAGVIter> iterPair = vertices(*forwardDAG);
+        iterPair.first != iterPair.second; ++iterPair.first) {
+        /*  Check if the vertice has any in edges. */
+        if (0 == in_degree(*iterPair.first, *forwardDAG)) {
+            /*  Debug print. */
+            if (debuging) {
+                std::cout << get(boost::vertex_index2, *forwardDAG, *iterPair.first)
+                    << " is the root instruction in the forward DAG." << std::endl;
+            }
+            /*  Save the vertex descriptor for later use. */
+            forwardDAGRootVertice = *iterPair.first;
+        }
+    }
+
+    /*  Find the root vertice for the backwardDAG. */
+    for(std::pair<DAGVIter, DAGVIter> iterPair = vertices(*backwardDAG);
+        iterPair.first != iterPair.second; ++iterPair.first) {
+        if (0 == in_degree(*iterPair.first, *backwardDAG)) {
+            /*  Debug print. */
+            if (debuging) {
+                std::cout << get(boost::vertex_index2, *backwardDAG, *iterPair.first)
+                    << " is the root instruction in the backward DAG." << std::endl << std::endl;
+            }
+            /*  Save backwardDAG root vertice. */
+            backwardDAGRootVertice = *iterPair.first;
+        }
+    }
 }
 
 /*  Constructs a DAG traversing forward. It is constructed by reversing
@@ -45,8 +86,8 @@ void graphDAG::buildDAGs() {
 void graphDAG::buildForwardDAG() {
     /*  New graph for the forward dag. */
     forwardDAG = new frameworkDAG;
-    /*  Use the function transpost graph. */
-    //TODO need to verify that the property maps are moved over.
+    /*  Use the function transpose_graph to build the forward graph from
+        the backward graph. All information is contained. */
     transpose_graph(*backwardDAG, *forwardDAG);
 }
 
@@ -67,6 +108,9 @@ void graphDAG::buildBackwardDAG() {
     vertexIndexNameMap nameMap = get(boost::vertex_index2, *backwardDAG);
     /*  Counter to number the nodes in order of inserted. */
     int count = 0;
+    /*  Vertex variable. */
+    DAGVertexDescriptor firstInstructionVertice;
+    DAGVertexDescriptor lastInstructionVertice; 
 
     /*  Check how many instructions there are. Depending on this examine
         if the last instruction is a jump. Also save the first instruction.
@@ -199,7 +243,7 @@ void graphDAG::buildBackwardDAG() {
         std::set<DAGVertexDescriptor> startVertices;
         for(std::pair<DAGVIter, DAGVIter> iterPair = vertices(*backwardDAG);
             iterPair.first != iterPair.second; ++iterPair.first) {
-            /*  Check if the vertice has any in edges. */
+            /*  Check if the vertice has any out edges. */
             if (0 == out_degree(*iterPair.first, *backwardDAG)) {
                 /*  debug print. */
                 if (debuging) {
@@ -219,7 +263,7 @@ void graphDAG::buildBackwardDAG() {
             /*  debug print. */
             if (debuging) {
                 std::cout << get(boost::vertex_index2, *backwardDAG, *vIter)
-                    << " gets an edge to root vertice." << std::endl;
+                    << " gets an edge from itself to the root vertice." << std::endl;
             }
             /*  Add an edge between the vertice and the first instruction vertice. */
             add_edge(*vIter, firstInstructionVertice , *backwardDAG);
@@ -273,9 +317,6 @@ void graphDAG::buildBackwardDAG() {
 
 
 /*  Function that handles definition of resources. */
-//TODO i believe i need the instruction struct here.
-//TODO add argument for backward or forward. boolean? different add edge call?
-//TODO there is a function in boost that reverses all the edges of the graph.
 void graphDAG::resourceDefined(DAGVertexDescriptor* newNode, DAGresources::resourceEnum newResource) {
     /*
         if (resource is defined AND no use of the resource)

@@ -73,7 +73,7 @@ void listScheduler::scheduleBlock(SgAsmBlock* basic) {
     /*  Get forward DAG. */
     frameworkDAG* forwardDAG = blockDAG.getForwardDAG();
     /*  In the forward pass the first instruction is the root. */
-    DAGVertexDescriptor* forwardRoot = blockDAG.getFirstInstructionVertex();
+    DAGVertexDescriptor* forwardRoot = blockDAG.getForwardDAGRoot();
     /*  Perform a forward pass in the DAG. */
     if (debuging) {
         std::cout << "Performing forward pass on DAG." << std::endl;
@@ -85,13 +85,13 @@ void listScheduler::scheduleBlock(SgAsmBlock* basic) {
     /*  Get the backward DAG. */
     frameworkDAG* backwardDAG = blockDAG.getBackwardDAG();
     /*  In the backward pass the last instruction is the root. */
-    DAGVertexDescriptor* backwardRoot = blockDAG.getLastInstructionVertex();
+    DAGVertexDescriptor* backwardRoot = blockDAG.getBackwardDAGRoot();
     /*  Perform the backward pass. */
     if (debuging) {
         std::cout << "Performing backward pass on DAG." << std::endl;
     }
-//    breadth_first_search(*backwardDAG, *backwardRoot,
-//        boost::visitor(listVariableBuilder));
+    breadth_first_search(*backwardDAG, *backwardRoot,
+        boost::visitor(listVariableBuilder));
 
     //TODO do the actuall scheduling.
     
