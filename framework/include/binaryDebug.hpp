@@ -15,6 +15,8 @@
 /* function declarations  */
 /*  Prints the content i.e. the instructions of a basic block. */
 void printBasicBlockInstructions(SgAsmBlock*);
+/*  Wrapper call for the printInstruction but you pass SgAsmMipsInstruction pointers. */
+void printInstruction(SgAsmMipsInstruction*);
 /*  Prints a specific instruction */
 void printInstruction(instructionStruct*);
 /*  Get the string for a register. */

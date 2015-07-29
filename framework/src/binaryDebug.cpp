@@ -38,6 +38,16 @@ void printBasicBlockInstructions(SgAsmBlock* block) {
               << std::dec; //dont print hex numbers in hex after this
 }
 
+
+/*  Wrapper of print instruction, decodes the instruction then
+    calls the function below. */
+void printInstruction(SgAsmMipsInstruction* mipsInst) {
+    /*  Decode instruction. */
+    instructionStruct mipsStruct = decodeInstruction(mipsInst);
+    /*  Call the other. */
+    printInstruction(&mipsStruct);
+}
+
 /* Prints out relevant information about a instruction */
 void printInstruction(instructionStruct* instStruct) {
     /* string stream object */
