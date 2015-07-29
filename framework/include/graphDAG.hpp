@@ -40,6 +40,8 @@ typedef boost::adjacency_list<  boost::setS,
 typedef boost::graph_traits<frameworkDAG>::vertex_iterator DAGVIter;
 typedef boost::graph_traits<frameworkDAG>::vertex_descriptor DAGVertexDescriptor;
 typedef boost::graph_traits<frameworkDAG>::edge_iterator DAGEIter;
+typedef boost::graph_traits<frameworkDAG>::out_edge_iterator DAGOEIter;
+typedef boost::graph_traits<frameworkDAG>::edge_descriptor DAGEdgeDescriptor;
 
 //propertymaps
 typedef boost::property_map<frameworkDAG, boost::vertex_index2_t>::type vertexIndexNameMap;
