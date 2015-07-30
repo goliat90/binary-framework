@@ -50,13 +50,20 @@ class listScheduler {
         void scheduleBlock(SgAsmBlock*);
         /*  Initialize the map containing the variables for
             the instructions used by the list scheduler. */
-        void initializeListVariables();
+        void initializeListVariables(graphDAG*);
+        /*  This function will propogate the EST values by traversing the
+            forward DAG. */
+        void propagateEST(graphDAG*);
+        /*  This function does the same as the propagateEST but it propagates
+            the LST value instead. It also calculates slack which is the difference
+            between LST and EST. */
+        void propagateLST(graphDAG*);
 
         /*  Private variables. */
         /*  CFG handler object pointer. */
         CFGhandler* cfgObject;
         /*  graph DAG object. */
-        graphDAG* DAGobject;
+//        graphDAG* DAGobject;
         /*  Debuging variable. */
         bool debuging;
 
