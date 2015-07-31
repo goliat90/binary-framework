@@ -67,55 +67,50 @@ void listScheduler::scheduleBlock(SgAsmBlock* basic) {
     /*  Let it build DAGs. */
     blockDAG.buildDAGs();
 
+
     //TODO Create a function that traverses the DAG and initializes the variable struct.
+    if (debuging) {
+        std::cout << "----------------------------------------" << std::endl;
+    }
     initializeListVariables(&blockDAG);
 
+    /*  Perform a forward pass in the forward dag and propagate the EST values. */
+    if (debuging) {
+        std::cout << "----------------------------------------" << std::endl;
+    }
     propagateEST(&blockDAG);
-    //TODO create a function that propagates the EST values in the forward DAG.
-    //TODO it will push values to its children and then visit the children,
-    //TODO the children will push the values to its children and then visit its children.
-    //TODO There is a possibility that a node is revisited since it could be a child to a later
-    //TODO visited node.
 
-    //TODO create a function that propagates the LST values through the backward DAG.
-    //TODO it will have the same behavior as the EST function.
-
-
-    //TODO create and calculate the variables used for scheduling.
-    /*  Visitor object. */
-    listForwardBFSVisitor forwardVariableBuilder(&variableMap, debuging);
-    /*  Get forward DAG. */
-    frameworkDAG* forwardDAG = blockDAG.getForwardDAG();
-    /*  In the forward pass the first instruction is the root. */
-    DAGVertexDescriptor* forwardRoot = blockDAG.getForwardDAGRoot();
-    /*  Perform a forward pass in the DAG. */
+    /*  Perform a pass on on the backward dag to propagate the LST values. */
     if (debuging) {
-        std::cout << "Performing forward pass on DAG." << std::endl << std::endl;
+        std::cout << "----------------------------------------" << std::endl;
     }
-//    breadth_first_search(*forwardDAG, *forwardRoot,
-//        boost::visitor(forwardVariableBuilder));
-
-    if (debuging) {
-        std::cout << std::endl;
-    }
-
-    /*  Perform a backward pass in the DAG. */
-    /*  Get the backward DAG. */
-    frameworkDAG* backwardDAG = blockDAG.getBackwardDAG();
-    /*  In the backward pass the last instruction is the root. */
-    DAGVertexDescriptor* backwardRoot = blockDAG.getBackwardDAGRoot();
-    /*  Create a backwards iterator. */
-    listBackwardBFSVisitor backwardVariableBuilder(&variableMap, backwardRoot, debuging);
-    /*  Perform the backward pass. */
-    if (debuging) {
-        std::cout << "Performing backward pass on DAG." << std::endl << std::endl;
-    }
-    /*  Call on breadth first search algorithm. */
-//    breadth_first_search(*backwardDAG, *backwardRoot,
-//        boost::visitor(backwardVariableBuilder));
-
-    //TODO do the actuall scheduling.
+    propagateLST(&blockDAG);
     
+    /*  Calculate maximum delay to leaf. */
+    if (debuging) {
+        std::cout << "----------------------------------------" << std::endl;
+    }
+    maximumDelayToLeaf(&blockDAG);
+    
+    /*  Calculate the slack variable. */
+    if (debuging) {
+        std::cout << "----------------------------------------" << std::endl;
+    }
+    calculateSlack();
+
+
+    if (debuging) {
+        std::cout << "----------------------------------------" << std::endl
+                << "Variable calculations complete. Scheduling block." << std::endl;
+    }
+    //TODO do the actuall scheduling.
+    forwardListScheduling(&blockDAG);
+}
+
+
+/*  Perform list scheduling. */
+void listScheduler::forwardListScheduling(graphDAG* DAGobject) {
+
 }
 
 
@@ -145,7 +140,7 @@ void listScheduler::initializeListVariables(graphDAG* DAGobject) {
     }
     /*  Debug print. */
     if (debuging) {
-        std::cout << "Created " << variableMap.size() << " entries." << std::endl;
+        std::cout << "Created " << variableMap.size() << " entries." << std::endl << std::endl;
     }
 }
 
@@ -154,6 +149,10 @@ void listScheduler::initializeListVariables(graphDAG* DAGobject) {
     new EST values assigned to them will be visited. The version therefore
     does not use coloring to mark visited. */
 void listScheduler::propagateEST(graphDAG* DAGobject) {
+    /*  Debug print. */
+    if (debuging) {
+        std::cout << "Performing forward pass on DAG to calculate EST." << std::endl;
+    }
     /*  Using a boost buffer to queue the nodes that i am visiting. */
     boost::queue<DAGVertexDescriptor> visitQueue;
 
@@ -165,7 +164,7 @@ void listScheduler::propagateEST(graphDAG* DAGobject) {
     /*  Push the root vertex into the queue. */
     visitQueue.push(*forwardRoot);
 
-    //TODO set the EST of the root node outside?
+    /*  Set the EST in the root node before traversal. */
     SgAsmMipsInstruction* rootMips = get(boost::vertex_name, *forwardDAG, *forwardRoot);
     /*  Get the variables of the popped node. */
     instructionVariables rootVars = variableMap.find(rootMips)->second;
@@ -174,7 +173,7 @@ void listScheduler::propagateEST(graphDAG* DAGobject) {
     variableMap[rootMips] = rootVars;
     /*  Debug printout. */
     if (debuging) {
-        std::cout << "EST set to root node." << std::endl;
+        std::cout << "EST set to root node to " << rootVars.earliestStart << std::endl << std::endl;
     }
 
     /*  BFS algorithm. Continue as long as the queue is not empty. */
@@ -210,7 +209,10 @@ void listScheduler::propagateEST(graphDAG* DAGobject) {
 
                 /*  Debug printout. */
                 if (debuging) {
-                    std::cout << "EST set to " << targetVars.earliestStart << std::endl;
+                    std::cout << "EST set to " << targetVars.earliestStart 
+                        << " in instruction" << std::endl;
+                    printInstruction(targetMips);
+                    std::cout << std::endl;
                 }
             }
         }
@@ -218,12 +220,14 @@ void listScheduler::propagateEST(graphDAG* DAGobject) {
 }
 
 
-/*  Function is used to propagate the LST values. It also calculates slack
-    which is calculated with EST and LST. (LST - EST). */
+/*  Function is used to propagate the LST values. */
 void listScheduler::propagateLST(graphDAG* DAGobject) {
+    /*  Perform the backward pass. */
+    if (debuging) {
+        std::cout << "Performing backward pass on DAG to calculate LST." << std::endl << std::endl;
+    }
     /*  Using a boost buffer to queue the nodes that i am visiting. */
     boost::queue<DAGVertexDescriptor> visitQueue;
-
     /*  Get forward DAG. */
     frameworkDAG* backwardDAG = DAGobject->getBackwardDAG();
     /*  In the forward pass the first instruction is the root. */
@@ -236,13 +240,14 @@ void listScheduler::propagateLST(graphDAG* DAGobject) {
     SgAsmMipsInstruction* rootMips = get(boost::vertex_name, *backwardDAG, *backwardRoot);
     /*  Get the variables of the popped node. */
     instructionVariables rootVars = variableMap.find(rootMips)->second;
-    /*  Set the EST value in the root and save it. */
+    /*  Set the LST value in the root and save it, the LST in the root
+        which is the last instruction in the block is the EST. */
     //TODO
-    //rootVars.earliestStart = 1; 
+    rootVars.latestStart = rootVars.earliestStart; 
     variableMap[rootMips] = rootVars;
     /*  Debug printout. */
     if (debuging) {
-        std::cout << "LST set in root node to " << std::endl;
+        std::cout << "LST set in root node to " << rootVars.latestStart << std::endl << std::endl;
     }
 
     /*  BFS algorithm. Continue as long as the queue is not empty. */
@@ -259,7 +264,7 @@ void listScheduler::propagateLST(graphDAG* DAGobject) {
             the target vertice should be reassigned. */
         for(std::pair<DAGOEIter, DAGOEIter> edgePair = out_edges(visitedNode, *backwardDAG);
             edgePair.first != edgePair.second; ++edgePair.first) {
-            /*  Get the target vertice of the edge and check if the ESt should
+            /*  Get the target vertice of the edge and check if the EST should
                 be reassigned. */
             DAGVertexDescriptor targetNode = target(*edgePair.first, *backwardDAG);
             /*  Get the instruction pointer. */
@@ -267,9 +272,9 @@ void listScheduler::propagateLST(graphDAG* DAGobject) {
             /*  Retrieve the variables for the target. */
             instructionVariables targetVars = variableMap.find(targetMips)->second;
             /*  Check if the EST of the target is lower than this nodes EST + Execution time. */
-            if (targetVars.earliestStart < (visitedVars.earliestStart + visitedVars.executionTime)) {
+            if (targetVars.latestStart > (visitedVars.latestStart - visitedVars.executionTime)) {
                 /*  The EST the visited node produces is higher than the assign so pass it over. */
-                targetVars.earliestStart = visitedVars.earliestStart + visitedVars.executionTime;
+                targetVars.latestStart = visitedVars.latestStart - visitedVars.executionTime;
                 /*  Save the new EST in the mapping. */
                 variableMap[targetMips] = targetVars;
                 /*  Push the target node to the queue so it will be visited so it can propagate
@@ -278,14 +283,127 @@ void listScheduler::propagateLST(graphDAG* DAGobject) {
 
                 /*  Debug printout. */
                 if (debuging) {
-                    std::cout << "LST set to " << targetVars.earliestStart << std::endl;
+                    std::cout << "LST set to " << targetVars.latestStart
+                        << " in instruction." << std::endl;
+                        printInstruction(targetMips);
+                        std::cout << std::endl;
                 }
             }
         }
     }
-
 }
 
+
+/*  Performs a backward pass and calculates the maximum delay to the leaf.
+    The way it is done is the same as with the LST. Start from the root node
+    and propagate the values. */
+void listScheduler::maximumDelayToLeaf(graphDAG* DAGobject) {
+/*
+    for each node in basic block in reverse order.
+        node->maxlength = 0
+        for each child of the node.
+            the maximum delay is the max of the 
+                childs maximum delay or the current node + execution time.
+
+    !!: The maximum delay will propagate from the last node up to the first.
+*/
+    /*  Perform the backward pass. */
+    if (debuging) {
+        std::cout << "Performing backward pass on DAG to calculate maximum delay." << std::endl << std::endl;
+    }
+    /*  Using a boost buffer to queue the nodes that i am visiting. */
+    boost::queue<DAGVertexDescriptor> visitQueue;
+    /*  Get forward DAG. */
+    frameworkDAG* backwardDAG = DAGobject->getBackwardDAG();
+    /*  In the forward pass the first instruction is the root. */
+    DAGVertexDescriptor* backwardRoot = DAGobject->getBackwardDAGRoot();
+
+    /*  Push the root vertex into the queue. */
+    visitQueue.push(*backwardRoot);
+
+    /*  Set the correct values in the root node. */
+    SgAsmMipsInstruction* rootMips = get(boost::vertex_name, *backwardDAG, *backwardRoot);
+    /*  Get the variables of the popped node. */
+    instructionVariables rootVars = variableMap.find(rootMips)->second;
+    /*  Set the delay value of the root, since the root is the last instruction
+        it has no delay because there is no instruction after it. 
+        //TODO need to consider this or if i should have execution time here. */
+    rootVars.maximumDelayToLeaf = 0;
+    /*  Debug print. */
+    if (debuging) {
+        std::cout << "maximum delay to leaf set in root to " << rootVars.maximumDelayToLeaf
+            << std::endl;
+    }
+    /*  Save the variable values. */
+    variableMap[rootMips] = rootVars;
+
+    /*  Traverse the DAG in a BFS maner, It will revisit nodes that have their
+        values updated though, a deviation from normal BFS. */
+    while(!visitQueue.empty()) {
+        /*  Pop node from the queue. */
+        DAGVertexDescriptor visitedNode = visitQueue.top();
+        /*  Remove it from the queue. */
+        visitQueue.pop();
+        /*  Get the instruction pointer of the popped node. */
+        SgAsmMipsInstruction* visitedMips = get(boost::vertex_name, *backwardDAG, visitedNode);
+        /*  Get the variables of the popped node. */
+        instructionVariables visitedVars = variableMap.find(visitedMips)->second;
+        /*  Iterate over the out edges and check the maximum delay to leaf
+            of the nodes children. */
+        for(std::pair<DAGOEIter, DAGOEIter> edgePair = out_edges(visitedNode, *backwardDAG);
+            edgePair.first != edgePair.second; ++edgePair.first) {
+            /*  Get the target/child node of the currently visited node. */
+            DAGVertexDescriptor targetNode = target(*edgePair.first, *backwardDAG);
+            /*  Get the instruction pointer. */
+            SgAsmMipsInstruction* targetMips = get(boost::vertex_name, *backwardDAG, targetNode);
+            /*  Retrieve the variables for the target. */
+            instructionVariables targetVars = variableMap.find(targetMips)->second;
+            /*  Check if the maximum delay should be reassigned. */
+            if (targetVars.maximumDelayToLeaf < (visitedVars.maximumDelayToLeaf + visitedVars.executionTime)) {
+                /*  The maximum delay in the child node is less. Assign the new
+                    maximum delay to the child. */
+                targetVars.maximumDelayToLeaf = visitedVars.maximumDelayToLeaf + visitedVars.executionTime;
+                /*  Debug printout. */
+                if (debuging) {
+                    std::cout << "Maximum delay set to " << targetVars.maximumDelayToLeaf
+                        << " in instruction." << std::endl;
+                    printInstruction(targetMips);
+                    std::cout << std::endl;
+                }
+                /*  Save the new variables in the map. */
+                variableMap[targetMips] = targetVars;
+                /*  Push the child node onto the visit queue so it will be visited. */
+                visitQueue.push(targetNode);
+            }
+        }
+
+    }
+}
+
+/*  Calculates the slack variable, which is the difference between EST and LST. */
+void listScheduler::calculateSlack() {
+    /*  Debug print. */
+    if (debuging) {
+        std::cout << "Calculating slack for all nodes." << std::endl;
+    }
+    /*  Iterate through the variable map and update values. */
+    for(nodeMap::iterator varMapIter = variableMap.begin();
+        varMapIter != variableMap.end(); ++varMapIter) {
+        /*  Get the variable struct. */
+        instructionVariables currentVars = varMapIter->second;
+        /*  Calculate the slack value. */
+        currentVars.slack = currentVars.latestStart - currentVars.earliestStart;
+        /*  Debug print. */
+        if (debuging) {
+            std::cout << "Slack calculated to " << currentVars.slack
+                << " for instruction." << std::endl;
+            printInstruction(varMapIter->first);
+            std::cout << std::endl;
+        }
+        /*  Save the new variables. */
+        varMapIter->second = currentVars;
+    }
+}
 
 
 /*  Pass the variable reference. */

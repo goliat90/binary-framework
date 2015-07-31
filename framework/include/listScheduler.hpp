@@ -22,11 +22,11 @@
 struct instructionVariables {
 //TODO constructor for this struct
     instructionVariables():earliestStart(-1), latestStart(std::numeric_limits<int>::max()), slack(-1),
-        sumOfExecutions(-1), executionTime(-1) {};
+        maximumDelayToLeaf(-1), executionTime(-1) {};
     int earliestStart;
     int latestStart;
     int slack;
-    int sumOfExecutions;
+    int maximumDelayToLeaf;
     int executionTime;
 };
 
@@ -58,12 +58,19 @@ class listScheduler {
             the LST value instead. It also calculates slack which is the difference
             between LST and EST. */
         void propagateLST(graphDAG*);
+        /*  Calculates the maximum delay to the most distant leaf. This should help
+            balance the progress on the paths in the DAG more evenly. Even though
+            all DAGs will have one leaf only this metric will hopefully be usable. */
+        void maximumDelayToLeaf(graphDAG*);
+        /*  Calculate the slack variable. It is just the difference between the
+            EST and LST, can be calculated by iterating over the variable map. */
+        void calculateSlack();
+        /*  Handles the scheduling of instructions. */
+        void forwardListScheduling(graphDAG*);
 
         /*  Private variables. */
         /*  CFG handler object pointer. */
         CFGhandler* cfgObject;
-        /*  graph DAG object. */
-//        graphDAG* DAGobject;
         /*  Debuging variable. */
         bool debuging;
 
