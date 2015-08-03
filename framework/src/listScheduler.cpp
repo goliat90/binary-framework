@@ -110,7 +110,67 @@ void listScheduler::scheduleBlock(SgAsmBlock* basic) {
 
 /*  Perform list scheduling. */
 void listScheduler::forwardListScheduling(graphDAG* DAGobject) {
+/*
+    Cycle = 0
+    ready-list = root nodes in DPG (Data precedence graph), This will probably be the
+    a kind of list containing nodes found in the cfg to be ready to be scheduled.
+    inflight-list =  instructions that are executing. 
+    //TODO the lists should probably contain nodes. Can give me the edges, source, target.
+    //TODO ready-list should be sortable according to priority.
 
+    //TODO need a function that can determine if a instructions is ready to be added to the ready-list.
+    //TODO I will probably need a list of the scheduled instructions that is searchable. (std::list)
+
+    while (ready-list or inflight-list is not empty)
+        for all instructions in ready-list in descending priority order
+        //TODO The for all here might not be needed since only one instruction can be scheduled at a time.
+            if a functional unit exists so a instruction can be scheduled at this cycle.
+                remove instruction from ready-list and add it to inflight-list.
+                add instruction to the schedule at time cycle.
+                if the instruction has out-going edges.(anti-edges) //TODO need to check for difference.
+                    add the targets of the edges to the ready-list
+                endif
+            endif
+        endfor
+
+        cycle = cycle + 1
+        for all instructions in the inflight-list
+            if operation finished at time cycle
+                remove instruction from inflight-list
+                check for nodes waiting for instruction to finish and add to ready-list
+                    if all operands are available.
+            endif
+        endfor
+    endwhile.
+
+    //TODO Do i need to annotate edges in graph? Or is some of the pseudo code not needed?
+    //TODO Im thinking about the situation when nodes are added to the ready-list, do i have both cases?
+*/
+
+    /*  Variable declarations. */
+    int listCycle = 0;
+    /*  Instructions ready for scheduling, ordered by priority. */
+    //TODO verify if i can list the priority with the use of comparator and .sort
+    std::list<DAGVertexDescriptor*> readyList;
+    /*  Instructions in flight. */
+    //TODO Since only one instruction can be scheduled at a time this might be redundant having that list. */
+    std::list<DAGVertexDescriptor*> inFlightList;
+    /*  The Determined list schedule. */
+    std::list<SgAsmMipsInstruction*> scheduleOrder;
+
+    /*  Insert root nodes into the ready list, since there is only one root node
+        use the function to get the root node. */
+    readyList.push_front(DAGobject->getForwardDAGRoot());
+
+    /*  While loops. */
+    while (readyList.empty() && inFlightList.empty()) {
+        /*  Take highest priority instruction that is ready and schedule it. */
+
+        listCycle += 1;
+
+        /*  Check the inflight list if any instruction is finished. */
+        //TODO this will probably just be a check to see if the last scheduled instruction has finished.
+    }
 }
 
 

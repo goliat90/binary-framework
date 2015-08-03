@@ -20,7 +20,7 @@
 /*  Struct for saving information regarding an instructions
     values used when scheduling. */
 struct instructionVariables {
-//TODO constructor for this struct
+    /*  Constructor. */
     instructionVariables():earliestStart(-1), latestStart(std::numeric_limits<int>::max()), slack(-1),
         maximumDelayToLeaf(-1), executionTime(-1) {};
     int earliestStart;
@@ -76,7 +76,7 @@ class listScheduler {
 
         //TODO create a storage medium for the instruction information, struct?
         /*  Storage medium to map the instructions. */
-        std::map<SgAsmMipsInstruction*, instructionVariables> variableMap;
+        nodeMap variableMap;
 };
 
 #endif 
