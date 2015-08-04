@@ -28,11 +28,15 @@ struct instructionVariables {
     int slack;
     int maximumDelayToLeaf;
     int executionTime;
+    //TODO consider adding mipsinstruction pointer? Or the vertex descriptor instead?
+    DAGVertexDescriptor forwardNodeRef;
 };
 
 /*  Typedef. */
-typedef std::map<SgAsmMipsInstruction*, instructionVariables> nodeMap;
-typedef std::pair<SgAsmMipsInstruction*, instructionVariables> nodeMapPair;
+typedef std::map<DAGVertexDescriptor, instructionVariables> nodeMap;
+typedef std::pair<DAGVertexDescriptor, instructionVariables> nodeMapPair;
+
+typedef std::map<DAGVertexDescriptor, SgAsmMipsInstruction*> nodeToInstructionMap;
 
 class listScheduler {
     public:
@@ -51,6 +55,8 @@ class listScheduler {
         /*  Initialize the map containing the variables for
             the instructions used by the list scheduler. */
         void initializeListVariables(graphDAG*);
+        /*  Help function to determine which execution time an instruction has. */
+        int getExecutionTime(SgAsmMipsInstruction*);
         /*  This function will propogate the EST values by traversing the
             forward DAG. */
         void propagateEST(graphDAG*);
@@ -67,6 +73,8 @@ class listScheduler {
         void calculateSlack();
         /*  Handles the scheduling of instructions. */
         void forwardListScheduling(graphDAG*);
+        /*  Sorts the list of nodes/instructions according to priority. */
+        void listPrioritySort(std::list<DAGVertexDescriptor*>&);
 
         /*  Private variables. */
         /*  CFG handler object pointer. */
@@ -74,8 +82,10 @@ class listScheduler {
         /*  Debuging variable. */
         bool debuging;
 
-        //TODO create a storage medium for the instruction information, struct?
-        /*  Storage medium to map the instructions. */
+        /*  Storage medium to map the instructions.
+            This map is used when calculating the different variables used when
+            scheduling. The variables are then later used during scheduling
+            to determine order. */
         nodeMap variableMap;
 };
 

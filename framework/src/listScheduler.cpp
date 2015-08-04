@@ -108,8 +108,121 @@ void listScheduler::scheduleBlock(SgAsmBlock* basic) {
 }
 
 
+/*  Comparator used in the readylist. It will enfore strict weak ordering,
+    that means that true should be returned if instA should be before instB.
+    It will order instructions according to the priority of the variables.
+    If there is an equal value in one variable the next variable is checked.
+
+    Order of variables checked are.
+    1. Critical path, instruction on critcal path have highest priority.
+    2. EST, schedule instruction as early as possible.
+    3. Slack, small slack means that the window between EST and LST is little.
+    4. Maximum delay to leaf, the maximum possible time for this instruction
+       path to reach the leaf node.
+    5. Execution time. */
+bool priorityCompare(const instructionVariables& instA, const instructionVariables& instB) {
+    /*  Check if there is any of the instructions are on the critical path. */
+    if (0 == instA.slack && 0 == instB.slack) {
+        /*  Both instructions are on critical path, check next variable. */
+        if (instA.earliestStart == instB.earliestStart) {
+           /*   Equal EST values, check next variable. */ 
+           if (instA.slack == instB.slack) {
+                /*  Equal slack, check next variable. */
+                if (instA.maximumDelayToLeaf == instB.maximumDelayToLeaf) {
+                    /*  Equal maximum delay to leaf, check next variable.
+                        Comparing execution times, higher execution times are prioritized. */
+                    return instA.executionTime > instB.executionTime;
+
+                } else if (instA.maximumDelayToLeaf > instB.maximumDelayToLeaf) {
+                    /*  instA has higher delay and therefore higher priority. */
+                    return true;
+                } else {
+                    /*  instB has the higher priority. */
+                    return false;
+                }
+           } else if (instA.slack < instB.slack) {
+                /*  instA has a smaller slack and has higher priority. */
+                return true;
+           } else {
+                /*  instB has smaller slack, therefore higher priority. */
+                return false;
+           }
+        } else if (instA.earliestStart < instB.earliestStart) {
+            /*  instA has a lower EST than instB and har higher priority. */
+            return true;
+        } else {
+            /*  If none of the above cases match then it means that instB
+                has lower EST than instA. */
+            return false;
+        }
+    } else if (0 == instA.slack) {
+        /*  InstA is on critical path and should be before instB which is
+            not on critical path. */
+        return true;
+    } else {
+        /*  InstB is on critical path and should be before instA which is
+            not on critical path. */
+        return false;
+    }
+}
+
 /*  Perform list scheduling. */
 void listScheduler::forwardListScheduling(graphDAG* DAGobject) {
+
+    /*  Variable declarations. */
+    int listCycle = 0;
+    /*  Instructions ready for scheduling, ordered by priority. */
+    std::list<instructionVariables> readyList;
+    std::list<instructionVariables> inFlightList;
+    //TODO  Maybe i need a list containing scheduling times for instructions.
+    //TODO  When the instruction is scheduled and when finished.
+
+    /* Initialize the readylist with the root vertex variables. */
+    DAGVertexDescriptor* root = DAGobject->getForwardDAGRoot();
+    readyList.push_front(variableMap.find(*root)->second);
+
+    //TODO verify if i can list the priority with the use of comparator and .sort
+    //typedef std::list<DAGVertexDescriptor*> vertexPtrList;
+    //vertexPtrList readyList;
+    /*  Instructions in flight. */
+    //TODO Since only one instruction can be scheduled at a time this might be redundant having that list. */
+    //vertexPtrList inFlightList;
+
+    /*  The Determined list schedule. This list will afterwards be exchanged
+        with the list in the block. */
+    //TODO can search this list with std::find.
+    SgAsmStatementPtrList scheduleOrder;
+
+    /*  Insert root nodes into the ready list, since there is only one root node
+        use the function to get the root node. */
+    //readyList.push_front(DAGobject->getForwardDAGRoot());
+
+    /*  While loops. */
+    while (readyList.empty() && inFlightList.empty()) {
+        /*  Sort the readyList according to priority with the priority compare. */
+        readyList.sort(priorityCompare);
+        /*  Find highest priority instruction that is ready and schedule it. */
+        for(std::list<instructionVariables>::iterator readyIter = readyList.begin();
+            readyIter != readyList.end(); ++readyIter) {
+            /*  Check if the instruction can be scheduled at this cycle.
+                Which means that EST should be checked. */
+            //TODO verify that it is the EST that i can check. 
+            //TODO Do i even need to check here? Is it if i have ready instructions
+            //TODO but their dependant instruction is not finished? But why are they in the readylist?
+
+            //TODO for now i add the first instruction to the inflight list and break the for loop.
+            inFlightList.push_back(*readyIter);
+            readyList.erase(readyIter);
+            break;
+        }
+
+        listCycle += 1;
+
+        /*  Check the inflight list if any instruction is finished. */
+
+        //TODO this will probably just be a check to see if the last scheduled instruction has finished.
+    }
+
 /*
     Cycle = 0
     ready-list = root nodes in DPG (Data precedence graph), This will probably be the
@@ -146,32 +259,34 @@ void listScheduler::forwardListScheduling(graphDAG* DAGobject) {
     //TODO Do i need to annotate edges in graph? Or is some of the pseudo code not needed?
     //TODO Im thinking about the situation when nodes are added to the ready-list, do i have both cases?
 */
-
-    /*  Variable declarations. */
-    int listCycle = 0;
-    /*  Instructions ready for scheduling, ordered by priority. */
-    //TODO verify if i can list the priority with the use of comparator and .sort
-    std::list<DAGVertexDescriptor*> readyList;
-    /*  Instructions in flight. */
-    //TODO Since only one instruction can be scheduled at a time this might be redundant having that list. */
-    std::list<DAGVertexDescriptor*> inFlightList;
-    /*  The Determined list schedule. */
-    std::list<SgAsmMipsInstruction*> scheduleOrder;
-
-    /*  Insert root nodes into the ready list, since there is only one root node
-        use the function to get the root node. */
-    readyList.push_front(DAGobject->getForwardDAGRoot());
-
-    /*  While loops. */
-    while (readyList.empty() && inFlightList.empty()) {
-        /*  Take highest priority instruction that is ready and schedule it. */
-
-        listCycle += 1;
-
-        /*  Check the inflight list if any instruction is finished. */
-        //TODO this will probably just be a check to see if the last scheduled instruction has finished.
-    }
 }
+
+
+
+
+
+
+/*  Used to sort the ready instructions/nodes in the correct order accoring to priority. 
+    Sorting criteria are.
+    1. Critical path, instruction on critcal path have highest priority.
+    2. EST, schedule instruction as early as possible.
+    3. Slack, small slack means that the window between EST and LST is little.
+    4. Maximum delay to leaf, the maximum possible time for this instruction
+       path to reach the leaf node.
+    5. Execution time. */
+//void listScheduler::listPrioritySort(std::list<DAGVertexDescriptor*>& readyNodes) {
+//    /*  Variables. */
+//    bool elementsSwaped = true;
+//    /*  Sort the list according to priority. Sort until there has been 
+//        no swap in in a whole iteration of the list. */
+//    while (elementsSwaped) {
+//        /*  Iterate through the list and compare elements. */
+//        for(std::list<DAGVertexDescriptor*>::iterator vertIter = readyNodes.begin();
+//            vertIter != readyNodes.end(); ++vertIter) {
+//            /*  Current element and the next element. */
+//        }
+//    }
+//}
 
 
 /*  Initialize the variableMap, make an entry for each instruction
@@ -188,15 +303,17 @@ void listScheduler::initializeListVariables(graphDAG* DAGobject) {
     for(std::pair<DAGVIter, DAGVIter> iterPair = vertices(*forwardDAG);
         iterPair.first != iterPair.second; ++iterPair.first) {
         /*  Retrieve the isntruciton pointer. */
-        SgAsmMipsInstruction* nodeInst = get(boost::vertex_name, *forwardDAG, *iterPair.first);
+        //SgAsmMipsInstruction* nodeInst = get(boost::vertex_name, *forwardDAG, *iterPair.first);
         /*  Create an entry for the vertice instruction.
             Also set some of the variable values. */
         instructionVariables nodeVars;
         /*  Set the execution time of the instruction. */
         //TODO need to change here if i set different values on instructions. 
         nodeVars.executionTime = 1;
+        /*  Save the node itself as well for later reference when scheduling. */
+        nodeVars.forwardNodeRef = *iterPair.first;
         /*  Insert the variable struct into the map. */
-        variableMap.insert(nodeMapPair(nodeInst, nodeVars));
+        variableMap.insert(nodeMapPair(*iterPair.first, nodeVars));
     }
     /*  Debug print. */
     if (debuging) {
@@ -225,12 +342,12 @@ void listScheduler::propagateEST(graphDAG* DAGobject) {
     visitQueue.push(*forwardRoot);
 
     /*  Set the EST in the root node before traversal. */
-    SgAsmMipsInstruction* rootMips = get(boost::vertex_name, *forwardDAG, *forwardRoot);
+//    SgAsmMipsInstruction* rootMips = get(boost::vertex_name, *forwardDAG, *forwardRoot);
     /*  Get the variables of the popped node. */
-    instructionVariables rootVars = variableMap.find(rootMips)->second;
+    instructionVariables rootVars = variableMap.find(*forwardRoot)->second;
     /*  Set the EST value in the root and save it. */
-    rootVars.earliestStart = 1; 
-    variableMap[rootMips] = rootVars;
+    rootVars.earliestStart = 0; 
+    variableMap[*forwardRoot] = rootVars;
     /*  Debug printout. */
     if (debuging) {
         std::cout << "EST set to root node to " << rootVars.earliestStart << std::endl << std::endl;
@@ -243,9 +360,9 @@ void listScheduler::propagateEST(graphDAG* DAGobject) {
         /*  Remove it from the queue. */
         visitQueue.pop();
         /*  Get the instruction pointer of the popped node. */
-        SgAsmMipsInstruction* visitedMips = get(boost::vertex_name, *forwardDAG, visitedNode);
+//        SgAsmMipsInstruction* visitedMips = get(boost::vertex_name, *forwardDAG, visitedNode);
         /*  Get the variables of the popped node. */
-        instructionVariables visitedVars = variableMap.find(visitedMips)->second;
+        instructionVariables visitedVars = variableMap.find(visitedNode)->second;
         /*  Go through the out edges of the vertex. Check if the EST of
             the target vertice should be reassigned. */
         for(std::pair<DAGOEIter, DAGOEIter> edgePair = out_edges(visitedNode, *forwardDAG);
@@ -256,13 +373,13 @@ void listScheduler::propagateEST(graphDAG* DAGobject) {
             /*  Get the instruction pointer. */
             SgAsmMipsInstruction* targetMips = get(boost::vertex_name, *forwardDAG, targetNode);
             /*  Retrieve the variables for the target. */
-            instructionVariables targetVars = variableMap.find(targetMips)->second;
+            instructionVariables targetVars = variableMap.find(targetNode)->second;
             /*  Check if the EST of the target is lower than this nodes EST + Execution time. */
             if (targetVars.earliestStart < (visitedVars.earliestStart + visitedVars.executionTime)) {
                 /*  The EST the visited node produces is higher than the assign so pass it over. */
                 targetVars.earliestStart = visitedVars.earliestStart + visitedVars.executionTime;
                 /*  Save the new EST in the mapping. */
-                variableMap[targetMips] = targetVars;
+                variableMap[targetNode] = targetVars;
                 /*  Push the target node to the queue so it will be visited so it can propagate
                     its new EST. */
                 visitQueue.push(targetNode);
@@ -297,14 +414,14 @@ void listScheduler::propagateLST(graphDAG* DAGobject) {
     visitQueue.push(*backwardRoot);
 
     /*  Set the correct values in the root node. */
-    SgAsmMipsInstruction* rootMips = get(boost::vertex_name, *backwardDAG, *backwardRoot);
+//    SgAsmMipsInstruction* rootMips = get(boost::vertex_name, *backwardDAG, *backwardRoot);
     /*  Get the variables of the popped node. */
-    instructionVariables rootVars = variableMap.find(rootMips)->second;
+    instructionVariables rootVars = variableMap.find(*backwardRoot)->second;
     /*  Set the LST value in the root and save it, the LST in the root
         which is the last instruction in the block is the EST. */
     //TODO
     rootVars.latestStart = rootVars.earliestStart; 
-    variableMap[rootMips] = rootVars;
+    variableMap[*backwardRoot] = rootVars;
     /*  Debug printout. */
     if (debuging) {
         std::cout << "LST set in root node to " << rootVars.latestStart << std::endl << std::endl;
@@ -317,9 +434,9 @@ void listScheduler::propagateLST(graphDAG* DAGobject) {
         /*  Remove it from the queue. */
         visitQueue.pop();
         /*  Get the instruction pointer of the popped node. */
-        SgAsmMipsInstruction* visitedMips = get(boost::vertex_name, *backwardDAG, visitedNode);
+//        SgAsmMipsInstruction* visitedMips = get(boost::vertex_name, *backwardDAG, visitedNode);
         /*  Get the variables of the popped node. */
-        instructionVariables visitedVars = variableMap.find(visitedMips)->second;
+        instructionVariables visitedVars = variableMap.find(visitedNode)->second;
         /*  Go through the out edges of the vertex. Check if the EST of
             the target vertice should be reassigned. */
         for(std::pair<DAGOEIter, DAGOEIter> edgePair = out_edges(visitedNode, *backwardDAG);
@@ -330,13 +447,13 @@ void listScheduler::propagateLST(graphDAG* DAGobject) {
             /*  Get the instruction pointer. */
             SgAsmMipsInstruction* targetMips = get(boost::vertex_name, *backwardDAG, targetNode);
             /*  Retrieve the variables for the target. */
-            instructionVariables targetVars = variableMap.find(targetMips)->second;
+            instructionVariables targetVars = variableMap.find(targetNode)->second;
             /*  Check if the EST of the target is lower than this nodes EST + Execution time. */
             if (targetVars.latestStart > (visitedVars.latestStart - visitedVars.executionTime)) {
                 /*  The EST the visited node produces is higher than the assign so pass it over. */
                 targetVars.latestStart = visitedVars.latestStart - visitedVars.executionTime;
                 /*  Save the new EST in the mapping. */
-                variableMap[targetMips] = targetVars;
+                variableMap[targetNode] = targetVars;
                 /*  Push the target node to the queue so it will be visited so it can propagate
                     its new EST. */
                 visitQueue.push(targetNode);
@@ -373,18 +490,18 @@ void listScheduler::maximumDelayToLeaf(graphDAG* DAGobject) {
     }
     /*  Using a boost buffer to queue the nodes that i am visiting. */
     boost::queue<DAGVertexDescriptor> visitQueue;
-    /*  Get forward DAG. */
+    /*  Get backward DAG. */
     frameworkDAG* backwardDAG = DAGobject->getBackwardDAG();
-    /*  In the forward pass the first instruction is the root. */
+    /*  In the backward pass the last instruction is the root. */
     DAGVertexDescriptor* backwardRoot = DAGobject->getBackwardDAGRoot();
 
     /*  Push the root vertex into the queue. */
     visitQueue.push(*backwardRoot);
 
     /*  Set the correct values in the root node. */
-    SgAsmMipsInstruction* rootMips = get(boost::vertex_name, *backwardDAG, *backwardRoot);
+//    SgAsmMipsInstruction* rootMips = get(boost::vertex_name, *backwardDAG, *backwardRoot);
     /*  Get the variables of the popped node. */
-    instructionVariables rootVars = variableMap.find(rootMips)->second;
+    instructionVariables rootVars = variableMap.find(*backwardRoot)->second;
     /*  Set the delay value of the root, since the root is the last instruction
         it has no delay because there is no instruction after it. 
         //TODO need to consider this or if i should have execution time here. */
@@ -395,7 +512,7 @@ void listScheduler::maximumDelayToLeaf(graphDAG* DAGobject) {
             << std::endl;
     }
     /*  Save the variable values. */
-    variableMap[rootMips] = rootVars;
+    variableMap[*backwardRoot] = rootVars;
 
     /*  Traverse the DAG in a BFS maner, It will revisit nodes that have their
         values updated though, a deviation from normal BFS. */
@@ -405,9 +522,9 @@ void listScheduler::maximumDelayToLeaf(graphDAG* DAGobject) {
         /*  Remove it from the queue. */
         visitQueue.pop();
         /*  Get the instruction pointer of the popped node. */
-        SgAsmMipsInstruction* visitedMips = get(boost::vertex_name, *backwardDAG, visitedNode);
+//        SgAsmMipsInstruction* visitedMips = get(boost::vertex_name, *backwardDAG, visitedNode);
         /*  Get the variables of the popped node. */
-        instructionVariables visitedVars = variableMap.find(visitedMips)->second;
+        instructionVariables visitedVars = variableMap.find(visitedNode)->second;
         /*  Iterate over the out edges and check the maximum delay to leaf
             of the nodes children. */
         for(std::pair<DAGOEIter, DAGOEIter> edgePair = out_edges(visitedNode, *backwardDAG);
@@ -417,7 +534,7 @@ void listScheduler::maximumDelayToLeaf(graphDAG* DAGobject) {
             /*  Get the instruction pointer. */
             SgAsmMipsInstruction* targetMips = get(boost::vertex_name, *backwardDAG, targetNode);
             /*  Retrieve the variables for the target. */
-            instructionVariables targetVars = variableMap.find(targetMips)->second;
+            instructionVariables targetVars = variableMap.find(targetNode)->second;
             /*  Check if the maximum delay should be reassigned. */
             if (targetVars.maximumDelayToLeaf < (visitedVars.maximumDelayToLeaf + visitedVars.executionTime)) {
                 /*  The maximum delay in the child node is less. Assign the new
@@ -431,7 +548,7 @@ void listScheduler::maximumDelayToLeaf(graphDAG* DAGobject) {
                     std::cout << std::endl;
                 }
                 /*  Save the new variables in the map. */
-                variableMap[targetMips] = targetVars;
+                variableMap[targetNode] = targetVars;
                 /*  Push the child node onto the visit queue so it will be visited. */
                 visitQueue.push(targetNode);
             }
@@ -455,9 +572,10 @@ void listScheduler::calculateSlack() {
         currentVars.slack = currentVars.latestStart - currentVars.earliestStart;
         /*  Debug print. */
         if (debuging) {
+            /*  Get instruction pointer. */
             std::cout << "Slack calculated to " << currentVars.slack
                 << " for instruction." << std::endl;
-            printInstruction(varMapIter->first);
+//            printInstruction(varMapIter->first);
             std::cout << std::endl;
         }
         /*  Save the new variables. */
