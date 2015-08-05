@@ -171,11 +171,17 @@ void listScheduler::forwardListScheduling(graphDAG* DAGobject) {
 
     /*  Variable declarations. */
     int listCycle = 0;
+    /*  Reference to forward DAG. */
+    frameworkDAG* fDAG = DAGobject->getForwardDAG();
     /*  Instructions ready for scheduling, ordered by priority. */
+    //TODO readyList could be priority queue?
     std::list<instructionVariables> readyList;
-    std::list<instructionVariables> inFlightList;
+    std::map<int, instructionVariables> inFlightList;
     //TODO  Maybe i need a list containing scheduling times for instructions.
     //TODO  When the instruction is scheduled and when finished.
+
+    //TODO  or change inflight list to a container that has finish times?
+    //TODO  The finish time would be cycle + execution time.
 
     /* Initialize the readylist with the root vertex variables. */
     DAGVertexDescriptor* root = DAGobject->getForwardDAGRoot();
@@ -191,36 +197,88 @@ void listScheduler::forwardListScheduling(graphDAG* DAGobject) {
     /*  The Determined list schedule. This list will afterwards be exchanged
         with the list in the block. */
     //TODO can search this list with std::find.
-    SgAsmStatementPtrList scheduleOrder;
+    //TODO perhaps change instruction variables to dag vertex instead.
+    std::set<DAGVertexDescriptor> scheduleOrder;
 
     /*  Insert root nodes into the ready list, since there is only one root node
         use the function to get the root node. */
     //readyList.push_front(DAGobject->getForwardDAGRoot());
 
     /*  While loops. */
-    while (readyList.empty() && inFlightList.empty()) {
+    while (!readyList.empty() || !inFlightList.empty()) {
         /*  Sort the readyList according to priority with the priority compare. */
         readyList.sort(priorityCompare);
         /*  Find highest priority instruction that is ready and schedule it. */
         for(std::list<instructionVariables>::iterator readyIter = readyList.begin();
             readyIter != readyList.end(); ++readyIter) {
-            /*  Check if the instruction can be scheduled at this cycle.
-                Which means that EST should be checked. */
-            //TODO verify that it is the EST that i can check. 
-            //TODO Do i even need to check here? Is it if i have ready instructions
-            //TODO but their dependant instruction is not finished? But why are they in the readylist?
+            /*  Schedule the highest priority instruction. Also check if
+                any of the child instructions can be scheduled. */
 
             //TODO for now i add the first instruction to the inflight list and break the for loop.
-            inFlightList.push_back(*readyIter);
+            inFlightList.insert(std::pair<int, instructionVariables>(listCycle, *readyIter));
+
+            //TODO Check childnodes of the scheduled instruction if they can be scheduled.
+            //TODO the criteria is that the only dependencies are WAR, verify this,
+            //TODO additionaly if other dependencies than WAR are satisfied and WAR
+            //TODO is the only dependency left, then it could be considered ready?
+
             readyList.erase(readyIter);
             break;
         }
 
+        /*  Increment the scheduling cycle. */
         listCycle += 1;
+        if (debuging) {
+            std::cout << "Incrementing cycle." << std::endl;
+        }
 
         /*  Check the inflight list if any instruction is finished. */
+        for(std::map<int, instructionVariables>::iterator flightIter = inFlightList.begin();
+            flightIter != inFlightList.end(); ++flightIter) {
+            /*  Check each instruction if they have finished this cycle.
+                This is done by checking if the cycle when put inflight list plus its
+                execution time is equal to the current cycle. */
+            if (listCycle == (flightIter->first + flightIter->second.executionTime)) {
+                /*  The Instruction is finished this cycle. Add it to the schedule order list. */
+                scheduleOrder.insert(flightIter->second.forwardNodeRef);
+                //TODO check child nodes to this instruction if they are ready to exectute.
+
+                for(std::pair<DAGOEIter, DAGOEIter> outEdgeIter = out_edges(flightIter->second.forwardNodeRef, *fDAG);
+                    outEdgeIter.first != outEdgeIter.second; ++outEdgeIter.first) {
+                    /*  Variable determening if a child node can be scheduled. */
+                    bool childScheduable = true;
+                    /*  Get the target node and check its in-edges. If all their
+                        dependencies are satisfied then push child to the readylist. */
+                    DAGVertexDescriptor childNode = target(*outEdgeIter.first, *fDAG);
+                    /*  Iteration over the in-edges. Checking that dependencies are satisfied. */
+                    for(std::pair<DAGIEIter, DAGIEIter> inEdgeIter = in_edges(childNode, *fDAG);
+                        inEdgeIter.first != inEdgeIter.second; ++inEdgeIter.first) {
+                        /*  If all dependencies are satisfied the instruction can be put in the 
+                            ready-list. First check if the parent instructions has been scheduled. */
+                        DAGVertexDescriptor parentNode = source(*inEdgeIter.first, *fDAG);
+                        /*  Check if parent is scheduled. If it has not been the we can
+                            not schedule the child. */
+                        if (0 == scheduleOrder.count(parentNode)) {
+                           childScheduable = false; 
+                           /*   Break loop since there is no reason to check other parents. */
+                           break;
+                        }
+                    }
+                    /*  If the childs parents have all been scheduled it can
+                        be added to the ready list. */
+                    if (true == childScheduable) {
+                        /*  Get the variable struct from the map. */
+                        instructionVariables childVars = variableMap.find(childNode)->second;
+                        /*  Insert it into the ready list. */
+                        readyList.push_back(childVars);
+                    }
+                }
+            }
+        }
 
         //TODO this will probably just be a check to see if the last scheduled instruction has finished.
+        std::cout << "Leaving scheduling while loop. Remove this later." << std::endl;
+        break;
     }
 
 /*
@@ -229,7 +287,6 @@ void listScheduler::forwardListScheduling(graphDAG* DAGobject) {
     a kind of list containing nodes found in the cfg to be ready to be scheduled.
     inflight-list =  instructions that are executing. 
     //TODO the lists should probably contain nodes. Can give me the edges, source, target.
-    //TODO ready-list should be sortable according to priority.
 
     //TODO need a function that can determine if a instructions is ready to be added to the ready-list.
     //TODO I will probably need a list of the scheduled instructions that is searchable. (std::list)
@@ -242,6 +299,8 @@ void listScheduler::forwardListScheduling(graphDAG* DAGobject) {
                 add instruction to the schedule at time cycle.
                 if the instruction has out-going edges.(anti-edges) //TODO need to check for difference.
                     add the targets of the edges to the ready-list
+                    //TODO this is probably WAR dependencies, after this the instruction is issued
+                    //TODO and instruction writing to the same register can execute since the value has been read.
                 endif
             endif
         endfor
@@ -252,12 +311,13 @@ void listScheduler::forwardListScheduling(graphDAG* DAGobject) {
                 remove instruction from inflight-list
                 check for nodes waiting for instruction to finish and add to ready-list
                     if all operands are available.
+                    //TODO This is probably RAW, instruction needs the computed value written to memory.
+                    //TODO Could probably be WAW also, write to the same register that has been written to.
             endif
         endfor
     endwhile.
 
     //TODO Do i need to annotate edges in graph? Or is some of the pseudo code not needed?
-    //TODO Im thinking about the situation when nodes are added to the ready-list, do i have both cases?
 */
 }
 
