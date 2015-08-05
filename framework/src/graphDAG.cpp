@@ -338,7 +338,9 @@ void graphDAG::resourceDefined(DAGVertexDescriptor* newNode, DAGresources::resou
         /*  ADD WAW arc between latest definition(created node) and last definition,. */
         //TODO do i need to distinguish the types of arcs?
         //TODO could be that i need to set the latency values here. 
-        add_edge(lastDefinitionVertex, *newNode, *backwardDAG);
+        std::pair<DAGEdgeDescriptor, bool> newEdge = add_edge(lastDefinitionVertex, *newNode, *backwardDAG);
+        /*  Add edge property (WAW). */
+        put(boost::edge_weight, *backwardDAG, newEdge.first, edgeDependency::WAW);
         /*  debug printout. */
         if (debuging) {
             std::cout << "adding WAW edge." << std::endl;
@@ -356,7 +358,9 @@ void graphDAG::resourceDefined(DAGVertexDescriptor* newNode, DAGresources::resou
             /*  add RAW arc between that node and the newnode. */
             //TODO do i need to distinguish the types of arcs?
             //TODO could be that i need to set the latency values here. 
-            add_edge(useIter->second, *newNode, *backwardDAG);
+            std::pair<DAGEdgeDescriptor, bool> newEdge = add_edge(useIter->second, *newNode, *backwardDAG);
+            /*  Add edge property (RAW). */
+            put(boost::edge_weight, *backwardDAG, newEdge.first, edgeDependency::RAW);
             if (debuging) {
                 std::cout << "Adding RAW edge." << std::endl;
             }
@@ -393,7 +397,9 @@ void graphDAG::resourceUsed(DAGVertexDescriptor* newNode, DAGresources::resource
         //TODO will that work?
         if (definitionNode != *newNode) {
             /*  The nodes are not the same, create the edge. */
-            add_edge(definitionNode, *newNode, *backwardDAG);
+            std::pair<DAGEdgeDescriptor, bool> newEdge = add_edge(definitionNode, *newNode, *backwardDAG);
+            /*  Add edge property (WAR). */
+            put(boost::edge_weight, *backwardDAG, newEdge.first, edgeDependency::RAW);
         }
         if (debuging) {
             std::cout << "adding WAR edge" << std::endl;

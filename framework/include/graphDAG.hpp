@@ -20,14 +20,21 @@
 
 /*  Properties for the properties of the vertices. */
 /*  NOTE! I'm using vertex_index2 instead of vertex_index because the later
-    seems to be used/instantiated by something and becomes unusable. */
+    seems to be used/instantiated by something and becomes unusable, it breaks the execution. */
 typedef boost::property<boost::vertex_name_t, SgAsmMipsInstruction*, boost::property<boost::vertex_index2_t, std::string> > vertexProperties_DAG;
 
 /*  Properties for the edges in the graph. The weight is intended to be the latency
     of the instruction. */
+namespace edgeDependency {
+    enum edgeTypes{
+        WAW,
+        RAW,
+        WAR
+    };
+}
     //TODO perhaps change this property to what the dependency is instead, or add it,
     //TODO could move latency to some other place.
-typedef boost::property<boost::edge_weight_t, int> edgeProperties_DAG;
+typedef boost::property<boost::edge_weight_t, edgeDependency::edgeTypes> edgeProperties_DAG;
 
 /*  The graph itself. */
 typedef boost::adjacency_list<  boost::setS,
@@ -41,6 +48,7 @@ typedef boost::graph_traits<frameworkDAG>::vertex_iterator DAGVIter;
 typedef boost::graph_traits<frameworkDAG>::vertex_descriptor DAGVertexDescriptor;
 typedef boost::graph_traits<frameworkDAG>::edge_iterator DAGEIter;
 typedef boost::graph_traits<frameworkDAG>::out_edge_iterator DAGOEIter;
+typedef boost::graph_traits<frameworkDAG>::in_edge_iterator DAGIEIter;
 typedef boost::graph_traits<frameworkDAG>::edge_descriptor DAGEdgeDescriptor;
 
 //propertymaps
