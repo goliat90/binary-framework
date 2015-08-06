@@ -98,13 +98,26 @@ void listScheduler::scheduleBlock(SgAsmBlock* basic) {
     }
     calculateSlack();
 
-
     if (debuging) {
         std::cout << "----------------------------------------" << std::endl
                 << "Variable calculations complete. Scheduling block." << std::endl;
     }
-    //TODO do the actuall scheduling.
-    forwardListScheduling(&blockDAG);
+    /*  Schedule order list. */
+    std::list<DAGVertexDescriptor> instructionOrder;
+    /*  Schedule the block. */
+    forwardListScheduling(&blockDAG, instructionOrder);
+
+    /*  Create a new statement list for the scheduled instruction order and
+        replace the old instruction order in the block. */
+    SgAsmStatementPtrList oldOrder = basic->get_statementList();
+    /*  List scheduler list, populate it and then swap with oldOrder list. */
+    SgAsmStatementPtrList listOrder;
+    /*  Iterate through the instruction order list and get the instructions. */
+    for(std::list<DAGVertexDescriptor>::iterator instIter = instructionOrder.begin();
+        instIter != instructionOrder.end(); ++instIter) {
+        /*  Get the instruction pointer. */
+
+    }
 }
 
 
@@ -116,10 +129,10 @@ void listScheduler::scheduleBlock(SgAsmBlock* basic) {
     Order of variables checked are.
     1. Critical path, instruction on critcal path have highest priority.
     2. EST, schedule instruction as early as possible.
-    3. Slack, small slack means that the window between EST and LST is little.
+    3. Slack, small slack means that the window between EST and LST is little. Small slack is prioritized.
     4. Maximum delay to leaf, the maximum possible time for this instruction
        path to reach the leaf node.
-    5. Execution time. */
+    5. Execution time, higher execution time is prioritized. */
 bool priorityCompare(const instructionVariables& instA, const instructionVariables& instB) {
     /*  Check if there is any of the instructions are on the critical path. */
     if (0 == instA.slack && 0 == instB.slack) {
@@ -167,8 +180,7 @@ bool priorityCompare(const instructionVariables& instA, const instructionVariabl
 }
 
 /*  Perform list scheduling. */
-void listScheduler::forwardListScheduling(graphDAG* DAGobject) {
-
+void listScheduler::forwardListScheduling(graphDAG* DAGobject, std::list<DAGVertexDescriptor>& scheduleOrder) {
     /*  Variable declarations. */
     int listCycle = 0;
     /*  Reference to forward DAG. */
@@ -176,6 +188,7 @@ void listScheduler::forwardListScheduling(graphDAG* DAGobject) {
     /*  Instructions ready for scheduling, ordered by priority. */
     //TODO readyList could be priority queue?
     std::list<instructionVariables> readyList;
+    //TODO  Consider changing this map to something more fitting. 
     std::map<int, instructionVariables> inFlightList;
     //TODO  Maybe i need a list containing scheduling times for instructions.
     //TODO  When the instruction is scheduled and when finished.
@@ -187,41 +200,82 @@ void listScheduler::forwardListScheduling(graphDAG* DAGobject) {
     DAGVertexDescriptor* root = DAGobject->getForwardDAGRoot();
     readyList.push_front(variableMap.find(*root)->second);
 
-    //TODO verify if i can list the priority with the use of comparator and .sort
-    //typedef std::list<DAGVertexDescriptor*> vertexPtrList;
-    //vertexPtrList readyList;
-    /*  Instructions in flight. */
-    //TODO Since only one instruction can be scheduled at a time this might be redundant having that list. */
-    //vertexPtrList inFlightList;
-
     /*  The Determined list schedule. This list will afterwards be exchanged
         with the list in the block. */
     //TODO can search this list with std::find.
     //TODO perhaps change instruction variables to dag vertex instead.
-    std::set<DAGVertexDescriptor> scheduleOrder;
+//    std::list<DAGVertexDescriptor> scheduleOrder;
 
-    /*  Insert root nodes into the ready list, since there is only one root node
-        use the function to get the root node. */
-    //readyList.push_front(DAGobject->getForwardDAGRoot());
+    /*  Debug printout. */
+    if (debuging) {
+        std::cout << "Starting scheduling." << std::endl;
+    }
 
     /*  While loops. */
     while (!readyList.empty() || !inFlightList.empty()) {
         /*  Sort the readyList according to priority with the priority compare. */
         readyList.sort(priorityCompare);
         /*  Find highest priority instruction that is ready and schedule it. */
+
+        //TODO change this to just checking in the readylist is empty and take the
+        //TODO highest prioritised instruciton. 
         for(std::list<instructionVariables>::iterator readyIter = readyList.begin();
             readyIter != readyList.end(); ++readyIter) {
+            /*  Debug print. */
+//            if (debuging) {
+//                std::cout << "Checking readylist." << std::endl;
+//            }
             /*  Schedule the highest priority instruction. Also check if
                 any of the child instructions can be scheduled. */
 
             //TODO for now i add the first instruction to the inflight list and break the for loop.
             inFlightList.insert(std::pair<int, instructionVariables>(listCycle, *readyIter));
 
-            //TODO Check childnodes of the scheduled instruction if they can be scheduled.
-            //TODO the criteria is that the only dependencies are WAR, verify this,
-            //TODO additionaly if other dependencies than WAR are satisfied and WAR
-            //TODO is the only dependency left, then it could be considered ready?
-
+            /*  Checking if the instructions children could execute. */
+            for(std::pair<DAGOEIter, DAGOEIter> outEdgeIter = out_edges((*readyIter).forwardNodeRef, *fDAG);
+                outEdgeIter.first != outEdgeIter.second; ++outEdgeIter.first) {
+                /*  Variable used to track if a child node can be added to the readylist.
+                    Which means it is ready for scheduling and execution. */
+                bool childReady = true;
+                /*  Get the child vertex. */
+                DAGVertexDescriptor childNode = target(*outEdgeIter.first, *fDAG);
+                /*  Iterate over the child in-edges and check if the parents have been
+                    scheduled or if the only dependencies are WAR. */
+                for(std::pair<DAGIEIter, DAGIEIter> inEdgeIter = in_edges(childNode, *fDAG);
+                    inEdgeIter.first != inEdgeIter.second; ++inEdgeIter.first) {
+                    /*  Check if parents are scheduled. If they are not then the
+                        dependency must be a WAR dependency for it to be acceptable.
+                        If these above criterias are not meet then the child can not be scheduled yet. */
+                    /*  Get the parent node. */
+                    DAGVertexDescriptor parentNode = source(*inEdgeIter.first, *fDAG);
+                    /*  Check if the parent has been scheduled or not. */
+                    if (scheduleOrder.end() == std::find(scheduleOrder.begin(), scheduleOrder.end(), parentNode)) {
+                        /*  The parent has not been scheduled. Check if the dependency
+                            is a WAR, if so it is still okay. */
+                        /*  Get the edge property. */
+                        edgeDependency::edgeType childDependency = get(boost::edge_weight, *fDAG, *inEdgeIter.first);
+                        /*  Check if the edge property is WAR. */
+                        //TODO need to consider here if i have the root and sink node edges how to handle them.
+                        if (edgeDependency::WAR != childDependency) {
+                            /*  The dependency is not WAR so the child is not ready. */
+                            childReady = false;
+                            /*  Break the loop. */
+                            break;
+                        }
+                    }
+                }
+                /*  Add the child node to the readylist if it is ready. */
+                if (true == childReady) {
+                    /*  Get the variable struct from the map. */
+                    instructionVariables childVars = variableMap.find(childNode)->second;
+                    /*  add variable struct to the list. */
+                    //TODO Need to check that the node has not been added already.
+                    readyList.push_back(childVars);
+                }
+                //TODO the criteria is that the only dependencies are WAR, verify this,
+                //TODO additionaly if other dependencies than WAR are satisfied and WAR
+                //TODO is the only dependency left, then it could be considered ready?
+            }
             readyList.erase(readyIter);
             break;
         }
@@ -232,15 +286,24 @@ void listScheduler::forwardListScheduling(graphDAG* DAGobject) {
             std::cout << "Incrementing cycle." << std::endl;
         }
 
-        /*  Check the inflight list if any instruction is finished. */
+        //TODO consider changing the for to a while loop and get a "safer"/"correct" way
+        //TODO of iterating and potentially deleting elements.
         for(std::map<int, instructionVariables>::iterator flightIter = inFlightList.begin();
             flightIter != inFlightList.end(); ++flightIter) {
+            /*  Debug print. */
+//            if (debuging) {
+//                std::cout << "Checking inflight list for finished instructions." << std::endl;
+//            }
             /*  Check each instruction if they have finished this cycle.
                 This is done by checking if the cycle when put inflight list plus its
                 execution time is equal to the current cycle. */
             if (listCycle == (flightIter->first + flightIter->second.executionTime)) {
+                /*  Debug printout. */
+//                if (debuging) {
+//                    std::cout << "Found instruction that has finished execution." << std::endl;
+//                }
                 /*  The Instruction is finished this cycle. Add it to the schedule order list. */
-                scheduleOrder.insert(flightIter->second.forwardNodeRef);
+                scheduleOrder.push_back(flightIter->second.forwardNodeRef);
                 //TODO check child nodes to this instruction if they are ready to exectute.
 
                 for(std::pair<DAGOEIter, DAGOEIter> outEdgeIter = out_edges(flightIter->second.forwardNodeRef, *fDAG);
@@ -255,10 +318,12 @@ void listScheduler::forwardListScheduling(graphDAG* DAGobject) {
                         inEdgeIter.first != inEdgeIter.second; ++inEdgeIter.first) {
                         /*  If all dependencies are satisfied the instruction can be put in the 
                             ready-list. First check if the parent instructions has been scheduled. */
+                        //TODO how could i take forwarding into account? 
                         DAGVertexDescriptor parentNode = source(*inEdgeIter.first, *fDAG);
                         /*  Check if parent is scheduled. If it has not been the we can
                             not schedule the child. */
-                        if (0 == scheduleOrder.count(parentNode)) {
+                        if (scheduleOrder.end() == std::find(scheduleOrder.begin(), scheduleOrder.end(), parentNode)) {
+//                        if (0 == scheduleOrder.count(parentNode)) {
                            childScheduable = false; 
                            /*   Break loop since there is no reason to check other parents. */
                            break;
@@ -269,16 +334,23 @@ void listScheduler::forwardListScheduling(graphDAG* DAGobject) {
                     if (true == childScheduable) {
                         /*  Get the variable struct from the map. */
                         instructionVariables childVars = variableMap.find(childNode)->second;
-                        /*  Insert it into the ready list. */
+                        /*  Insert it into the ready list. If it is not already in the list. */
+    //                    if (readyList.end() == std::find(readyList.begin(), readyList.end(), childVars)) {
+                        //TODO need to make sure i do not add a vertex several times.
                         readyList.push_back(childVars);
+     //                   }
                     }
                 }
+                /*  Remove the instruction from the inflight list. */
+                //TODO this might now work. Or it works but is not a good solution.
+                inFlightList.erase(flightIter);
             }
         }
+    }
 
-        //TODO this will probably just be a check to see if the last scheduled instruction has finished.
-        std::cout << "Leaving scheduling while loop. Remove this later." << std::endl;
-        break;
+    /*  Debug printout. */
+    if (debuging) {
+        std::cout << "Scheduling complete." << std::endl;
     }
 
 /*
@@ -316,38 +388,8 @@ void listScheduler::forwardListScheduling(graphDAG* DAGobject) {
             endif
         endfor
     endwhile.
-
-    //TODO Do i need to annotate edges in graph? Or is some of the pseudo code not needed?
 */
 }
-
-
-
-
-
-
-/*  Used to sort the ready instructions/nodes in the correct order accoring to priority. 
-    Sorting criteria are.
-    1. Critical path, instruction on critcal path have highest priority.
-    2. EST, schedule instruction as early as possible.
-    3. Slack, small slack means that the window between EST and LST is little.
-    4. Maximum delay to leaf, the maximum possible time for this instruction
-       path to reach the leaf node.
-    5. Execution time. */
-//void listScheduler::listPrioritySort(std::list<DAGVertexDescriptor*>& readyNodes) {
-//    /*  Variables. */
-//    bool elementsSwaped = true;
-//    /*  Sort the list according to priority. Sort until there has been 
-//        no swap in in a whole iteration of the list. */
-//    while (elementsSwaped) {
-//        /*  Iterate through the list and compare elements. */
-//        for(std::list<DAGVertexDescriptor*>::iterator vertIter = readyNodes.begin();
-//            vertIter != readyNodes.end(); ++vertIter) {
-//            /*  Current element and the next element. */
-//        }
-//    }
-//}
-
 
 /*  Initialize the variableMap, make an entry for each instruction
     and set some of the variables. */
