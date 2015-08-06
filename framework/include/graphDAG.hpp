@@ -26,7 +26,8 @@ typedef boost::property<boost::vertex_name_t, SgAsmMipsInstruction*, boost::prop
 /*  Properties for the edges in the graph. The weight is intended to be the latency
     of the instruction. */
 namespace edgeDependency {
-    enum edgeTypes{
+    //TODO add edge for enforcing sink and root node. Should limit scheduler.
+    enum edgeType{
         WAW,
         RAW,
         WAR
@@ -34,7 +35,7 @@ namespace edgeDependency {
 }
     //TODO perhaps change this property to what the dependency is instead, or add it,
     //TODO could move latency to some other place.
-typedef boost::property<boost::edge_weight_t, edgeDependency::edgeTypes> edgeProperties_DAG;
+typedef boost::property<boost::edge_weight_t, edgeDependency::edgeType> edgeProperties_DAG;
 
 /*  The graph itself. */
 typedef boost::adjacency_list<  boost::setS,
