@@ -21,7 +21,11 @@
 /*  Properties for the properties of the vertices. */
 /*  NOTE! I'm using vertex_index2 instead of vertex_index because the later
     seems to be used/instantiated by something and becomes unusable, it breaks the execution. */
-typedef boost::property<boost::vertex_name_t, SgAsmMipsInstruction*, boost::property<boost::vertex_index2_t, std::string> > vertexProperties_DAG;
+    //TODO added vertex_index1 to be able to number the vertices by myself.
+    //TODO to be sure of preserving identity of nodes between backward and forward DAG.
+typedef boost::property<boost::vertex_name_t, SgAsmMipsInstruction*, 
+        boost::property<boost::vertex_index1_t, int, 
+        boost::property<boost::vertex_index2_t, std::string> > > vertexProperties_DAG;
 
 /*  Properties for the edges in the graph. The weight is intended to be the latency
     of the instruction. */
@@ -54,6 +58,7 @@ typedef boost::graph_traits<frameworkDAG>::edge_descriptor DAGEdgeDescriptor;
 
 //propertymaps
 typedef boost::property_map<frameworkDAG, boost::vertex_index2_t>::type vertexIndexNameMap;
+typedef boost::property_map<frameworkDAG, boost::vertex_index1_t>::type vertexNumberMap;
 typedef boost::property_map<frameworkDAG, boost::vertex_name_t>::type vertexInstructionMap;
 
 //TODO Create some kind of definition for resources that is used when building the dag.

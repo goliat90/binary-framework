@@ -103,9 +103,11 @@ void graphDAG::buildBackwardDAG() {
 
     /*  Property map for the vertex_name, which is an instruction pointer. */
     vertexInstructionMap instructionMap = get(boost::vertex_name, *backwardDAG);
-
     /*  Property map for the naming of nodes. */
     vertexIndexNameMap nameMap = get(boost::vertex_index2, *backwardDAG);
+    /*  Property map for the indexing of nodes. */
+    vertexNumberMap numberMap = get(boost::vertex_index1, *backwardDAG);
+
     /*  Counter to number the nodes in order of inserted. */
     int count = 0;
     /*  Vertex variable. */
@@ -159,11 +161,14 @@ void graphDAG::buildBackwardDAG() {
             /*  Set a string name to it. Can be used when printing. */
             std::stringstream strStream;
             strStream << mips->get_mnemonic() << " " << count;
-            count++;
             /*  Save the string as a property of the node. */
             put(nameMap, newNode, strStream.str());
+            /*  Save the numbering of the node. */
+            put(numberMap, newNode, count);
             /*  Save the instruction pointer as a property of the vertex. */
             put(instructionMap, newNode, mips);
+            /*  Increment the counter used for numbering and string name. */
+            count++;
 
             /*  debug print. */
             if (debuging) {
