@@ -24,18 +24,39 @@
 struct instructionVariables {
     /*  Constructor. */
     instructionVariables():earliestStart(-1), latestStart(std::numeric_limits<int>::max()), slack(-1),
-        maximumDelayToLeaf(-1), executionTime(-1) {};
+        maximumDelayToLeaf(-1), executionTime(-1), nodeNumber(-1) {};
     int earliestStart;
     int latestStart;
     int slack;
     int maximumDelayToLeaf;
     int executionTime;
-    //TODO consider adding mipsinstruction pointer? Or the vertex descriptor instead?
-    //TODO might not need this if i change nodeMap to a bimap.
-    DAGVertexDescriptor forwardNodeRef;
+    //TODO Changing this to the identity of a node would make it easier to search for nodes
+    //TODO in lists. I could also remove the vertex variable and have a map outside
+    //TODO with number keyed to node.
+//    DAGVertexDescriptor forwardNodeRef;
+    int nodeNumber;
+    //TODO structs to not have equal operators by default need to design one if i need it.
+
+    /*  Equal function, is needed for the when i use std::find during scheduling.
+        This compare will only check the node numbers. */
+    bool operator==(const instructionVariables& varA) const {
+        return (nodeNumber == varA.nodeNumber);
+    }
 };
 
-/*  Comparator here. */
+/*  Comparator used in the readylist, impemented as functor. It will enfore strict weak ordering,
+    that means that true should be returned if instA should be before instB.
+    It will order instructions according to the priority of the variables.
+    If there is an equal value in one variable the next variable is checked.
+
+    Order of variables checked are.
+    1. Critical path, instruction on critcal path have highest priority.
+    2. EST, schedule instruction as early as possible.
+    3. Slack, small slack means that the window between EST and LST is little. Small slack is prioritized.
+    4. Maximum delay to leaf, the maximum possible time for this instruction
+       path to reach the leaf node.
+    5. Execution time, higher execution time is prioritized. */
+
 struct priorityCompareFunctor {
     bool operator()(const instructionVariables& instA, const instructionVariables& instB) {
         /*  Check if there is any of the instructions are on the critical path. */
@@ -85,14 +106,20 @@ struct priorityCompareFunctor {
 };
 
 /*  Typedef. */
-typedef std::map<DAGVertexDescriptor, instructionVariables> nodeMap;
-typedef std::pair<DAGVertexDescriptor, instructionVariables> nodeMapPair;
+//TODO change this mapping to nodenumber to struct
+/*  Defines the mapping between node and its variables. */
+typedef std::map<int, instructionVariables> nodeVars;
+typedef std::pair<int, instructionVariables> nodeVarsPair;
+
+/*  Defines mapping from node number to vertex descriptor. */
+typedef std::map<int, DAGVertexDescriptor> numberToVertexMap;
+typedef std::pair<int, DAGVertexDescriptor> numberToVertexPair;
 
 //TODO Seems like i need a special comparator for instruction variables.
 //TODO with the bimap i can skip having a vertex variable in the struct.
-typedef boost::bimap<DAGVertexDescriptor, boost::bimaps::set_of<instructionVariables, priorityCompareFunctor> > nodeBiMap;
-typedef nodeBiMap::left_value_type leftNodePair;
-typedef nodeBiMap::right_value_type rightNodePair;
+//typedef boost::bimap<DAGVertexDescriptor, boost::bimaps::set_of<instructionVariables, priorityCompareFunctor> > nodeBiMap;
+//typedef nodeBiMap::left_value_type leftNodePair;
+//typedef nodeBiMap::right_value_type rightNodePair;
 
 //typedef std::map<DAGVertexDescriptor, SgAsmMipsInstruction*> nodeToInstructionMap;
 
@@ -130,7 +157,7 @@ class listScheduler {
             EST and LST, can be calculated by iterating over the variable map. */
         void calculateSlack();
         /*  Handles the scheduling of instructions. */
-        void forwardListScheduling(graphDAG*, std::list<DAGVertexDescriptor>&);
+        void forwardListScheduling(graphDAG*, std::list<int>&);
 
         /*  Private variables. */
         /*  CFG handler object pointer. */
@@ -142,7 +169,9 @@ class listScheduler {
             This map is used when calculating the different variables used when
             scheduling. The variables are then later used during scheduling
             to determine order. */
-        nodeMap variableMap;
+        nodeVars variableMap;
+        /*  Mapping between node numbering and vertex descriptor. */
+        numberToVertexMap nodeNumberToVertex;
 };
 
 #endif 
