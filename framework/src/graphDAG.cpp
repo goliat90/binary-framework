@@ -271,7 +271,9 @@ void graphDAG::buildBackwardDAG() {
                     << " gets an edge from itself to the root vertice." << std::endl;
             }
             /*  Add an edge between the vertice and the first instruction vertice. */
-            add_edge(*vIter, firstInstructionVertice , *backwardDAG);
+            std::pair<DAGEdgeDescriptor, bool> rootEdge = add_edge(*vIter, firstInstructionVertice , *backwardDAG);
+            /*  Add edge property to specify the root or sink dependency.. */
+            put(boost::edge_weight, *backwardDAG, rootEdge.first, edgeDependency::sinkRootDependency);
         }
     }
     if (debuging) {
@@ -315,7 +317,9 @@ void graphDAG::buildBackwardDAG() {
                     << " gets an edge to sink vertice." << std::endl;
             }
             /*  add edge call. */
-            add_edge(*vIter, lastInstructionVertice, *backwardDAG);
+            std::pair<DAGEdgeDescriptor, bool> sinkEdge = add_edge(*vIter, lastInstructionVertice, *backwardDAG);
+            /*  Add edge property to specify the root or sink dependency.. */
+            put(boost::edge_weight, *backwardDAG, sinkEdge.first, edgeDependency::sinkRootDependency);
         }
     }
 }
@@ -341,8 +345,6 @@ void graphDAG::resourceDefined(DAGVertexDescriptor* newNode, DAGresources::resou
         /*  Get the previous vertex defining the resource. */
         DAGVertexDescriptor lastDefinitionVertex = definitionMap.find(newResource)->second;
         /*  ADD WAW arc between latest definition(created node) and last definition,. */
-        //TODO do i need to distinguish the types of arcs?
-        //TODO could be that i need to set the latency values here. 
         std::pair<DAGEdgeDescriptor, bool> newEdge = add_edge(lastDefinitionVertex, *newNode, *backwardDAG);
         /*  Add edge property (WAW). */
         put(boost::edge_weight, *backwardDAG, newEdge.first, edgeDependency::WAW);
@@ -356,13 +358,9 @@ void graphDAG::resourceDefined(DAGVertexDescriptor* newNode, DAGresources::resou
     bool removeUseEntries = false;
     for(useContainer::left_iterator useIter = useBiMap.left.begin();
         useIter != useBiMap.left.end(); ++useIter) {
-        //TODO do i need to distinguish the types of arcs?
-        //TODO could be that i need to set the latency values here. 
         /*  Check if the entry uses the new resource. */
         if (newResource == useIter->first) {
             /*  add RAW arc between that node and the newnode. */
-            //TODO do i need to distinguish the types of arcs?
-            //TODO could be that i need to set the latency values here. 
             std::pair<DAGEdgeDescriptor, bool> newEdge = add_edge(useIter->second, *newNode, *backwardDAG);
             /*  Add edge property (RAW). */
             put(boost::edge_weight, *backwardDAG, newEdge.first, edgeDependency::RAW);
@@ -389,7 +387,6 @@ void graphDAG::resourceDefined(DAGVertexDescriptor* newNode, DAGresources::resou
 /*  Resource used. */
 void graphDAG::resourceUsed(DAGVertexDescriptor* newNode, DAGresources::resourceEnum newResource) {
     /*
-        //TODO need to consider here that i cant have the newly made definition here. 
         if (resource is defined)
             add WAR arc between newnode and resource defined entry.
         add newnode as a uselist entry in resource uselist.
@@ -398,8 +395,6 @@ void graphDAG::resourceUsed(DAGVertexDescriptor* newNode, DAGresources::resource
         /*  Add WAR arc between newnode and defined node. */
         /*  Get the node that is defining the resource. */
         DAGVertexDescriptor definitionNode = definitionMap.find(newResource)->second;
-        //TODO here do a check so target and source node is not the same.
-        //TODO will that work?
         if (definitionNode != *newNode) {
             /*  The nodes are not the same, create the edge. */
             std::pair<DAGEdgeDescriptor, bool> newEdge = add_edge(definitionNode, *newNode, *backwardDAG);

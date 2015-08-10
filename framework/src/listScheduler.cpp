@@ -70,10 +70,10 @@ void listScheduler::scheduleBlock(SgAsmBlock* basic) {
     blockDAG.buildDAGs();
 
 
-    //TODO Create a function that traverses the DAG and initializes the variable struct.
     if (debuging) {
         std::cout << "----------------------------------------" << std::endl;
     }
+    /*  Initialize the variables for each instruction of the list scheduler. */
     initializeListVariables(&blockDAG);
 
     /*  Perform a forward pass in the forward dag and propagate the EST values. */
@@ -104,10 +104,7 @@ void listScheduler::scheduleBlock(SgAsmBlock* basic) {
         std::cout << "----------------------------------------" << std::endl
                 << "Variable calculations complete. Scheduling block." << std::endl;
     }
-    /*  Schedule order list. */
-    //TODO by changing this to node numbers it becomes searchable with std::find,
-    //TODO when building the instruction list i can use the mapping from nodenumber
-    //TODO to vertex to get the nodes instruction.
+    /*  Schedule order list, contains the nodenumbers of the instructions. */
     std::list<int> instructionOrder;
     /*  Schedule the block. */
     forwardListScheduling(&blockDAG, instructionOrder);
@@ -207,9 +204,10 @@ void listScheduler::forwardListScheduling(graphDAG* DAGobject, std::list<int>& s
                         /*  The parent has not been scheduled. Check if the dependency
                             is a WAR, if so it is still okay. */
                         edgeDependency::edgeType childDependency = get(boost::edge_weight, *fDAG, *inEdgeIter.first);
-                        /*  Check if the edge property is WAR. */
-                        //TODO need to consider here if i have the root and sink node edges how to handle them.
-                        if (edgeDependency::WAR != childDependency) {
+                        /*  Check if the edge property is WAR. Also if the dependency is to enforce
+                            root and sink nodes it is still okay since then there are no data dependencies. */
+                        if ((edgeDependency::WAR != childDependency) ||
+                            (edgeDependency::sinkRootDependency == childDependency)) {
                             /*  The dependency is not WAR so the child is not ready. */
                             childReady = false;
                             /*  Break the loop. */
@@ -223,13 +221,14 @@ void listScheduler::forwardListScheduling(graphDAG* DAGobject, std::list<int>& s
                     int childNumber = get(boost::vertex_index1, *fDAG, childNode);
                     /*  Get the variable struct from the map. */
                     instructionVariables childVars = variableMap.find(childNumber)->second;
-                    /*  add variable struct to the list. */
-                    //TODO Need to check that the node has not been added already.
-                    readyList.push_back(childVars);
+                    /*  Insert it into the ready list. If it is not already in the list. */
+                    if (readyList.end() == std::find(readyList.begin(), readyList.end(), childVars)) {
+                        /*  Child is inserted. */
+                        readyList.push_back(childVars);
+                    } else if (debuging) {
+                        std::cout << "Node already in readylist." << std::endl;
+                    }
                 }
-                //TODO the criteria is that the only dependencies are WAR, verify this,
-                //TODO additionaly if other dependencies than WAR are satisfied and WAR
-                //TODO is the only dependency left, then it could be considered ready?
             }
             readyList.erase(readyIter);
             break;
@@ -241,7 +240,7 @@ void listScheduler::forwardListScheduling(graphDAG* DAGobject, std::list<int>& s
             std::cout << "Incrementing cycle." << std::endl;
         }
 
-        //TODO consider changing the for to a while loop and get a "safer"/"correct" way
+        //TODO consider changing the for too a while loop and get a "safer"/"correct" way
         //TODO of iterating and potentially deleting elements.
         for(std::map<int, instructionVariables>::iterator flightIter = inFlightList.begin();
             flightIter != inFlightList.end(); ++flightIter) {
@@ -262,9 +261,8 @@ void listScheduler::forwardListScheduling(graphDAG* DAGobject, std::list<int>& s
                 /*  Add the node number to the schedule list. */
                 scheduleOrder.push_back(flightIter->second.nodeNumber);
 
-                //TODO here the nodenumber would give me the node which then gives me the out edges.
-                //TODO check child nodes to this instruction if they are ready to exectute.
-                //for(std::pair<DAGOEIter, DAGOEIter> outEdgeIter = out_edges(flightIter->second.forwardNodeRef, *fDAG);
+                /*  Check the child nodes of the completted instruction and see
+                    if they can be scheduled. */
                 for(std::pair<DAGOEIter, DAGOEIter> outEdgeIter = out_edges(completedNode, *fDAG);
                     outEdgeIter.first != outEdgeIter.second; ++outEdgeIter.first) {
                     /*  Variable determening if a child node can be scheduled. */
@@ -297,6 +295,7 @@ void listScheduler::forwardListScheduling(graphDAG* DAGobject, std::list<int>& s
                         instructionVariables childVars = variableMap.find(childNumber)->second;
                         /*  Insert it into the ready list. If it is not already in the list. */
                         if (readyList.end() == std::find(readyList.begin(), readyList.end(), childVars)) {
+                            /*  Child is inserted. */
                             readyList.push_back(childVars);
                         } else if (debuging) {
                             std::cout << "Node already in readylist." << std::endl;
@@ -320,10 +319,6 @@ void listScheduler::forwardListScheduling(graphDAG* DAGobject, std::list<int>& s
     ready-list = root nodes in DPG (Data precedence graph), This will probably be the
     a kind of list containing nodes found in the cfg to be ready to be scheduled.
     inflight-list =  instructions that are executing. 
-    //TODO the lists should probably contain nodes. Can give me the edges, source, target.
-
-    //TODO need a function that can determine if a instructions is ready to be added to the ready-list.
-    //TODO I will probably need a list of the scheduled instructions that is searchable. (std::list)
 
     while (ready-list or inflight-list is not empty)
         for all instructions in ready-list in descending priority order
@@ -331,7 +326,7 @@ void listScheduler::forwardListScheduling(graphDAG* DAGobject, std::list<int>& s
             if a functional unit exists so a instruction can be scheduled at this cycle.
                 remove instruction from ready-list and add it to inflight-list.
                 add instruction to the schedule at time cycle.
-                if the instruction has out-going edges.(anti-edges) //TODO need to check for difference.
+                if the instruction has out-going edges.(anti-edges)
                     add the targets of the edges to the ready-list
                     //TODO this is probably WAR dependencies, after this the instruction is issued
                     //TODO and instruction writing to the same register can execute since the value has been read.
@@ -375,9 +370,8 @@ void listScheduler::initializeListVariables(graphDAG* DAGobject) {
         //TODO need to change here if i set different values on instructions. 
         nodeVars.executionTime = 1;
         /*  Save the node itself as well for later reference when scheduling. */
-        //TODO i change this to the node numbering instead.
         nodeVars.nodeNumber = get(boost::vertex_index1, *forwardDAG, *iterPair.first);
-        //TODO Add a mapping between the node number and a vertex descriptor.
+        /*  Create a mapping between node number and the vertex descriptor. */
         nodeNumberToVertex.insert(numberToVertexPair(nodeVars.nodeNumber, *iterPair.first));
         /*  Insert the variable struct into the map. */
         variableMap.insert(nodeVarsPair(nodeVars.nodeNumber, nodeVars));
@@ -413,7 +407,6 @@ void listScheduler::propagateEST(graphDAG* DAGobject) {
     visitQueue.push(*forwardRoot);
 
     /*  Set the EST in the root node before traversal. */
-//    SgAsmMipsInstruction* rootMips = get(boost::vertex_name, *forwardDAG, *forwardRoot);
     /*  Get the variables of the popped node. */
     instructionVariables rootVars = variableMap.find(rootNumber)->second;
     /*  Set the EST value in the root and save it. */
@@ -430,8 +423,7 @@ void listScheduler::propagateEST(graphDAG* DAGobject) {
         DAGVertexDescriptor visitedNode = visitQueue.top();
         /*  Remove it from the queue. */
         visitQueue.pop();
-        /*  Get the instruction pointer of the popped node. */
-//        SgAsmMipsInstruction* visitedMips = get(boost::vertex_name, *forwardDAG, visitedNode);
+        /*  Get the node number of the visited node. */
         int visitedNodeNumber = get(boost::vertex_index1, *forwardDAG, visitedNode);
         /*  Get the variables of the popped node. */
         instructionVariables visitedVars = variableMap.find(visitedNodeNumber)->second;
@@ -490,12 +482,9 @@ void listScheduler::propagateLST(graphDAG* DAGobject) {
     visitQueue.push(*backwardRoot);
 
     /*  Set the correct values in the root node. */
-//    SgAsmMipsInstruction* rootMips = get(boost::vertex_name, *backwardDAG, *backwardRoot);
-    /*  Get the variables of the popped node. */
     instructionVariables rootVars = variableMap.find(backwardRootNumber)->second;
     /*  Set the LST value in the root and save it, the LST in the root
         which is the last instruction in the block is the EST. */
-    //TODO
     rootVars.latestStart = rootVars.earliestStart; 
     variableMap[backwardRootNumber] = rootVars;
     /*  Debug printout. */
@@ -509,8 +498,6 @@ void listScheduler::propagateLST(graphDAG* DAGobject) {
         DAGVertexDescriptor visitedNode = visitQueue.top();
         /*  Remove it from the queue. */
         visitQueue.pop();
-        /*  Get the instruction pointer of the popped node. */
-//        SgAsmMipsInstruction* visitedMips = get(boost::vertex_name, *backwardDAG, visitedNode);
         /*  Get the visited node number. */
         int visitedNodeNumber = get(boost::vertex_index1, *backwardDAG, visitedNode);
         /*  Get the variables of the popped node. */
@@ -581,12 +568,10 @@ void listScheduler::maximumDelayToLeaf(graphDAG* DAGobject) {
     visitQueue.push(*backwardRoot);
 
     /*  Set the correct values in the root node. */
-//    SgAsmMipsInstruction* rootMips = get(boost::vertex_name, *backwardDAG, *backwardRoot);
-    /*  Get the variables of the popped node. */
     instructionVariables rootVars = variableMap.find(rootNodeNumber)->second;
     /*  Set the delay value of the root, since the root is the last instruction
         it has no delay because there is no instruction after it. 
-        //TODO need to consider this or if i should have execution time here. */
+    //TODO need to consider this or if i should have execution time here. */
     rootVars.maximumDelayToLeaf = 0;
     /*  Debug print. */
     if (debuging) {
@@ -603,8 +588,6 @@ void listScheduler::maximumDelayToLeaf(graphDAG* DAGobject) {
         DAGVertexDescriptor visitedNode = visitQueue.top();
         /*  Remove it from the queue. */
         visitQueue.pop();
-        /*  Get the instruction pointer of the popped node. */
-//        SgAsmMipsInstruction* visitedMips = get(boost::vertex_name, *backwardDAG, visitedNode);
         /*  Get visited nodes number. */
         int visitedNodeNumber = get(boost::vertex_index1, *backwardDAG, visitedNode);
         /*  Get the variables of the popped node. */

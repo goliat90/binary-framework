@@ -19,10 +19,12 @@
 /*  Typedef for the DAG graph. */
 
 /*  Properties for the properties of the vertices. */
-/*  NOTE! I'm using vertex_index2 instead of vertex_index because the later
-    seems to be used/instantiated by something and becomes unusable, it breaks the execution. */
-    //TODO added vertex_index1 to be able to number the vertices by myself.
-    //TODO to be sure of preserving identity of nodes between backward and forward DAG.
+/*  NOTE! vertex_index is not used because it seems to be
+    used/instantiated by something and becomes unusable, it breaks the execution. */
+/*  vertex_index1_t is used for numbering the nodes. It is used to ensure
+    that the identity of the nodes are the same in backward and forward DAGS. */
+/*  vertex_index2_t is used when debuging and names the strings with the number
+    they are encountered in the graph and the instruction mnemonic. */
 typedef boost::property<boost::vertex_name_t, SgAsmMipsInstruction*, 
         boost::property<boost::vertex_index1_t, int, 
         boost::property<boost::vertex_index2_t, std::string> > > vertexProperties_DAG;
@@ -32,13 +34,17 @@ typedef boost::property<boost::vertex_name_t, SgAsmMipsInstruction*,
 namespace edgeDependency {
     //TODO add edge for enforcing sink and root node. Should limit scheduler.
     enum edgeType{
+        /*  The sinkRootDependency is used to ensure that the first and last
+            instruction in a block become root and sink nodes in the DAG.
+            This property is set on edges enforcing this. */
+        sinkRootDependency,
         WAW,
         RAW,
         WAR
     };
 }
-    //TODO perhaps change this property to what the dependency is instead, or add it,
-    //TODO could move latency to some other place.
+
+/*  This property is used to identify dependencies when scheduling. */
 typedef boost::property<boost::edge_weight_t, edgeDependency::edgeType> edgeProperties_DAG;
 
 /*  The graph itself. */
@@ -61,7 +67,6 @@ typedef boost::property_map<frameworkDAG, boost::vertex_index2_t>::type vertexIn
 typedef boost::property_map<frameworkDAG, boost::vertex_index1_t>::type vertexNumberMap;
 typedef boost::property_map<frameworkDAG, boost::vertex_name_t>::type vertexInstructionMap;
 
-//TODO Create some kind of definition for resources that is used when building the dag.
 /*  Enums used for tracking which resources are being used. */
 namespace DAGresources {
     enum resourceEnum {
@@ -79,7 +84,6 @@ namespace DAGresources {
         fp,
         ra,
         /*  Special registers, accumulator. */
-        //TODO might merge these to one enum.
         highAcc, lowAcc,
         /*  Memory resource. I do not think i can change the order which load and
             stores are encountered. */
@@ -114,14 +118,11 @@ class graphDAG {
         /*  Hide default constructor. */
         graphDAG();
         /*  build a DAG for block. */
-        //TODO this will probably be a forward build and a backward version.
         void buildForwardDAG();
         void buildBackwardDAG();
         /*  Resource definition function. */
-        //TODO determine arguments, is probably the node and the resource checked.
         void resourceDefined(DAGVertexDescriptor*, DAGresources::resourceEnum);
         /*  Resource use function. */
-        //TODO determine arguments, is probably the node and the resource checked.
         void resourceUsed(DAGVertexDescriptor*, DAGresources::resourceEnum);
         /*  Gets resource enum from register name. */
         DAGresources::resourceEnum getRegisterResource(mipsRegisterName);
@@ -148,7 +149,6 @@ class graphDAG {
         /*  Pointer to first instruction in block. */
         SgAsmMipsInstruction* firstInstruction;
         DAGVertexDescriptor forwardDAGRootVertice;
-        //TODO some kind of storage for the variables used when scheduling. map with instructions as keys?
 
         /*  Map for which definition is set. */
         std::map<DAGresources::resourceEnum, DAGVertexDescriptor>  definitionMap;
