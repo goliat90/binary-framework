@@ -361,14 +361,14 @@ void listScheduler::initializeListVariables(graphDAG* DAGobject) {
         entry for each instruction. */
     for(std::pair<DAGVIter, DAGVIter> iterPair = vertices(*forwardDAG);
         iterPair.first != iterPair.second; ++iterPair.first) {
-        /*  Retrieve the isntruciton pointer. */
-        //SgAsmMipsInstruction* nodeInst = get(boost::vertex_name, *forwardDAG, *iterPair.first);
+        /*  Retrieve the instruction pointer. */
+        SgAsmMipsInstruction* nodeInst = get(boost::vertex_name, *forwardDAG, *iterPair.first);
         /*  Create an entry for the vertice instruction.
             Also set some of the variable values. */
         instructionVariables nodeVars;
         /*  Set the execution time of the instruction. */
         //TODO need to change here if i set different values on instructions. 
-        nodeVars.executionTime = 1;
+        nodeVars.executionTime = getInstructionExecutionTime(nodeInst->get_kind());
         /*  Save the node itself as well for later reference when scheduling. */
         nodeVars.nodeNumber = get(boost::vertex_index1, *forwardDAG, *iterPair.first);
         /*  Create a mapping between node number and the vertex descriptor. */

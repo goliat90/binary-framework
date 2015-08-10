@@ -573,6 +573,17 @@ instructionType getInstructionFormat(MipsInstructionKind mipsKind) {
     }
 }
 
+/******************************************************************************
+* Return the execution time for a specific instruction.
+******************************************************************************/
+int getInstructionExecutionTime(MipsInstructionKind instType) {
+    /*  Initialize latency to a default, only change if the instruction
+        has a different latency, such as loads. */
+    int latency = 1;
+
+    /*  Return the latency for the instruction. */
+    return latency;
+}
 
 /******************************************************************************
 * Misc functions.

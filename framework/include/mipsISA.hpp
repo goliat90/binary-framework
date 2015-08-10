@@ -53,6 +53,8 @@ instructionType getInstructionFormat(MipsInstructionKind);
 registerStruct decodeRegister(SgAsmExpression*);
 /* Creates a register expression */
 SgAsmDirectRegisterExpression* buildRegister(registerStruct);
+/*  Instruction to get execution times of instrucitions.*/
+int getInstructionExecutionTime(MipsInstructionKind);
 
 // -------- instruction struct --------
 // Contains information that is useful for the framework about
