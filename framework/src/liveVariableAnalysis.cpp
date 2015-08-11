@@ -92,8 +92,20 @@ void liveVariableAnalysisHandler::computeDefAndUseOnBlocks() {
         /*  Debug code */
         if (debuging) {
             /*  Print the block def and use. */
-            std::cout << "block def: " << currentBits.first << std::endl;
-            std::cout << "block use: " << currentBits.second << std::endl;
+            std::cout << "block def: "; //<< currentBits.first; // << std::endl;
+            for(int i = 0; i < currentBits.first.size(); i++) {
+                if (true == currentBits.first[i]) {
+                    std::cout << std::dec << i << " ";
+                }
+            }
+            std::cout << std::endl;
+            std::cout << "block use: "; // << currentBits.second << std::endl;
+            for(int i = 0; i < currentBits.second.size(); i++) {
+                if (true == currentBits.second[i]) {
+                    std::cout << std::dec << i << " ";
+                }
+            }
+            std::cout << std::endl;
             /* print block limiter */
             std::cout << "-------------------- block:" << std::hex << basic->get_id() << " end --------------------" << std::endl;
         }
@@ -191,8 +203,19 @@ void liveVariableAnalysisHandler::instructionUsageAndDefinition(SgAsmStatement* 
     
     /*  debug printout of def and use */
     if(debuging) {
-        std::cout << mipsInst->get_address() << " inst " << mipsInst->get_mnemonic() << " def: " << instructionPair.first << std::endl;
-        std::cout << mipsInst->get_address() << " inst " << mipsInst->get_mnemonic() << " use: " << instructionPair.second << std::endl;
+        std::cout << std::hex << mipsInst->get_address() << " inst " << mipsInst->get_mnemonic() << " def: "; //<< instructionPair.first << std::endl;
+        for(int i = 0; i < instructionPair.first.size(); i++) {
+            if (true == instructionPair.first[i]) {
+                std::cout << std::dec << i << " ";// std::end;
+            }
+        }
+        std::cout << std::endl;
+        std::cout << std::hex << mipsInst->get_address() << " inst " << mipsInst->get_mnemonic() << " use: "; // << instructionPair.second << std::endl;
+        for(int i = 0; i < instructionPair.second.size(); i++) {
+            if (true == instructionPair.second[i]) {
+                std::cout << std::dec << i << " ";// std::end;
+            }
+        }
     }
 }
 
@@ -325,8 +348,20 @@ void liveVariableAnalysisHandler::computeInstructionInOut() {
                 }
                 /*  Print the IN/OUT set, if debuging is active. */
                 if (debuging) {
-                    std::cout << mips->get_address() << " inst  IN: " << inoutBits.first << std::endl;
-                    std::cout << mips->get_address() << " inst OUT: " << inoutBits.second << std::endl;
+                    std::cout << std::hex << mips->get_address() << " inst  IN: "; // << inoutBits.first << std::endl;
+                    for(int i = 0; i < inoutBits.first.size(); i++) {
+                        if (true == inoutBits.first[i]) {
+                            std::cout << std::dec << i << " ";// std::end;
+                        }
+                    }
+                    std::cout << std::endl;
+                    std::cout << std::hex << mips->get_address() << " inst OUT: "; // << inoutBits.second << std::endl;
+                    for(int i = 0; i < inoutBits.second.size(); i++) {
+                        if (true == inoutBits.second[i]) {
+                            std::cout << std::dec << i << " ";// std::end;
+                        }
+                    }
+                    std::cout << std::endl;
                 }
                 /*  Save the bits in the inoutInstructionmap */
                 inoutInstructionMap.insert(std::pair<SgAsmMipsInstruction*, bitPair>(mips, inoutBits));
@@ -607,6 +642,10 @@ void liveVariableAnalysisHandler::buildLiveIntervals() {
             if (instInOut.second[bitNum]) {
                 /*  Save the where the instruction is in the dfs order (number)
                     and the symbolic number related to the range. */
+                if (debuging) {
+                    std::cout << "Start interval found at DFS number: " << dfsIter->first
+                        << " for symbolic " << symbolIter->first << std::endl;
+                }
                 startPointBiMap.insert(intervalMap::value_type(dfsIter->first, symbolIter->first));
                 /*  When we find an interval we also add an end point which is the last
                     in the dfs order. */
@@ -627,6 +666,10 @@ void liveVariableAnalysisHandler::buildLiveIntervals() {
                 indicates that the symbolic has been used and the range ends here. */
             if (instInOut.first[bitNum] && !instInOut.second[bitNum]) {
                 /*  Save the live interval end point and the number of the symbolic */
+                if (debuging) {
+                    std::cout << "End of interval found at DFS number: " << dfsIterRev->first
+                        << " for symbolic " << symbolIter->first << std::endl;
+                }
                 //TODO do replace here instead.
                 endPointBiMap.insert(intervalMap::value_type(dfsIterRev->first, symbolIter->first));
                 /*  Break from the loop. */

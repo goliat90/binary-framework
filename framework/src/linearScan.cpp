@@ -412,6 +412,14 @@ void linearScanHandler::linearScanAllocation() {
         expireOldIntervals(intervalIter->first);
         /*  Check if all registers are in use, if so spill an interval.
             Otherwise allocate register for the interval. */
+        if (debuging) {
+            std::cout << "Symbolics active" << std::endl;
+            for(intervalMap::left_iterator lIter = activeMap.left.begin();
+                lIter != activeMap.left.end(); ++lIter) {
+                std::cout << "Symbolic: " << lIter->second << " active until " << lIter->first << std::endl;
+            }
+        }
+
         if (registerPoolSize == activeMap.size()) {
             //SPILL interval.
             if (debuging) {
@@ -419,6 +427,10 @@ void linearScanHandler::linearScanAllocation() {
             }
             spillAtInterval(intervalIter);
         } else {
+            if (debuging) {
+                std::cout << "Allocating a register." << std::endl;
+                std::cout << "activeMap size = " << activeMap.size() << std::endl;
+            }
             /*  Take a register from the pool and remove it form the pool. */
             mipsRegisterName intervalReg = registerPool.front();
             registerPool.pop_front();
