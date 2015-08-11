@@ -12,11 +12,18 @@ userFramework::userFramework(int argc, char** argv) {
 
 
 int main(int argc, char** argv) {
+    /*  Check that an function name has been supplied as argument. */
+    if (3 != argc) {
+        std::cout << "Wrong number of arguments. Supply function name to transform." << std::endl;
+        exit(0);
+    }
+    /*  String variable containing the function name. */
+    std::string functionName = std::string(argv[2]);
 
-    userFramework* ut = new userFramework(argc, argv);
+    userFramework* ut = new userFramework(argc-1, argv);
 
     /* set which function is to be transformed */
-    ut->functionSelect("simpleAdditionTMR");
+    ut->functionSelect(functionName);
     /* enable printing */
     ut->setDebug(true);
     /* use optimized transform */
