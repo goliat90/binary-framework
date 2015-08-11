@@ -37,7 +37,7 @@ userRewriter.out: buildLibrary userFramework.lo
 
 
 simpledebug:
-	libtool --mode=execute gdb --args ./userrewriter.out ../mipscode/simpleadd.out simpeAdditionTMR
+	libtool --mode=execute gdb --args ./userRewriter.out ../mipsCode/simpleAdd.out simpeAdditionTMR
 
 simpletest:
 	./userRewriter.out ../mipsCode/simpleAdd.out simpleAdditionTMR
