@@ -581,6 +581,44 @@ int getInstructionExecutionTime(MipsInstructionKind instType) {
         has a different latency, such as loads. */
     int latency = 1;
 
+    /*  Check if the latency should be changed.
+        The instructions are grouped by latency. */
+    switch (instType) {
+        //TODO i need to consider a latency for these instructions.
+        //TODO the multiply and div instructions here use the accumulator register.
+        //multiply and div.
+        case mips_div   :
+        case mips_divu  :
+        case mips_madd  :
+        case mips_maddu :
+        case mips_msub  :
+        case mips_msubu :
+        case mips_mult  :
+        case mips_multu : {
+            break;
+        }
+
+        /*  Load and store operations grouped, latency of 2. */
+        //TODO should i consider stores to have a latency as well?
+        //load operations.
+        case mips_lb    :
+        case mips_lbu   :
+        case mips_lh    :
+        case mips_lhu   :
+        case mips_lw    :
+        case mips_lwl   :
+        case mips_lwr   :
+        //store operations
+        case mips_sb    :
+        case mips_sh    :
+        case mips_sw    :
+        case mips_swl   :
+        case mips_swr   : {
+            latency = 2;
+            break;
+        }
+    }
+
     /*  Return the latency for the instruction. */
     return latency;
 }
@@ -591,46 +629,46 @@ int getInstructionExecutionTime(MipsInstructionKind instType) {
 /* initfunction for the registerName map,   */
 static biRegMap initRegisterNameMap() {
     //variable for the register
-    biRegMap registerName; 
+    biRegMap registerName;
 
     registerName.insert(biRegMap::value_type(0,zero));
-    registerName.insert(biRegMap::value_type(1,at));    
-    registerName.insert(biRegMap::value_type(2,v0));    
-    registerName.insert(biRegMap::value_type(3,v1));    
+    registerName.insert(biRegMap::value_type(1,at));
+    registerName.insert(biRegMap::value_type(2,v0));
+    registerName.insert(biRegMap::value_type(3,v1));
 
-    registerName.insert(biRegMap::value_type(4,a0));    
-    registerName.insert(biRegMap::value_type(5,a1));    
-    registerName.insert(biRegMap::value_type(6,a2));    
-    registerName.insert(biRegMap::value_type(7,a3));    
+    registerName.insert(biRegMap::value_type(4,a0));
+    registerName.insert(biRegMap::value_type(5,a1));
+    registerName.insert(biRegMap::value_type(6,a2));
+    registerName.insert(biRegMap::value_type(7,a3));
 
-    registerName.insert(biRegMap::value_type(8,t0));    
-    registerName.insert(biRegMap::value_type(9,t1));    
-    registerName.insert(biRegMap::value_type(10,t2));    
-    registerName.insert(biRegMap::value_type(11,t3));    
-    registerName.insert(biRegMap::value_type(12,t4));    
-    registerName.insert(biRegMap::value_type(13,t5));    
-    registerName.insert(biRegMap::value_type(14,t6));    
-    registerName.insert(biRegMap::value_type(15,t7));    
+    registerName.insert(biRegMap::value_type(8,t0));
+    registerName.insert(biRegMap::value_type(9,t1));
+    registerName.insert(biRegMap::value_type(10,t2));
+    registerName.insert(biRegMap::value_type(11,t3));
+    registerName.insert(biRegMap::value_type(12,t4));
+    registerName.insert(biRegMap::value_type(13,t5));
+    registerName.insert(biRegMap::value_type(14,t6));
+    registerName.insert(biRegMap::value_type(15,t7));
 
-    registerName.insert(biRegMap::value_type(16,s0));    
-    registerName.insert(biRegMap::value_type(17,s1));    
-    registerName.insert(biRegMap::value_type(18,s2));    
-    registerName.insert(biRegMap::value_type(19,s3));    
-    registerName.insert(biRegMap::value_type(20,s4));    
-    registerName.insert(biRegMap::value_type(21,s5));    
-    registerName.insert(biRegMap::value_type(22,s6));    
-    registerName.insert(biRegMap::value_type(23,s7));    
+    registerName.insert(biRegMap::value_type(16,s0));
+    registerName.insert(biRegMap::value_type(17,s1));
+    registerName.insert(biRegMap::value_type(18,s2));
+    registerName.insert(biRegMap::value_type(19,s3));
+    registerName.insert(biRegMap::value_type(20,s4));
+    registerName.insert(biRegMap::value_type(21,s5));
+    registerName.insert(biRegMap::value_type(22,s6));
+    registerName.insert(biRegMap::value_type(23,s7));
 
-    registerName.insert(biRegMap::value_type(24,t8));    
-    registerName.insert(biRegMap::value_type(25,t9));    
+    registerName.insert(biRegMap::value_type(24,t8));
+    registerName.insert(biRegMap::value_type(25,t9));
 
-    registerName.insert(biRegMap::value_type(26,k0));    
-    registerName.insert(biRegMap::value_type(27,k1));    
+    registerName.insert(biRegMap::value_type(26,k0));
+    registerName.insert(biRegMap::value_type(27,k1));
 
-    registerName.insert(biRegMap::value_type(28,gp));    
-    registerName.insert(biRegMap::value_type(29,sp));    
-    registerName.insert(biRegMap::value_type(30,fp));    
-    registerName.insert(biRegMap::value_type(31,ra));    
+    registerName.insert(biRegMap::value_type(28,gp));
+    registerName.insert(biRegMap::value_type(29,sp));
+    registerName.insert(biRegMap::value_type(30,fp));
+    registerName.insert(biRegMap::value_type(31,ra));
 
     return registerName;
 }
