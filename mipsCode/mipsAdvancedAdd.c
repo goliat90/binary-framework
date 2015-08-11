@@ -5,8 +5,8 @@
 long long advancedAdditionTMR(int a, int b) {
     /* add the numbers together and return them */
     /*  Using long long to get 64 bit variables. */
-    long long acc = (long long) a^2 + b^2;
-    long long result = 0;
+    long long acc1 = (long long) 0;
+    long long acc2 = (long long) 0;
 
     /*  loop variables. */
     int j;
@@ -16,15 +16,11 @@ long long advancedAdditionTMR(int a, int b) {
     /*  Loop and perform some work. */
     for (j = 0; j < limit; j++) {
         /*  computation on acc, plus operation. */
-        acc += (long long) b*(2*a);
-        /*  do some subtraction on acc. */
-        acc -= (long long) (a*b)*(3*b);
+        acc1 += (long long) 213*a;
+        acc1 += (long long) 311*b;
     }
 
-    /*  transfer acc result and return. */
-    result = acc;
-
-    return result;
+    return acc1;
 }
 
 /* Main sets two integer values. */
