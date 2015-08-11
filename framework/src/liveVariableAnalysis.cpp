@@ -91,6 +91,7 @@ void liveVariableAnalysisHandler::computeDefAndUseOnBlocks() {
         }
         /*  Debug code */
         if (debuging) {
+            std::cout << std::endl;
             /*  Print the block def and use. */
             std::cout << "block def: "; //<< currentBits.first; // << std::endl;
             for(int i = 0; i < currentBits.first.size(); i++) {
@@ -145,7 +146,7 @@ void liveVariableAnalysisHandler::instructionUsageAndDefinition(SgAsmStatement* 
                 newUse.insert(symBit);
                 /*  Debug code */
                 if (debuging) {
-                    std::cout << "block identified use: sym_" << std::dec << (*regiter).symbolicNumber << " ";
+                    std::cout << std::endl << "block identified use: sym_" << std::dec << (*regiter).symbolicNumber << " ";
                 }
             }
             //TODO Need to add code here that sets the bit for the def use pair for the instruction
@@ -331,7 +332,18 @@ void liveVariableAnalysisHandler::computeInstructionInOut() {
                     bitPair inoutBlockBits = inoutBlockMap.find(basic)->second;
                     /*  Calculate OUT, is done by using the OUT bitset from
                         the current block as IN. It is basically just copying it.  */
-                    inoutBits.second = inoutBlockBits.first;
+                    //TODO inoutBlockBits was .first, which means it used IN, 
+                    //TODO it is set to .second now. which should be OUT.
+                    inoutBits.second = inoutBlockBits.second;
+                    /*  debug printing. */
+                    if (debuging) {
+                        std::cout << " Using block OUT: ";
+                        for(int i = 0; i < inoutBits.second.size(); i++) {
+                            if (true == inoutBits.second[i]) {
+                                std::cout << std::dec << i << " ";// std::end;
+                            }
+                        }
+                    }
                     /*  Calculate IN */
                     inoutBits.first = defuseBits.second | (inoutBits.second - defuseBits.first);
                     /*  Set the bool to false since the special case has been handled */
@@ -369,7 +381,7 @@ void liveVariableAnalysisHandler::computeInstructionInOut() {
         }
         /*  If debuging print out block address */
         if (debuging) {
-            std::cout << "IN/OUT calculations finished on instructions in block: " << basic->get_id() << std::endl;
+            std::cout << "IN/OUT calculations finished on instructions in block: " << std::hex << basic->get_id() << std::endl;
         }
     }
     /* All blocks have been visited and the instructions have their IN and OUT calculated */
@@ -410,12 +422,12 @@ void liveVariableAnalysisHandler::computeInOutOnBlocks() {
                 /*  Compare latest computed IN with previous IN. If they differ
                     then set modifiedIN to true */
                 if (inoutPair.first != oldIN) {
-                    if (debuging) {
-                        std::cout << "IN changed Block:"  << std::hex << (*iter).first->get_id() << std::endl;
-                        std::cout << "OLD: " << oldIN << std::endl;
-                        std::cout << "NEW: " << inoutPair.first << std::endl;
-                        std::cout << "OUT: " << inoutPair.second << std::endl;
-                    }
+//                    if (debuging) {
+//                        std::cout << "IN changed Block:"  << std::hex << (*iter).first->get_id() << std::endl;
+//                        std::cout << "OLD: " << oldIN << std::endl;
+//                        std::cout << "NEW: " << inoutPair.first << std::endl;
+//                        std::cout << "OUT: " << inoutPair.second << std::endl;
+//                    }
                     modifiedIN = true;
                 }
                 /*  Save the new IN and OUT computation */
@@ -425,6 +437,27 @@ void liveVariableAnalysisHandler::computeInOutOnBlocks() {
     }
     if (debuging) {
         std::cout << "IN/OUT computation on block level finished." << std::endl;
+        for(std::map<SgAsmBlock*, bitPair>::iterator iter = inoutBlockMap.begin();
+            iter != inoutBlockMap.end(); ++iter) {
+            /*  Get the bit pair. */
+            bitPair inoutPair = (*iter).second;
+            /*  print out the in out bits that are set. */
+            std::cout << "Block "  << std::hex << (*iter).first->get_id() << "  IN: ";
+            for(int i = 0; i < inoutPair.first.size(); i++) {
+                if (true == inoutPair.first[i]) {
+                    std::cout << std::dec << i << " ";
+                }
+            }
+            std::cout << std::endl;
+
+            std::cout << "Block "  << std::hex << (*iter).first->get_id() << " OUT: ";
+            for(int i = 0; i < inoutPair.second.size(); i++) {
+                if (true == inoutPair.second[i]) {
+                    std::cout << std::dec << i << " ";
+                }
+            }
+            std::cout << std::endl;
+        }
     }
     /*  Remove ENTRY and EXIT from the cfg */
     removeEntryExit();
