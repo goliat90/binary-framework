@@ -10,6 +10,7 @@
 #include <set>
 #include <map>
 #include <string>
+#include <stdlib.h>
 
 #include "rose.h"
 #include "BinaryControlFlow.h"

@@ -5,13 +5,30 @@
 #include "binaryDotGraph.h"
 
 // predeclarations of functions
-void subCFG (CFG &largecfg, CFG &subcfg, string function);
+void subCFG (CFG &largecfg, CFG &subcfg, string function, int);
 
-int main( int argc, char * argv[] ) 
-{
+int main( int argc, char * argv[] ) {
+    /*  Check that the number of arguments are enough.
+        First argument is path to binary.
+        Second will be the path to the binary.
+        Third will be the function name to generate cfg of.
+        Fourth will be the degree of neighbours.
+    */
+    if (4 != argc) {
+        std::cout << "Invalid amount of arguments." << std::endl;
+        exit(0);
+    }
+    /*  Transfer the char function name to a string variable. */
+    string functionName = string(argv[2]);
+    string stringDegree = string(argv[3]);
+    int intDegree = strtol(&argv[3][0], NULL, 0);
+    /*  Printout function name. */
+    std::cout << "Function to generate graph for is called "
+        << functionName << " with neighbour degree " << stringDegree << std::endl;
+
     // Use the frondend to generate AST.
     // generates two lines of printout
-    SgProject* project = frontend(argc,argv);
+    SgProject* project = frontend(argc-2,argv);
 
     //retrieve the assembly interpretation.
     std::vector<SgAsmInterpretation*> test = SageInterface::querySubTree<SgAsmInterpretation>(project);
@@ -26,11 +43,13 @@ int main( int argc, char * argv[] )
 
     // The cfg i have is to big, i want a subset of it. More specific i want
     // a graph only over main.
-    subCFG(*bigcfg, *subcfg, "simpleAdditionTMR");
+    //subCFG(*bigcfg, *subcfg, "simpleAdditionTMR");
+    subCFG(*bigcfg, *subcfg, functionName, intDegree);
 
     //call the graph maker function when i have a cfg.
     //BinaryDotGenerator(*bigcfg, "main" , "main.dot", true);
-    BinaryDotGenerator(*subcfg, "SimpleAdditionTMR" , "simpleAdditionTMR.dot", true);
+    //BinaryDotGenerator(*subcfg, "SimpleAdditionTMR" , "simpleAdditionTMR.dot", true);
+    BinaryDotGenerator(*subcfg, functionName , (functionName + stringDegree + ".dot"), true);
 
     //
     return 0;
@@ -39,7 +58,7 @@ int main( int argc, char * argv[] )
 
 
 // function to extract a subcfg for a specific function from a cfg.
-void subCFG (CFG &largecfg, CFG &subcfg, string function)
+void subCFG (CFG &largecfg, CFG &subcfg, string function, int nDegree)
 {
     //keep track of visited vertices(blocks).
     //SgAsmBlock is key, bool to determine if visited.
@@ -87,7 +106,7 @@ void subCFG (CFG &largecfg, CFG &subcfg, string function)
     // been added. Now we add all neighbouring vertices that have edges that
     // jump into or out of the function. Were getting one degree of neighbours.
 
-    for(int i=0; i < 1; i++) {
+    for(int i=0; i < nDegree; i++) {
         // Before finding the neighbours add all the current copied vertexes
         // to the copiedNeighbour map to avoid duplicate vertice copies.
         map<CFG::vertex_descriptor, bool> copiedNeighbourV (copiedVertex);
