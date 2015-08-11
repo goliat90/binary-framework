@@ -3,11 +3,15 @@
 #with the CROSS_COMPILE environment variable set to mips_4KCle-
 
 #The all rule which compiles all the binaries.
-all: numCounter.out simpleAdd.out
+all: numCounter.out simpleAdd.out advancedAdd.out
 
 #Simple add compile
 simpleAdd.out: mipsSimpleAdd.c
 	mips-linux-gcc -static -O1 mipsSimpleAdd.c -o simpleAdd.out
+
+#Advanced add.
+advancedAdd.out: mipsAdvancedAdd.c
+	mips-linux-gcc -static -O1 mipsAdvancedAdd.c -o advancedAdd.out
 
 #ascii counter
 numCounter.out: mipsNumCounter.c
@@ -18,4 +22,5 @@ numCounter.out: mipsNumCounter.c
 clean:
 	rm -f simpleAdd.out
 	rm -f numCounter.out
+	rm -f advancedAdd.out
 
