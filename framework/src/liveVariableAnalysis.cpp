@@ -672,7 +672,7 @@ void liveVariableAnalysisHandler::buildLiveIntervals() {
             /*  Check the bit for the symbolic being checked. If it is set then the startpoint
                 has been found. Check if OUT is set for the specific bit in the instruction.
                 Then it becomes live in this instruction. */
-            if (instInOut.second[bitNum]) {
+            if (true == instInOut.second[bitNum]) {
                 /*  Save the where the instruction is in the dfs order (number)
                     and the symbolic number related to the range. */
                 if (debuging) {
@@ -697,7 +697,11 @@ void liveVariableAnalysisHandler::buildLiveIntervals() {
             bitPair instInOut = inoutInstructionMap.find((*dfsIterRev).second)->second;
             /*  Check if the bit for the symbolic is set on IN but not OUT. This
                 indicates that the symbolic has been used and the range ends here. */
-            if (instInOut.first[bitNum] && !instInOut.second[bitNum]) {
+            //TODO checking IN for true AND checking OUT for false will not always work.
+            //TODO perhaps change the AND to a OR?
+            //TODO or just check the IN of the instruction and ignore OUT?
+            //if (instInOut.first[bitNum] && !instInOut.second[bitNum]) {
+            if (true == instInOut.first[bitNum]) { //&& !instInOut.second[bitNum]) {
                 /*  Save the live interval end point and the number of the symbolic */
                 if (debuging) {
                     std::cout << "End of interval found at DFS number: " << dfsIterRev->first
