@@ -144,7 +144,7 @@ class listScheduler {
         void maximumDelayToLeaf(graphDAG*);
         /*  Calculate the slack variable. It is just the difference between the
             EST and LST, can be calculated by iterating over the variable map. */
-        void calculateSlack();
+        void calculateSlack(graphDAG*);
         /*  Handles the scheduling of instructions. */
         void forwardListScheduling(graphDAG*, std::list<int>&);
 

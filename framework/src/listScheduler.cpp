@@ -98,7 +98,7 @@ void listScheduler::scheduleBlock(SgAsmBlock* basic) {
     if (debuging) {
         std::cout << "----------------------------------------" << std::endl;
     }
-    calculateSlack();
+    calculateSlack(&blockDAG);
 
     if (debuging) {
         std::cout << "----------------------------------------" << std::endl
@@ -410,11 +410,11 @@ void listScheduler::propagateEST(graphDAG* DAGobject) {
     /*  Get the variables of the popped node. */
     instructionVariables rootVars = variableMap.find(rootNumber)->second;
     /*  Set the EST value in the root and save it. */
-    rootVars.earliestStart = 0; 
+    rootVars.earliestStart = 1; 
     variableMap[rootNumber] = rootVars;
     /*  Debug printout. */
     if (debuging) {
-        std::cout << "EST set to root node to " << rootVars.earliestStart << std::endl << std::endl;
+        std::cout << "EST set to " << rootVars.earliestStart << " in root node."  << std::endl << std::endl;
     }
 
     /*  BFS algorithm. Continue as long as the queue is not empty. */
@@ -628,7 +628,9 @@ void listScheduler::maximumDelayToLeaf(graphDAG* DAGobject) {
 }
 
 /*  Calculates the slack variable, which is the difference between EST and LST. */
-void listScheduler::calculateSlack() {
+void listScheduler::calculateSlack(graphDAG* blockDAG) {
+    /*  Pointer to the map. */
+    frameworkDAG* forward = blockDAG->getForwardDAG();
     /*  Debug print. */
     if (debuging) {
         std::cout << "Calculating slack for all nodes." << std::endl;
@@ -643,9 +645,11 @@ void listScheduler::calculateSlack() {
         /*  Debug print. */
         if (debuging) {
             /*  Get instruction pointer. */
-            std::cout << "Slack calculated to " << currentVars.slack
-                << " for instruction." << std::endl;
-//            printInstruction(varMapIter->first);
+            DAGVertexDescriptor node = nodeNumberToVertex.find(varMapIter->first)->second;
+            SgAsmMipsInstruction* mips = get(boost::vertex_name, *forward, node);
+            std::cout << "Slack " << currentVars.slack << " = " << currentVars.latestStart << " - " << currentVars.earliestStart
+                << " for instruction. " << std::endl;
+            printInstruction(mips); 
             std::cout << std::endl;
         }
         /*  Save the new variables. */
