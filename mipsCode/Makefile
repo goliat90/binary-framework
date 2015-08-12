@@ -7,15 +7,15 @@ all: numCounter.out simpleAdd.out advancedAdd.out
 
 #Simple add compile
 simpleAdd.out: mipsSimpleAdd.c
-	mips-linux-gcc -static -O1 mipsSimpleAdd.c -o simpleAdd.out
+	mips-linux-gcc -static -march=r3000 -O1 mipsSimpleAdd.c -o simpleAdd.out
 
 #Advanced add.
 advancedAdd.out: mipsAdvancedAdd.c
-	mips-linux-gcc -static -O1 mipsAdvancedAdd.c -o advancedAdd.out
+	mips-linux-gcc -static -march=r3000 -O1 mipsAdvancedAdd.c -o advancedAdd.out
 
 #ascii counter
 numCounter.out: mipsNumCounter.c
-	mips-linux-gcc -static -O2 mipsNumCounter.c -o numCounter.out
+	mips-linux-gcc -static -march=r3000 -O2 mipsNumCounter.c -o numCounter.out
 
 
 #Remove all binaries
