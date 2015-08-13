@@ -36,17 +36,25 @@ userRewriter.out: buildLibrary userFramework.lo
 	libtool --mode=link g++ $(ROSE_LIBS) -o userRewriter.out $(OBJDIR)/*.lo $(FRAMEWORKLIBDIR)/libConvenience.la
 
 
+simpletestall: simpletestnaive simpletestopt
+
+simpletestnaive:
+	./userRewriter.out ../mipsCode/simpleAdd.out simpleAdditionTMR 0
+simpletestopt:
+	./userRewriter.out ../mipsCode/simpleAdd.out simpleAdditionTMR 1 
 simpledebug:
-	libtool --mode=execute gdb --args ./userRewriter.out ../mipsCode/simpleAdd.out simpeAdditionTMR
+	libtool --mode=execute gdb --args ./userRewriter.out ../mipsCode/simpleAdd.out simpeAdditionTMR 
 
-simpletest:
-	./userRewriter.out ../mipsCode/simpleAdd.out simpleAdditionTMR
 
+advancedtestall: advancedtestnaive advancedtestopt
+
+advancedtestnaive:
+	./userRewriter.out ../mipsCode/advancedAdd.out advancedAdditionTMR 0
+advancedtestopt:
+	./userRewriter.out ../mipsCode/advancedAdd.out advancedAdditionTMR 1 
 advanceddebug:
 	libtool --mode=execute gdb --args ./userRewriter.out ../mipsCode/advancedAdd.out advancedAdditionTMR
 
-advancedtest:
-	./userRewriter.out ../mipsCode/advancedAdd.out advancedAdditionTMR
 
 clean:
 	rm -rf .libs

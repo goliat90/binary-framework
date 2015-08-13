@@ -13,21 +13,27 @@ userFramework::userFramework(int argc, char** argv) {
 
 int main(int argc, char** argv) {
     /*  Check that an function name has been supplied as argument. */
-    if (3 != argc) {
-        std::cout << "Wrong number of arguments. Supply function name to transform." << std::endl;
+    if (4 != argc) {
+        std::cout << "Wrong number of arguments." << std::endl
+            << "Needed: Binary that is to be transformed." << std::endl
+            << "        Function name of function to transform." << std::endl
+            << "        Transformation mode (0 or 1), 1 is optimized mode." << std::endl;
         exit(0);
     }
     /*  String variable containing the function name. */
     std::string functionName = std::string(argv[2]);
+    int mode = strtol(&argv[3][0], NULL, 0);
 
-    userFramework* ut = new userFramework(argc-1, argv);
+    userFramework* ut = new userFramework(argc-2, argv);
 
     /* set which function is to be transformed */
     ut->functionSelect(functionName);
     /* enable printing */
     ut->setDebug(true);
-    /* use optimized transform */
-    ut->useOptimizedTransform();
+    /* use optimized transform, if selected. */
+    if (1 == mode) {
+        ut->useOptimizedTransform();
+    }
     /* transform the function */
     ut->transformBinary();
 

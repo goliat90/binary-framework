@@ -734,6 +734,13 @@ void liveVariableAnalysisHandler::buildLiveIntervals() {
         }
         std::cout << std::endl;
     }
+
+    /*  Make sure that the sizes of the endPoint and startPoint maps
+        are equal. If they are not then at least on range is not correct. */
+    if (startPointBiMap.size() != endPointBiMap.size()) {
+        std::cout << "Fault. Not equal amount of start and end points. Failure in liverange analysis." << std::endl;
+        exit(1);
+    }
 }
 
 
