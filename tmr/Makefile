@@ -42,8 +42,10 @@ simpletestnaive:
 	./userRewriter.out ../mipsCode/simpleAdd.out simpleAdditionTMR 0
 simpletestopt:
 	./userRewriter.out ../mipsCode/simpleAdd.out simpleAdditionTMR 1 
-simpledebug:
-	libtool --mode=execute gdb --args ./userRewriter.out ../mipsCode/simpleAdd.out simpeAdditionTMR 
+simpledebugnaive:
+	libtool --mode=execute gdb --args ./userRewriter.out ../mipsCode/simpleAdd.out simpeAdditionTMR 0 
+simpledebugopt:
+	libtool --mode=execute gdb --args ./userRewriter.out ../mipsCode/simpleAdd.out simpeAdditionTMR 1
 
 
 advancedtestall: advancedtestnaive advancedtestopt
@@ -52,8 +54,10 @@ advancedtestnaive:
 	./userRewriter.out ../mipsCode/advancedAdd.out advancedAdditionTMR 0
 advancedtestopt:
 	./userRewriter.out ../mipsCode/advancedAdd.out advancedAdditionTMR 1 
-advanceddebug:
-	libtool --mode=execute gdb --args ./userRewriter.out ../mipsCode/advancedAdd.out advancedAdditionTMR
+advanceddebugopt:
+	libtool --mode=execute gdb --args ./userRewriter.out ../mipsCode/advancedAdd.out advancedAdditionTMR 1
+advanceddebugnaive:
+	libtool --mode=execute gdb --args ./userRewriter.out ../mipsCode/advancedAdd.out advancedAdditionTMR 0
 
 
 clean:
