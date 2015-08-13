@@ -380,7 +380,7 @@ void listScheduler::initializeListVariables(graphDAG* DAGobject) {
     if (debuging) {
         /*  These maps should be equal in size. */
         std::cout << "Created " << variableMap.size() << " entries in variableMap." << std::endl << std::endl;
-        std::cout << "Created " << nodeNumberToVertex.size() << " entries in nodeNumberToVertex." << std::endl << std::endl;
+        std::cout << "Created " << nodeNumberToVertex.size() << " entries in nodeNumberToVertex." << std::endl;
     }
 }
 
@@ -414,7 +414,7 @@ void listScheduler::propagateEST(graphDAG* DAGobject) {
     variableMap[rootNumber] = rootVars;
     /*  Debug printout. */
     if (debuging) {
-        std::cout << "EST set to " << rootVars.earliestStart << " in root node."  << std::endl << std::endl;
+        std::cout << "EST set to " << rootVars.earliestStart << " in root node."  << std::endl;
     }
 
     /*  BFS algorithm. Continue as long as the queue is not empty. */
@@ -455,7 +455,6 @@ void listScheduler::propagateEST(graphDAG* DAGobject) {
                     std::cout << "EST set to " << targetVars.earliestStart 
                         << " in instruction" << std::endl;
                     printInstruction(targetMips);
-                    std::cout << std::endl;
                 }
             }
         }
@@ -467,30 +466,52 @@ void listScheduler::propagateEST(graphDAG* DAGobject) {
 void listScheduler::propagateLST(graphDAG* DAGobject) {
     /*  Perform the backward pass. */
     if (debuging) {
-        std::cout << "Performing backward pass on DAG to calculate LST." << std::endl << std::endl;
+        std::cout << "Performing backward pass on DAG to calculate LST." << std::endl;
     }
     /*  Using a boost buffer to queue the nodes that i am visiting. */
     boost::queue<DAGVertexDescriptor> visitQueue;
     /*  Get forward DAG. */
     frameworkDAG* backwardDAG = DAGobject->getBackwardDAG();
-    /*  In the forward pass the first instruction is the root. */
-    DAGVertexDescriptor* backwardRoot = DAGobject->getBackwardDAGRoot();
-    /*  Get the backward nodes index number. */
-    int backwardRootNumber = get(boost::vertex_index1, *backwardDAG, *backwardRoot);
 
-    /*  Push the root vertex into the queue. */
-    visitQueue.push(*backwardRoot);
+//    /*  In the forward pass the first instruction is the root. */
+//    DAGVertexDescriptor* backwardRoot = DAGobject->getBackwardDAGRoot();
+//    /*  Get the backward nodes index number. */
+//    int backwardRootNumber = get(boost::vertex_index1, *backwardDAG, *backwardRoot);
+//    /*  Set the correct values in the root node. */
+//    instructionVariables rootVars = variableMap.find(backwardRootNumber)->second;
+//    /*  Set the LST value in the root and save it, the LST in the root
+//        which is the last instruction in the block is the EST. */
+//    rootVars.latestStart = rootVars.earliestStart; 
+//    variableMap[backwardRootNumber] = rootVars;
+//    /*  Debug printout. */
+//    if (debuging) {
+//        std::cout << "LST set in root node to " << rootVars.latestStart << std::endl;
+//    }
+//
+//    /*  Push the root vertex into the queue. */
+//    visitQueue.push(*backwardRoot);
 
-    /*  Set the correct values in the root node. */
-    instructionVariables rootVars = variableMap.find(backwardRootNumber)->second;
-    /*  Set the LST value in the root and save it, the LST in the root
-        which is the last instruction in the block is the EST. */
-    rootVars.latestStart = rootVars.earliestStart; 
-    variableMap[backwardRootNumber] = rootVars;
-    /*  Debug printout. */
-    if (debuging) {
-        std::cout << "LST set in root node to " << rootVars.latestStart << std::endl << std::endl;
+    /*  Get the root nodes and set their values and insert them into the set. */
+    std::set<DAGVertexDescriptor>* backwardRoots = DAGobject->getBackwardDAGRoots();
+    /*  Iterate over the roots and initialize them and add them to the queue. */
+    for(std::set<DAGVertexDescriptor>::iterator rootIter = backwardRoots->begin();
+        rootIter != backwardRoots->end(); ++rootIter) {
+        /*  Get the node number of the vertex. */
+        int nodeNumber = get(boost::vertex_index1, *backwardDAG, *rootIter);
+        /*  Set the values for the node in the variable map. */
+        instructionVariables nodeVars = variableMap.find(nodeNumber)->second;
+        /*  Set the LST value in the root and save it, the LST in the root
+            which is the last instruction in the block is the EST. */
+        nodeVars.latestStart = nodeVars.earliestStart; 
+        variableMap[nodeNumber] = nodeVars;
+        /*  Debug printout. */
+        if (debuging) {
+            std::cout << "LST set in root node to " << nodeVars.latestStart << std::endl;
+        }
+        /*  Push the node to the visit queue. */
+        visitQueue.push(*rootIter);
     }
+
 
     /*  BFS algorithm. Continue as long as the queue is not empty. */
     while(!visitQueue.empty()) {
@@ -530,7 +551,6 @@ void listScheduler::propagateLST(graphDAG* DAGobject) {
                     std::cout << "LST set to " << targetVars.latestStart
                         << " in instruction." << std::endl;
                         printInstruction(targetMips);
-                        std::cout << std::endl;
                 }
             }
         }
@@ -553,33 +573,60 @@ void listScheduler::maximumDelayToLeaf(graphDAG* DAGobject) {
 */
     /*  Perform the backward pass. */
     if (debuging) {
-        std::cout << "Performing backward pass on DAG to calculate maximum delay." << std::endl << std::endl;
+        std::cout << "Performing backward pass on DAG to calculate maximum delay." << std::endl;
     }
     /*  Using a boost buffer to queue the nodes that i am visiting. */
     boost::queue<DAGVertexDescriptor> visitQueue;
     /*  Get backward DAG. */
     frameworkDAG* backwardDAG = DAGobject->getBackwardDAG();
-    /*  In the backward pass the last instruction is the root. */
-    DAGVertexDescriptor* backwardRoot = DAGobject->getBackwardDAGRoot();
-    /*  Get the root node number. */
-    int rootNodeNumber = get(boost::vertex_index1, *backwardDAG, *backwardRoot);
 
-    /*  Push the root vertex into the queue. */
-    visitQueue.push(*backwardRoot);
+//    /*  In the backward pass the last instruction is the root. */
+//    DAGVertexDescriptor* backwardRoot = DAGobject->getBackwardDAGRoot();
+//    /*  Get the root node number. */
+//    int rootNodeNumber = get(boost::vertex_index1, *backwardDAG, *backwardRoot);
+//    /*  Set the correct values in the root node. */
+//    instructionVariables rootVars = variableMap.find(rootNodeNumber)->second;
+//    /*  Set the delay value of the root, since the root is the last instruction
+//        it has no delay because there is no instruction after it. 
+//    //TODO need to consider this or if i should have execution time here. */
+//    rootVars.maximumDelayToLeaf = 0;
+//    /*  Debug print. */
+//    if (debuging) {
+//        std::cout << "maximum delay to leaf set in root to " << rootVars.maximumDelayToLeaf
+//            << std::endl;
+//    }
+//    /*  Save the variable values. */
+//    variableMap[rootNodeNumber] = rootVars;
+//    /*  Push the root vertex into the queue. */
+//    visitQueue.push(*backwardRoot);
 
-    /*  Set the correct values in the root node. */
-    instructionVariables rootVars = variableMap.find(rootNodeNumber)->second;
-    /*  Set the delay value of the root, since the root is the last instruction
-        it has no delay because there is no instruction after it. 
-    //TODO need to consider this or if i should have execution time here. */
-    rootVars.maximumDelayToLeaf = 0;
-    /*  Debug print. */
-    if (debuging) {
-        std::cout << "maximum delay to leaf set in root to " << rootVars.maximumDelayToLeaf
-            << std::endl;
+
+    /*  Get the root nodes and set their values and insert them into the set. */
+    std::set<DAGVertexDescriptor>* backwardRoots = DAGobject->getBackwardDAGRoots();
+    /*  Iterate over the roots and initialize them and add them to the queue. */
+    for(std::set<DAGVertexDescriptor>::iterator rootIter = backwardRoots->begin();
+        rootIter != backwardRoots->end(); ++rootIter) {
+        /*  Get the node number of the vertex. */
+        int nodeNumber = get(boost::vertex_index1, *backwardDAG, *rootIter);
+        /*  Set the values for the node in the variable map. */
+        instructionVariables nodeVars = variableMap.find(nodeNumber)->second;
+        /*  Set the delay value of the root, since the root is the last instruction
+            it has no delay because there is no instruction after it. 
+        //TODO need to consider this or if i should have execution time here. */
+        nodeVars.maximumDelayToLeaf = 0;
+        /*  Save the variable values. */
+        variableMap[nodeNumber] = nodeVars;
+        /*  Push the root vertex into the queue. */
+        visitQueue.push(*rootIter);
+        /*  Debug print. */
+        if (debuging) {
+            std::cout << "maximum delay to leaf set in root to " << nodeVars.maximumDelayToLeaf
+                << std::endl;
+        }
     }
-    /*  Save the variable values. */
-    variableMap[rootNodeNumber] = rootVars;
+
+
+    
 
     /*  Traverse the DAG in a BFS maner, It will revisit nodes that have their
         values updated though, a deviation from normal BFS. */
@@ -615,7 +662,6 @@ void listScheduler::maximumDelayToLeaf(graphDAG* DAGobject) {
                     std::cout << "Maximum delay set to " << targetVars.maximumDelayToLeaf
                         << " in instruction." << std::endl;
                     printInstruction(targetMips);
-                    std::cout << std::endl;
                 }
                 /*  Save the new variables in the map. */
                 variableMap[targetNodeNumber] = targetVars;
@@ -650,7 +696,6 @@ void listScheduler::calculateSlack(graphDAG* blockDAG) {
             std::cout << "Slack " << currentVars.slack << " = " << currentVars.latestStart << " - " << currentVars.earliestStart
                 << " for instruction. " << std::endl;
             printInstruction(mips); 
-            std::cout << std::endl;
         }
         /*  Save the new variables. */
         varMapIter->second = currentVars;

@@ -63,6 +63,8 @@ void graphDAG::findRootVertices() {
             }
             /*  Save the vertex descriptor for later use. */
             forwardDAGRootVertice = *iterPair.first;
+            /*  Add the vertex descriptor to the set. */
+            forwardDAGroots.insert(*iterPair.first);
         }
     }
 
@@ -73,10 +75,12 @@ void graphDAG::findRootVertices() {
             /*  Debug print. */
             if (debuging) {
                 std::cout << get(boost::vertex_index2, *backwardDAG, *iterPair.first)
-                    << " is the root instruction in the backward DAG." << std::endl << std::endl;
+                    << " is the root instruction in the backward DAG." << std::endl;
             }
             /*  Save backwardDAG root vertice. */
             backwardDAGRootVertice = *iterPair.first;
+            /*  Add the vertex descriptor to the set. */
+            backwardDAGroots.insert(*iterPair.first);
         }
     }
 }
@@ -236,6 +240,9 @@ void graphDAG::buildBackwardDAG() {
     /*  The backward dag has been built. Now ensure that the last
         instruction will be a jump if there is one in the block.
         Also ensure that the first instruction in the block will not be moved. */
+    //TODO need to consider the situation where we have a branch but there is no
+    //TODO dependency on it, like the JR instruction. Then the root node
+    //TODO should perhaps not be connected to the sink node?
     if (NULL != firstInstruction) {
         /*  There is a reference to the first instruction. Go through the 
             graph and connect nodes without in edges to the first instructions
@@ -460,6 +467,7 @@ bool graphDAG::isBranchInstruction(SgAsmStatement* inst) {
         /*  Check if the instruction kind matches a branch instruction. */
         switch(mips->get_kind()) {
             case mips_j:
+            case mips_jr:
             case mips_jal:
             case mips_jalr:
             case mips_beq:

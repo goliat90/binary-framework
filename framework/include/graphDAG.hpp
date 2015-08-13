@@ -111,8 +111,10 @@ class graphDAG {
         frameworkDAG* getForwardDAG() {return forwardDAG;};
         /*  Return a reference to the first instruction vertex. */
         DAGVertexDescriptor* getForwardDAGRoot() {return &forwardDAGRootVertice;};
+        std::set<DAGVertexDescriptor>* getForwardDAGRoots() {return &forwardDAGroots;};
         /*  Return a reference to the last instruction vertex. */
-        DAGVertexDescriptor* getBackwardDAGRoot() {return &backwardDAGRootVertice;};
+//        DAGVertexDescriptor* getBackwardDAGRoot() {return &backwardDAGRootVertice;};
+        std::set<DAGVertexDescriptor>* getBackwardDAGRoots() {return &backwardDAGroots;};
 
     private:
         /*  Hide default constructor. */
@@ -146,9 +148,11 @@ class graphDAG {
         /*  Pointer to last instruction in block. */
         SgAsmMipsInstruction* lastInstruction;
         DAGVertexDescriptor backwardDAGRootVertice;
+        std::set<DAGVertexDescriptor> backwardDAGroots;
         /*  Pointer to first instruction in block. */
         SgAsmMipsInstruction* firstInstruction;
         DAGVertexDescriptor forwardDAGRootVertice;
+        std::set<DAGVertexDescriptor> forwardDAGroots;
 
         /*  Map for which definition is set. */
         std::map<DAGresources::resourceEnum, DAGVertexDescriptor>  definitionMap;
