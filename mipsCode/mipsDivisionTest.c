@@ -3,22 +3,15 @@
 /*  Divistion function test. */
 int divisionTest(int a, int b, int c, int d) {
     int result = 0;
-    int result1 = 0;
-    int result2 = 0;
-    int result3 = 0;
-    int result4 = 0;
-    int result5 = 0;
-    int result6 = 0;
-    int sum = 0;
 
-    /*  add up a and b. */
+    a = a + 2 + 1;
+    b = b + a + 1;
 
     /*  Divide the numbers. */
     result = a / b;
-//    result = a / c;
-//    result = a / d;
+    a += a + b;
+    result += result * a;
     result += result / c;
-//    result = b / d;
     result += result / d;
 
 
