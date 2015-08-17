@@ -59,6 +59,8 @@ advanceddebugopt:
 advanceddebugnaive:
 	libtool --mode=execute gdb --args ./userRewriter.out ../mipsCode/advancedAdd.out advancedAdditionTMR 0
 
+# Rule to invoke all test
+testall: simpletestall advancedtestall
 
 clean:
 	rm -rf .libs
