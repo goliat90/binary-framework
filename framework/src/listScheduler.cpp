@@ -204,11 +204,12 @@ void listScheduler::forwardListScheduling(graphDAG* DAGobject, std::list<int>& s
                         /*  The parent has not been scheduled. Check if the dependency
                             is a WAR, if so it is still okay. */
                         edgeDependency::edgeType childDependency = get(boost::edge_weight, *fDAG, *inEdgeIter.first);
-                        /*  Check if the edge property is WAR. Also if the dependency is to enforce
+                        /*  Check if the edge property is not WAR. Also if the dependency is to enforce
                             root and sink nodes it is still okay since then there are no data dependencies. */
                         if ((edgeDependency::WAR != childDependency) ||
-                            (edgeDependency::sinkRootDependency == childDependency)) {
-                            /*  The dependency is not WAR so the child is not ready. */
+                            (edgeDependency::sinkRootDependency != childDependency)) {
+                            /*  The dependency is not WAR or a sink/root dependency so it
+                                can not be scheduled now. */
                             childReady = false;
                             /*  Break the loop. */
                             break;
