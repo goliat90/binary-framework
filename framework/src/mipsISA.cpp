@@ -602,6 +602,8 @@ int getInstructionExecutionTime(MipsInstructionKind instType) {
             have instructions to close to them afterwards. Looks like the
             number of instructions between them needs to be at least two.
             I set an execution time of 2 for these instructions for now. */
+            //TODO should i really set the delay on these instructions?
+            //TODO just create an additional check?
         case mips_mflo:
         case mips_mfhi: {
             latency = 2;

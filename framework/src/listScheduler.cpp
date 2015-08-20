@@ -48,6 +48,10 @@ void listScheduler::performScheduling() {
             }
         }
     }
+
+    //TODO Consider adding code here that enforces the two preceding
+    //TODO instruction structural hazard for reading acc(hi/lo) and
+    //TODO having an intruction that writes to it afterwards.
 }
 
 

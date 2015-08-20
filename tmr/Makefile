@@ -17,7 +17,7 @@ OBJDIR = ./objectfiles
 VPATH = $(LIBSRCDIR):$(LIBINCDIR):$(FRAMEWORKLIBDIR):src:include:objectfiles
 
 #phony rules
-.PHONY: all buildLibrary debug test clean
+.PHONY: all buildLibrary debug clean
 
 all: userRewriter.out
 
