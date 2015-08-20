@@ -326,6 +326,8 @@ void naiveHandler::initHardRegisters() {
     hardRegisters.insert(t5);
     hardRegisters.insert(t6);
     hardRegisters.insert(t7);
+    hardRegisters.insert(t8);
+    hardRegisters.insert(t9);
 }
 
 /*  Help function that will return hard registers for exchange.
