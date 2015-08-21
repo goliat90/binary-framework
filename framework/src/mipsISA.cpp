@@ -595,21 +595,10 @@ int getInstructionExecutionTime(MipsInstructionKind instType) {
         case mips_msubu :
         case mips_mult  :
         case mips_multu : {
-            break;
-        }
-
-        /*  Instructions that move data from HI and LO registers can not
-            have instructions to close to them afterwards. Looks like the
-            number of instructions between them needs to be at least two.
-            I set an execution time of 2 for these instructions for now. */
-            //TODO should i really set the delay on these instructions?
-            //TODO just create an additional check?
-        case mips_mflo:
-        case mips_mfhi: {
+            //TODO need to revise this latency.
             latency = 2;
             break;
         }
-
         /*  Load and store operations grouped, latency of 4. */
         //TODO should i consider stores to have a latency as well?
         //TODO should their latency not be seperate? If they even have one?
@@ -620,14 +609,17 @@ int getInstructionExecutionTime(MipsInstructionKind instType) {
         case mips_lhu   :
         case mips_lw    :
         case mips_lwl   :
-        case mips_lwr   :
+        case mips_lwr   : {
+            latency = 4;
+            break;
+        }
         //store operations
         case mips_sb    :
         case mips_sh    :
         case mips_sw    :
         case mips_swl   :
         case mips_swr   : {
-            latency = 4;
+            //latency = 4;
             break;
         }
     }
