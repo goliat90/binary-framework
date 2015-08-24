@@ -23,7 +23,7 @@ class userFramework : public BinaryRewriter {
         /*  TMR for addition, subtraction. */
         void arithmeticTMR();
         /*  TMR for condition testing. */
-        void conditionTMR();
+        void conditionAndLogicalTMR();
 
         /*  Variables. */
         instructionStruct currentInst;

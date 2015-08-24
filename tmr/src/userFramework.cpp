@@ -194,16 +194,20 @@ void userFramework::arithmeticTMR() {
     //std::cout << "Seventh insertion" << std::endl;
 }
 
-/*  Create TMR for condition testing instructions. */
-void userFramework::conditionTMR() {
+/*  Create TMR for condition testing instructions.
+    It also handles logical instructions.
+    It does TMR with OR and AND instructions.
+    The expression can be abstracted as
+    (a AND b) OR (b AND c) OR (c AND a). */
+void userFramework::conditionAndLogicalTMR() {
     /* This function should be able to apply common tmr to many functions */
     /* Save the original instruction */
     saveInstruction();
     /*  Depending on the instruction kind i select what kind
         the TMR instructions should be. */
-    //TODO need to make a switch here to select correct types.
     MipsInstructionKind duplicateKind = currentInst.kind;
     std::string tmrMnemonic = currentInst.mnemonic;
+
 
     /* Add two new add instructions using the original input operands */
     instructionStruct firstDup;
@@ -343,10 +347,32 @@ void userFramework::transformDecision(SgAsmMipsInstruction* inst) {
             arithmeticTMR();
             break;
         }
+        /*  Condition instructions. */
         case mips_slt:
         case mips_sltu:
-        //TODO im missing instructions here, sll, sllv, sra, srav, srl, srlv, and, andi, nor, or, ori, xor, xori
-            conditionTMR();
+        case mips_slti:
+        case mips_sltiu:
+
+        /*  Left shift instructions. */
+        case mips_sll:
+        case mips_sllv:
+        /*  Right shift instructions, arithmetic. */
+        case mips_sra:
+        case mips_srav:
+        /*  Right shift instructions, logical. */
+        case mips_srl:
+        case mips_srlv:
+
+        /*  Logical and bit operations. */
+        case mips_and:
+        case mips_andi:
+        case mips_or:
+        case mips_ori:
+        case mips_xor:
+        case mips_xori:
+        case mips_nor:
+            /*  Call TMR function. */
+            conditionAndLogicalTMR();
             break;
         default: {
             saveInstruction();
