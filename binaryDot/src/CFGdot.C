@@ -9,13 +9,17 @@ void subCFG (CFG &largecfg, CFG &subcfg, string function, int);
 
 int main( int argc, char * argv[] ) {
     /*  Check that the number of arguments are enough.
-        First argument is path to binary.
-        Second will be the path to the binary.
+        First argument is path to binary cfg binary
+        Second will be the path to the binary beign analyzed.
         Third will be the function name to generate cfg of.
         Fourth will be the degree of neighbours.
     */
     if (4 != argc) {
-        std::cout << "Invalid amount of arguments." << std::endl;
+        std::cout << "Invalid amount of arguments." << std::endl
+            << "Arg1: Path to binary being analyzed" << std::endl
+            << "Arg2: name of function being analyzed" << std::endl
+            << "Arg3: Degree of neighbour inclusion." << std::endl;
+
         exit(0);
     }
     /*  Transfer the char function name to a string variable. */
