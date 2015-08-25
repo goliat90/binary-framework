@@ -83,6 +83,9 @@ class CFGhandler {
         /* Activation instructions, are forbidden by users to transform
             but might have to be modified by the framework, consider other storage
             than vector. */
+        //TODO consider changing this to a set instead. so i cant have duplicates.
+        //TODO reason is if i have a single block then i will scan it twice from
+        //TODO both directions. 
         std::vector<SgAsmInstruction*> activationInstruction;
         /* first is the activationrecord, second is the deactivation record */
         std::pair<SgAsmMipsInstruction*, SgAsmMipsInstruction*> activationPair;

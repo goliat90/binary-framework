@@ -71,8 +71,6 @@ bool CFGhandler::isForbiddenInstruction(SgAsmMipsInstruction* inst) {
 /* Searches the function cfg for activation records.
     These are saved for later use and also added to the forbidden
     instructions map. */
-//TODO i need to handle cases of single block functions, a function like that
-//TODO only consists of two block, the function assembly and the delay block.
 void CFGhandler::findActivationRecords() {
     /* Vector for edges */ 
     std::set<CFG::vertex_descriptor> targetVertices;
@@ -131,6 +129,9 @@ void CFGhandler::findActivationRecords() {
                 /*  Save the list as the first and last statementlist and break. */
                 firstStatementList = &list;
                 lastStatementList = &list;
+                /*  Also set it as the entry and exit block. */
+                entryBlock = entryBlock;
+                exitBlock = entryBlock;
                 break;
             }
         }
@@ -160,8 +161,6 @@ void CFGhandler::findActivationRecords() {
         }
     }
     /* check the last blocks instructions. */
-    //TODO change to reverse iterator, to solve single block case and avoid reading
-    //TODO the same activation instruction again.
     for(SgAsmStatementPtrList::reverse_iterator iter = lastStatementList->rbegin();
         iter != lastStatementList->rend(); ++iter) {
         /* decode instruction */
