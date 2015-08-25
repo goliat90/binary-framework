@@ -71,13 +71,15 @@ bool CFGhandler::isForbiddenInstruction(SgAsmMipsInstruction* inst) {
 /* Searches the function cfg for activation records.
     These are saved for later use and also added to the forbidden
     instructions map. */
+//TODO i need to handle cases of single block functions, a function like that
+//TODO only consists of two block, the function assembly and the delay block.
 void CFGhandler::findActivationRecords() {
     /* Vector for edges */ 
     std::set<CFG::vertex_descriptor> targetVertices;
     std::set<CFG::vertex_descriptor> sourceVertices;
     /* Block statement lists */
-    SgAsmStatementPtrList* firstStatementList;
-    SgAsmStatementPtrList* lastStatementList;
+    SgAsmStatementPtrList* firstStatementList = NULL;
+    SgAsmStatementPtrList* lastStatementList = NULL;
     
     for(std::pair<CFGEIter, CFGEIter> edgeIter = edges(*functionCFG);
         edgeIter.first != edgeIter.second; ++edgeIter.first) {
@@ -111,7 +113,28 @@ void CFGhandler::findActivationRecords() {
             lastStatementList = &exitBlock->get_statementList();
         }
     }
-
+    /*  Check here if the statement pointers are still NULL. If so then
+        the cfg has no edges and is basically a single block of instructions
+        and a branch delay block with one instruction. */
+    if (firstStatementList == NULL && lastStatementList == NULL) {
+        std::cout << "No entry or exitblock found. Single block and delay block." << std::endl;
+        /*  Go through the CFG and find the vertice with a block that has more instructions than 1. */
+        for(std::pair<CFGVIter, CFGVIter> iter = vertices(*functionCFG);
+            iter.first != iter.second; ++iter.first) {
+            /*  Get the basic block and check the size of it. */
+            entryBlock = get(boost::vertex_name, *functionCFG, (*iter.first));
+            /* Get statement list reference. */
+            SgAsmStatementPtrList& list = entryBlock->get_statementList();
+            /*  Check the size of it. if it is larger than 1 then it is
+                the function block. assign it as first and last statementlist. */
+            if (1 < list.size()) {
+                /*  Save the list as the first and last statementlist and break. */
+                firstStatementList = &list;
+                lastStatementList = &list;
+                break;
+            }
+        }
+    }
     /* Go through the blocks and find the activation records.
         The instruction in question is an addiu instruction with
         sp as RD and as RS and constant  */
@@ -137,8 +160,10 @@ void CFGhandler::findActivationRecords() {
         }
     }
     /* check the last blocks instructions. */
-    for(SgAsmStatementPtrList::iterator iter = lastStatementList->begin();
-        iter != lastStatementList->end(); ++iter) {
+    //TODO change to reverse iterator, to solve single block case and avoid reading
+    //TODO the same activation instruction again.
+    for(SgAsmStatementPtrList::reverse_iterator iter = lastStatementList->rbegin();
+        iter != lastStatementList->rend(); ++iter) {
         /* decode instruction */
         SgAsmMipsInstruction* mipsInst = isSgAsmMipsInstruction(*iter);
         instructionStruct currentInst = decodeInstruction(mipsInst);
