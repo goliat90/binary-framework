@@ -517,6 +517,11 @@ void liveVariableAnalysisHandler::initializeInOutOnBlocks() {
 }
 
 /*  add ENTRY and EXIT vertices to the cfg */
+//TODO This function does it the same way as the cfg handler.
+//TODO it breaks on functions with a single block and a delay block.
+//TODO best way is probably to rewrite the code here to utilize
+//TODO information from the cfghandler and add entry and exit block
+//TODO by those means.
 void liveVariableAnalysisHandler::addEntryExit() {
     /* find the first and last block in the cfg. */
     std::set<CFG::vertex_descriptor> targetVertices;
