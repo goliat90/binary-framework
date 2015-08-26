@@ -125,7 +125,7 @@ void BinaryRewriter::transformBinary() {
             SgAsmBlock* currentBB = get(boost::vertex_name, *functionGraph, *vPair.first);
             /* Print the block */
             std::cout << std::endl;
-            printBasicBlockInstructions(currentBB);
+            printBasicBlockAsAssembly(currentBB);
         }
     }
 

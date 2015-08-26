@@ -22,5 +22,10 @@ void printInstruction(instructionStruct*);
 /*  Get the string for a register. */
 std::string getRegisterString(mipsRegisterName);
 
+/*  Print the content of a block in assembly format. */
+void printBasicBlockAsAssembly(SgAsmBlock*);
+/*  Print instruction in functional assembly format. */
+void printAssemblyInstruction(SgAsmMipsInstruction*);
+
 #endif
 

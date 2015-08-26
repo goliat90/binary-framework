@@ -10,6 +10,10 @@ std::map<mipsRegisterName, std::string> initRegStringMap();
 void printRegisters(std::stringstream* regStream, std::vector<registerStruct>* registers); 
 /* Print instruction constants */
 void printConstant(std::stringstream* conStream, instructionStruct* instStruct);
+/*  Adds registers to the assembly print stream. */
+void assemblyRegister(std::stringstream*, std::vector<registerStruct>*);
+/*  Initfunction for the register enum to assembly string map. */
+std::map<mipsRegisterName, std::string> initAssemblyMap();
 
 /* print the instructions contained in a basicblock */
 void printBasicBlockInstructions(SgAsmBlock* block) {
@@ -61,7 +65,6 @@ void printInstruction(instructionStruct* instStruct) {
     printConstant(&instStream, instStruct);
     /* print the instructions information */
     std::cout << instStream.str() << std::endl;
-    
 }
 
 /* Print instruction constants */
@@ -92,7 +95,6 @@ void printConstant(std::stringstream* conStream, instructionStruct* instStruct) 
             //std::cout << "skipped constants on address: " << std::hex << instStruct->address << std::endl;
         }
     }
-    
 }
 
 
@@ -134,6 +136,145 @@ void printRegisters(std::stringstream* regStream, std::vector<registerStruct>* r
     }
 }
 
+
+/* print the instructions contained in a basicblock in assembly format. */
+void printBasicBlockAsAssembly(SgAsmBlock* block) {
+    //get the list of instructions in the block.
+    SgAsmStatementPtrList* stmtlistPtr = &block->get_statementList();
+    /* print the block number */
+    std::cout << "********** "
+              << "Block: " << std::hex << block->get_id()
+              << " **********" << std::endl
+              << std::dec; //dont print hex numbers in after this
+
+    /* iterate through the statement list and print. */
+    for(SgAsmStatementPtrList::iterator instIter = stmtlistPtr->begin();
+        instIter != stmtlistPtr->end(); instIter++) {
+        /* Cast the SgAsmStatement to SgAsmMipsInstruction */
+        SgAsmMipsInstruction* mipsInst = isSgAsmMipsInstruction(*instIter);
+        /*  Call the print instruction. */
+        printAssemblyInstruction(mipsInst);
+    }
+    /* print some delimiter as well */
+    std::cout << "********** "
+              << "End of Block: " << std::hex << block->get_id()
+              << " **********" << std::endl
+              << std::dec; //dont print hex numbers in hex after this
+}
+
+/*  Prints the instruction in assembly format. This is so it could be pasted in to a file. */
+void printAssemblyInstruction(SgAsmMipsInstruction* mipsInst) {
+    /* string stream object */
+    std::stringstream assemblyStream;
+    /*  Decode the instruction. */
+    instructionStruct asmStruct = decodeInstruction(mipsInst);
+    /*  Add the name to the of the instruction to the stream. */
+    assemblyStream << asmStruct.mnemonic << " ";
+    /*  Check format of the instruction and depending on the format build
+        the correct assembly format. */
+    //TODO Create instructions that handle a specific part.
+    switch(asmStruct.format) {
+        case R_RD_RS_RT:
+        case R_RD_RS_C:
+            break;
+        case R_RD:
+            assemblyRegister(&assemblyStream, &asmStruct.destinationRegisters);
+            break;
+        case R_RS_RT:
+            break;
+        case R_RS:
+            assemblyRegister(&assemblyStream, &asmStruct.sourceRegisters);
+        case R_NOP: {
+            break;
+        }
+
+        case I_RD_RS_C:
+        case I_RD_MEM_RS_C:
+        case I_RD_C:
+        case I_RS_RT_C:
+        case I_RS_MEM_RT_C:
+        case I_RS_C:
+
+        case J_C:
+        case J_RS:
+        case J_RD_RS:
+
+        default: {
+            break;
+        }
+    }
+    /*  Add the destination registers, if we have them. */
+
+    /*  Add the source registers, if they are present. */
+
+    /*  Add constants if they they are available. */
+
+    /*  Print out the block from the stream. */
+    std::cout << assemblyStream.str() << std::endl;
+}
+
+/*  Add an register to the stream. */
+void assemblyRegister(std::stringstream* regStream, std::vector<registerStruct>* registers) {
+    /* Map that is mapping enum to corresponding string */
+    static std::map<mipsRegisterName, std::string> assemblyMap = initAssemblyMap();
+    /* add the registers to the register stream, iterate over the vector and add them. */
+    for(std::vector<registerStruct>::iterator iter = registers->begin();
+        iter != registers->end(); iter++) {
+        /*  add register to the stream. */
+        *regStream << assemblyMap.find((*iter).regName)->second;
+        /*  Add comma if the there is another register. */
+        if (registers->end() != iter+1 ) {
+            *regStream << ", ";
+        }
+    }
+}
+
+
+/*  Init function for the register enum to assembly map. */
+std::map<mipsRegisterName, std::string> initAssemblyMap() {
+    std::map<mipsRegisterName, std::string> assemblyMap;
+    /* inserting all register names with their matching enum */
+    assemblyMap.insert(std::pair<mipsRegisterName, std::string>(zero,"$zero"));
+    assemblyMap.insert(std::pair<mipsRegisterName, std::string>(at, "$at"));
+    assemblyMap.insert(std::pair<mipsRegisterName, std::string>(v0, "$2"));
+    assemblyMap.insert(std::pair<mipsRegisterName, std::string>(v1, "$3"));
+
+    assemblyMap.insert(std::pair<mipsRegisterName, std::string>(a0, "$4"));
+    assemblyMap.insert(std::pair<mipsRegisterName, std::string>(a1, "$5"));
+    assemblyMap.insert(std::pair<mipsRegisterName, std::string>(a2, "$6"));
+    assemblyMap.insert(std::pair<mipsRegisterName, std::string>(a3, "$7"));
+
+    assemblyMap.insert(std::pair<mipsRegisterName, std::string>(t0, "$8"));
+    assemblyMap.insert(std::pair<mipsRegisterName, std::string>(t1, "$9"));
+    assemblyMap.insert(std::pair<mipsRegisterName, std::string>(t2, "$10"));
+    assemblyMap.insert(std::pair<mipsRegisterName, std::string>(t3, "$11"));
+    assemblyMap.insert(std::pair<mipsRegisterName, std::string>(t4, "$12"));
+    assemblyMap.insert(std::pair<mipsRegisterName, std::string>(t5, "$13"));
+    assemblyMap.insert(std::pair<mipsRegisterName, std::string>(t6, "$14"));
+    assemblyMap.insert(std::pair<mipsRegisterName, std::string>(t7, "$15"));
+
+    assemblyMap.insert(std::pair<mipsRegisterName, std::string>(s0, "$16"));
+    assemblyMap.insert(std::pair<mipsRegisterName, std::string>(s1, "$17"));
+    assemblyMap.insert(std::pair<mipsRegisterName, std::string>(s2, "$18"));
+    assemblyMap.insert(std::pair<mipsRegisterName, std::string>(s3, "$19"));
+    assemblyMap.insert(std::pair<mipsRegisterName, std::string>(s4, "$20"));
+    assemblyMap.insert(std::pair<mipsRegisterName, std::string>(s5, "$21"));
+    assemblyMap.insert(std::pair<mipsRegisterName, std::string>(s6, "$22"));
+    assemblyMap.insert(std::pair<mipsRegisterName, std::string>(s7, "$23"));
+
+    assemblyMap.insert(std::pair<mipsRegisterName, std::string>(t8, "$24"));
+    assemblyMap.insert(std::pair<mipsRegisterName, std::string>(t9, "$25"));
+
+    assemblyMap.insert(std::pair<mipsRegisterName, std::string>(k0, "$26"));
+    assemblyMap.insert(std::pair<mipsRegisterName, std::string>(k1, "$27"));
+
+    assemblyMap.insert(std::pair<mipsRegisterName, std::string>(gp, "$gp"));
+    assemblyMap.insert(std::pair<mipsRegisterName, std::string>(sp, "$sp"));
+    assemblyMap.insert(std::pair<mipsRegisterName, std::string>(fp, "$fp"));
+    assemblyMap.insert(std::pair<mipsRegisterName, std::string>(ra, "$ra"));
+    /* return the filled map */
+    return assemblyMap;
+}
 
 /* initfunction for register enum to string map.  */
 std::map<mipsRegisterName, std::string> initRegStringMap() {
