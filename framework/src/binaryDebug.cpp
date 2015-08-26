@@ -175,40 +175,84 @@ void printAssemblyInstruction(SgAsmMipsInstruction* mipsInst) {
     //TODO Create instructions that handle a specific part.
     switch(asmStruct.format) {
         case R_RD_RS_RT:
+            assemblyRegister(&assemblyStream, &asmStruct.destinationRegisters);
+            assemblyStream << ", ";
+            assemblyRegister(&assemblyStream, &asmStruct.sourceRegisters);
+            break;
         case R_RD_RS_C:
+            assemblyRegister(&assemblyStream, &asmStruct.destinationRegisters);
+            assemblyStream << ", ";
+            assemblyRegister(&assemblyStream, &asmStruct.sourceRegisters);
+            //TODO need to add constant
             break;
         case R_RD:
             assemblyRegister(&assemblyStream, &asmStruct.destinationRegisters);
             break;
         case R_RS_RT:
+            assemblyRegister(&assemblyStream, &asmStruct.sourceRegisters);
             break;
         case R_RS:
             assemblyRegister(&assemblyStream, &asmStruct.sourceRegisters);
         case R_NOP: {
             break;
         }
-
         case I_RD_RS_C:
+            //TODO check how this format differs from the R_RD_RS_C
+            assemblyRegister(&assemblyStream, &asmStruct.destinationRegisters);
+            assemblyStream << ", ";
+            assemblyRegister(&assemblyStream, &asmStruct.sourceRegisters);
+            //TODO add constant here, 
+            break;
         case I_RD_MEM_RS_C:
+            assemblyRegister(&assemblyStream, &asmStruct.destinationRegisters);
+            assemblyStream << ", ";
+            //TODO constant here
+            assemblyStream << "(";
+            assemblyRegister(&assemblyStream, &asmStruct.sourceRegisters);
+            assemblyStream << ")";
+            break;
         case I_RD_C:
+            assemblyRegister(&assemblyStream, &asmStruct.destinationRegisters);
+            assemblyStream << ", ";
+            //TODO add constant here.
+            break;
         case I_RS_RT_C:
+            assemblyRegister(&assemblyStream, &asmStruct.sourceRegisters);
+            assemblyStream << ", ";
+            //TODO add constant here
+            break;
         case I_RS_MEM_RT_C:
+            //TODO this one will print source twice in each position.
+            //TODO adjust the register function to print only a specific register?
+            //TODO pass matching iterator? which is null otherwise or end??
+            assemblyRegister(&assemblyStream, &asmStruct.sourceRegisters);
+            assemblyStream << ", ";
+            //TODO add constant here
+            assemblyStream << "(";
+            assemblyRegister(&assemblyStream, &asmStruct.sourceRegisters);
+            assemblyStream << ")";
+            break;
         case I_RS_C:
-
+            assemblyRegister(&assemblyStream, &asmStruct.sourceRegisters);
+            assemblyStream << ", ";
+            //TODO add constant here.
+            break;
         case J_C:
+            //TODO add constant here.
+            break;
         case J_RS:
+            assemblyRegister(&assemblyStream, &asmStruct.sourceRegisters);
+            break;
         case J_RD_RS:
-
+            assemblyRegister(&assemblyStream, &asmStruct.destinationRegisters);
+            assemblyStream << ", ";
+            assemblyRegister(&assemblyStream, &asmStruct.sourceRegisters);
+            break;
         default: {
+            //TODO throw error here?
             break;
         }
     }
-    /*  Add the destination registers, if we have them. */
-
-    /*  Add the source registers, if they are present. */
-
-    /*  Add constants if they they are available. */
-
     /*  Print out the block from the stream. */
     std::cout << assemblyStream.str() << std::endl;
 }
@@ -235,7 +279,7 @@ std::map<mipsRegisterName, std::string> initAssemblyMap() {
     std::map<mipsRegisterName, std::string> assemblyMap;
     /* inserting all register names with their matching enum */
     assemblyMap.insert(std::pair<mipsRegisterName, std::string>(zero,"$zero"));
-    assemblyMap.insert(std::pair<mipsRegisterName, std::string>(at, "$at"));
+    assemblyMap.insert(std::pair<mipsRegisterName, std::string>(at, "$1"));
     assemblyMap.insert(std::pair<mipsRegisterName, std::string>(v0, "$2"));
     assemblyMap.insert(std::pair<mipsRegisterName, std::string>(v1, "$3"));
 

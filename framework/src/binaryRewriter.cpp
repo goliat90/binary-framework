@@ -123,9 +123,11 @@ void BinaryRewriter::transformBinary() {
             vPair.first != vPair.second; ++vPair.first) {
             /* get the basic block from the property map */
             SgAsmBlock* currentBB = get(boost::vertex_name, *functionGraph, *vPair.first);
-            /* Print the block */
+            /* Print the block, both debug and assembly. */
+            printBasicBlockInstructions(currentBB);
             std::cout << std::endl;
             printBasicBlockAsAssembly(currentBB);
+            std::cout << std::endl;
         }
     }
 
