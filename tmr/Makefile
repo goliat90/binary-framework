@@ -39,25 +39,25 @@ userRewriter.out: buildLibrary userFramework.lo
 simpletestall: simpletestnaive simpletestopt
 
 simpletestnaive:
-	./userRewriter.out ../mipsCode/simpleAdd.out simpleAdditionTMR 0
+	./userRewriter.out ../mipsCode/mipsSimpleAdd.out simpleAdditionTMR 0
 simpletestopt:
-	./userRewriter.out ../mipsCode/simpleAdd.out simpleAdditionTMR 1 
+	./userRewriter.out ../mipsCode/mipsSimpleAdd.out simpleAdditionTMR 1 
 simpledebugnaive:
-	libtool --mode=execute gdb --args ./userRewriter.out ../mipsCode/simpleAdd.out simpeAdditionTMR 0 
+	libtool --mode=execute gdb --args ./userRewriter.out ../mipsCode/mipsSimpleAdd.out simpeAdditionTMR 0 
 simpledebugopt:
-	libtool --mode=execute gdb --args ./userRewriter.out ../mipsCode/simpleAdd.out simpeAdditionTMR 1
+	libtool --mode=execute gdb --args ./userRewriter.out ../mipsCode/mipsSimpleAdd.out simpeAdditionTMR 1
 
 
 advancedtestall: advancedtestnaive advancedtestopt
 
 advancedtestnaive:
-	./userRewriter.out ../mipsCode/advancedAdd.out advancedAdditionTMR 0
+	./userRewriter.out ../mipsCode/mipsAdvancedAdd.out advancedAdditionTMR 0
 advancedtestopt:
-	./userRewriter.out ../mipsCode/advancedAdd.out advancedAdditionTMR 1 
+	./userRewriter.out ../mipsCode/mipsAdvancedAdd.out advancedAdditionTMR 1 
 advanceddebugopt:
-	libtool --mode=execute gdb --args ./userRewriter.out ../mipsCode/advancedAdd.out advancedAdditionTMR 1
+	libtool --mode=execute gdb --args ./userRewriter.out ../mipsCode/mipsAdvancedAdd.out advancedAdditionTMR 1
 advanceddebugnaive:
-	libtool --mode=execute gdb --args ./userRewriter.out ../mipsCode/advancedAdd.out advancedAdditionTMR 0
+	libtool --mode=execute gdb --args ./userRewriter.out ../mipsCode/mipsAdvancedAdd.out advancedAdditionTMR 0
 
 # Rule to invoke all test
 testall: simpletestall advancedtestall
