@@ -7,6 +7,8 @@ void CFGhandler::initialize(SgProject* root) {
     /* Activation pair is set to null. */
     activationPair.first = NULL;
     activationPair.second = NULL;
+    /*  Debugging bool set to false as default. */
+    debugging = false;
     /* With the SgProject build the programcfg and save it */
     std::vector<SgAsmInterpretation*> interpretation = SageInterface::querySubTree<SgAsmInterpretation>(root);
     /* build cfg. */
@@ -66,6 +68,68 @@ bool CFGhandler::isForbiddenInstruction(SgAsmMipsInstruction* inst) {
         /* the instruction is allowed to be transformed */
         return false;
     }
+}
+
+/* Determines the entry and exit block of the functions cfg. */
+void CFGhandler::findEntryAndExitBlocks() {
+    /*  To find the entry block i can get it returned by getting
+        the enclosing function from a basicblock. */
+    std::pair<CFGVIter, CFGVIter> verticePair = vertices(*functionCFG);
+    SgAsmBlock* block = get(boost::vertex_name, *functionCFG, *verticePair.first);
+    SgAsmFunction* function = block->get_enclosing_function();
+    entryBlock = function->get_entry_block();
+    /*  Debug print. */
+    if (debugging) {
+        std::cout << "Block " << std::hex << entryBlock->get_address()
+            << " is entry block." << std::endl;
+    }
+
+    //TODO if i get all vertices here and just get the block
+    //TODO from that i can get the enclosing function and the entry block.
+
+    //TODO I could use that vertice set and iterate over it
+    //TODO and identify the exit block(s). the exit block(s)
+    //TODO can be identified by having only inbound edges but no outbound.
+
+    /*  Check how many vertices there actually are in the cfg
+        to determine the way we determine exit blocks.
+        If there are only two, which means one basic block and
+        the delay block it is handled specially. */
+    if (2 >= num_vertices(*functionCFG)) {
+        /*  There is only one basic block and a delay slot block
+            or even less. Save the entry block as an exit block. */
+        exitBlocks.insert(entryBlock);
+        /*  Debug print. */
+        if (debugging) {
+            std::cout << "Block " << std::hex << entryBlock->get_address()
+                << " is also exit block." << std::endl;
+        }
+    } else {
+        /*  There are more than two vertices. This means there can
+            possibly be one or more blocks that can be considered exit blocks. */
+        for(verticePair; verticePair.first != verticePair.second;
+            ++verticePair.first) {
+            /*  Check the vertices if they classify as an exit block.
+                Have no out edges and have at least one in-edges,
+                the at least one is to avoid delay slot vertices. */
+            int inDeg = in_degree(*verticePair.first, *functionCFG);
+            int outDeg = out_degree(*verticePair.first, *functionCFG);
+            if (0 < inDeg && 0 == outDeg) {
+                /*  The vertice fits the exit block requirements, save it. */
+                SgAsmBlock* exitBlock = get(boost::vertex_name, *functionCFG, *verticePair.first);
+                /*  Debug print. */
+                if (debugging) {
+                    std::cout << "Block " << std::hex << exitBlock->get_address()
+                        << " considered an exit block." << std::endl;
+                }
+                /*  Save the block pointer. */
+                exitBlocks.insert(exitBlock);
+            }
+        }
+    }
+
+    //TODO I need to take consideration if i only have one basicblock and
+    //TODO delay block i should skip this and set the entry block as exit block as well.
 }
 
 /* Searches the function cfg for activation records.
@@ -158,7 +222,9 @@ void CFGhandler::findActivationRecords() {
                 activationPair.first = mipsInst;
                 /* Add the instruction to the activation instruction vector */
                 activationInstruction.push_back(mipsInst);
-                std::cout << "forbidden instruction found: " << std::hex << currentInst.address << std::endl;
+                if (debugging) {
+                    std::cout << "forbidden instruction found: " << std::hex << currentInst.address << std::endl;
+                }
             }
         }
     }
@@ -180,7 +246,9 @@ void CFGhandler::findActivationRecords() {
                 activationPair.second = mipsInst;
                 /* Add the instruction to the activation instruction vector */
                 activationInstruction.push_back(mipsInst);
-                std::cout << "forbidden instruction found: " << std::hex << currentInst.address << std::endl;
+                if (debugging) {
+                    std::cout << "forbidden instruction found: " << std::hex << currentInst.address << std::endl;
+                }
             }
         }
     }
@@ -194,7 +262,10 @@ void CFGhandler::findAddressRange() {
     rose_addr_t lowestAddr = std::numeric_limits<rose_addr_t>::max();
     rose_addr_t highestAddr = std::numeric_limits<rose_addr_t>::min();
 
-    std::cout << "Highest: " << std::hex << highestAddr  << " Lowest: " << lowestAddr << std::endl;
+    /* Debug print. */
+    if (debugging) {
+        std::cout << "Highest: " << std::hex << highestAddr  << " Lowest: " << lowestAddr << std::endl;
+    }
 
     /* Go through the basic blocks and look at the first
         and last address compare to previous values and save */
@@ -297,6 +368,8 @@ void CFGhandler::createFunctionCFG(std::string newFunctionName) {
         }
     }
 
+    /*  Find the entry and exit block(s). */
+    findEntryAndExitBlocks();
     /* Find activation records */
     findActivationRecords();
     /* Find the address range */

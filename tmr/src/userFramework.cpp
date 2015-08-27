@@ -25,11 +25,11 @@ int main(int argc, char** argv) {
     int mode = strtol(&argv[3][0], NULL, 0);
 
     userFramework* ut = new userFramework(argc-2, argv);
+    /* enable printing */
+    ut->setDebug(true);
 
     /* set which function is to be transformed */
     ut->functionSelect(functionName);
-    /* enable printing */
-    ut->setDebug(true);
     /* use optimized transform, if selected. */
     if (1 == mode) {
         ut->useOptimizedTransform();

@@ -32,6 +32,10 @@ void BinaryRewriter::initialize(int argc, char **binaryFile) {
 /* Used to select the function to be transformed and builds the functioncfg */
 void BinaryRewriter::functionSelect(std::string fName) {
     /* call on cfghandler to build the functioncfg */
+    /* Check if debuging should be active. */
+    if (debugging) {
+        cfgContainer->setDebugging(debugging);
+    }
     cfgContainer->createFunctionCFG(fName);
 }
 
