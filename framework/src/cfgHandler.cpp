@@ -71,6 +71,8 @@ bool CFGhandler::isForbiddenInstruction(SgAsmMipsInstruction* inst) {
 /* Searches the function cfg for activation records.
     These are saved for later use and also added to the forbidden
     instructions map. */
+//TODO instead of determining the entry and exit block in this
+//TODO function maybe split into another function
 void CFGhandler::findActivationRecords() {
     /* Vector for edges */ 
     std::set<CFG::vertex_descriptor> targetVertices;
