@@ -12,8 +12,15 @@ void printRegisters(std::stringstream* regStream, std::vector<registerStruct>* r
 void printConstant(std::stringstream* conStream, instructionStruct* instStruct);
 /*  Adds registers to the assembly print stream. */
 void assemblyRegister(std::stringstream*, std::vector<registerStruct>*);
+/*  Function that adds constants to the assembly string. */
+void assemblyConstant(std::stringstream*, instructionStruct*);
+/*  Handles building assembly stores. */
+void assemblyStores(std::stringstream*, instructionStruct*);
 /*  Initfunction for the register enum to assembly string map. */
 std::map<mipsRegisterName, std::string> initAssemblyMap();
+
+/* Map that is mapping enum to corresponding string */
+static std::map<mipsRegisterName, std::string> assemblyMap = initAssemblyMap();
 
 /* print the instructions contained in a basicblock */
 void printBasicBlockInstructions(SgAsmBlock* block) {
@@ -142,7 +149,7 @@ void printBasicBlockAsAssembly(SgAsmBlock* block) {
     //get the list of instructions in the block.
     SgAsmStatementPtrList* stmtlistPtr = &block->get_statementList();
     /* print the block number */
-    std::cout << "********** "
+    std::cout << "#********** "
               << "Block: " << std::hex << block->get_id()
               << " **********" << std::endl
               << std::dec; //dont print hex numbers in after this
@@ -156,7 +163,7 @@ void printBasicBlockAsAssembly(SgAsmBlock* block) {
         printAssemblyInstruction(mipsInst);
     }
     /* print some delimiter as well */
-    std::cout << "********** "
+    std::cout << "#********** "
               << "End of Block: " << std::hex << block->get_id()
               << " **********" << std::endl
               << std::dec; //dont print hex numbers in hex after this
@@ -169,7 +176,7 @@ void printAssemblyInstruction(SgAsmMipsInstruction* mipsInst) {
     /*  Decode the instruction. */
     instructionStruct asmStruct = decodeInstruction(mipsInst);
     /*  Add the name to the of the instruction to the stream. */
-    assemblyStream << asmStruct.mnemonic << " ";
+    assemblyStream << asmStruct.mnemonic << "\t";
     /*  Check format of the instruction and depending on the format build
         the correct assembly format. */
     //TODO Create instructions that handle a specific part.
@@ -183,6 +190,8 @@ void printAssemblyInstruction(SgAsmMipsInstruction* mipsInst) {
             assemblyRegister(&assemblyStream, &asmStruct.destinationRegisters);
             assemblyStream << ", ";
             assemblyRegister(&assemblyStream, &asmStruct.sourceRegisters);
+            assemblyStream << ", ";
+            assemblyConstant(&assemblyStream, &asmStruct);
             //TODO need to add constant
             break;
         case R_RD:
@@ -201,12 +210,16 @@ void printAssemblyInstruction(SgAsmMipsInstruction* mipsInst) {
             assemblyRegister(&assemblyStream, &asmStruct.destinationRegisters);
             assemblyStream << ", ";
             assemblyRegister(&assemblyStream, &asmStruct.sourceRegisters);
+            assemblyStream << ", ";
             //TODO add constant here, 
+            assemblyConstant(&assemblyStream, &asmStruct);
             break;
         case I_RD_MEM_RS_C:
             assemblyRegister(&assemblyStream, &asmStruct.destinationRegisters);
             assemblyStream << ", ";
             //TODO constant here
+            assemblyConstant(&assemblyStream, &asmStruct);
+
             assemblyStream << "(";
             assemblyRegister(&assemblyStream, &asmStruct.sourceRegisters);
             assemblyStream << ")";
@@ -215,30 +228,30 @@ void printAssemblyInstruction(SgAsmMipsInstruction* mipsInst) {
             assemblyRegister(&assemblyStream, &asmStruct.destinationRegisters);
             assemblyStream << ", ";
             //TODO add constant here.
+            assemblyConstant(&assemblyStream, &asmStruct);
             break;
         case I_RS_RT_C:
             assemblyRegister(&assemblyStream, &asmStruct.sourceRegisters);
             assemblyStream << ", ";
             //TODO add constant here
+            assemblyConstant(&assemblyStream, &asmStruct);
             break;
         case I_RS_MEM_RT_C:
             //TODO this one will print source twice in each position.
             //TODO adjust the register function to print only a specific register?
             //TODO pass matching iterator? which is null otherwise or end??
-            assemblyRegister(&assemblyStream, &asmStruct.sourceRegisters);
-            assemblyStream << ", ";
-            //TODO add constant here
-            assemblyStream << "(";
-            assemblyRegister(&assemblyStream, &asmStruct.sourceRegisters);
-            assemblyStream << ")";
+            //TODO create a specific function to handel printing store instructions
+            assemblyStores(&assemblyStream, &asmStruct);
             break;
         case I_RS_C:
             assemblyRegister(&assemblyStream, &asmStruct.sourceRegisters);
             assemblyStream << ", ";
             //TODO add constant here.
+            assemblyConstant(&assemblyStream, &asmStruct);
             break;
         case J_C:
             //TODO add constant here.
+            assemblyConstant(&assemblyStream, &asmStruct);
             break;
         case J_RS:
             assemblyRegister(&assemblyStream, &asmStruct.sourceRegisters);
@@ -259,8 +272,6 @@ void printAssemblyInstruction(SgAsmMipsInstruction* mipsInst) {
 
 /*  Add an register to the stream. */
 void assemblyRegister(std::stringstream* regStream, std::vector<registerStruct>* registers) {
-    /* Map that is mapping enum to corresponding string */
-    static std::map<mipsRegisterName, std::string> assemblyMap = initAssemblyMap();
     /* add the registers to the register stream, iterate over the vector and add them. */
     for(std::vector<registerStruct>::iterator iter = registers->begin();
         iter != registers->end(); iter++) {
@@ -273,6 +284,28 @@ void assemblyRegister(std::stringstream* regStream, std::vector<registerStruct>*
     }
 }
 
+/* Print instruction constants */
+void assemblyConstant(std::stringstream* conStream, instructionStruct* instStruct) {
+    //TODO If negative numbers are to large to handle then the solution could
+    //TODO be to make a string of the constant and then check its size, 
+    //TODO if it is larger than the max size then erase the higher chars.
+    *conStream << std::hex << std::showbase << instStruct->instructionConstant;
+}
+
+/*  Handles creating all assembly store instructions. */
+void assemblyStores(std::stringstream* assemblyStream, instructionStruct* asmStruct) {
+    mipsRegisterName sourceReg = asmStruct->sourceRegisters.front().regName;
+    mipsRegisterName baReg = asmStruct->sourceRegisters.back().regName;
+    /*  Add the source register being stored. */
+    *assemblyStream << assemblyMap.find(sourceReg)->second;
+    *assemblyStream << ", ";
+    /*  Add the offset constant*/
+    assemblyConstant(assemblyStream, asmStruct);
+    /*  Enclose the register holding the base address. */
+    *assemblyStream << "(";
+    *assemblyStream << assemblyMap.find(baReg)->second;
+    *assemblyStream << ")";
+}
 
 /*  Init function for the register enum to assembly map. */
 std::map<mipsRegisterName, std::string> initAssemblyMap() {
