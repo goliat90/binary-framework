@@ -55,6 +55,7 @@ void userFramework::arithmeticTMR() {
         case mips_addu:
         case mips_sub:
         case mips_subu:{
+            //TODO is this not incorrect? subs should not become adds
             duplicateKind = mips_addu;
             tmrMnemonic = "addu";
             break;
@@ -335,18 +336,31 @@ void userFramework::transformDecision(SgAsmMipsInstruction* inst) {
     currentInst = decodeInstruction(inst);
     /* Depending on the kind of instruction do appropriate transformation
         consider more functions. */
+    //TODO add the lui instruction to tmr
+    //TODO im missing div, divu, mult, multu, they can maybe be their on instruction.
+    //TODO the acc tmr will probably be done by a median tmr applied seperatley to
+    //TODO high and lo registers, end result are moved back to acc.
     switch(currentInst.kind) {
+        //case mips_add:
+        //case mips_addu:
+        //case mips_sub:
+        //case mips_subu:
+        //case mips_mul:{
+        //case mips_addi:
+        //case mips_addiu:{
+        //    arithmeticTMR();
+        //    break;
+        //}
+        /*  Arithmetic */
         case mips_add:
         case mips_addu:
+        case mips_addi:
+        case mips_addiu:
         case mips_sub:
         case mips_subu:
         case mips_mul:
-        case mips_addi:
-        case mips_addiu:{
-        //TODO im missing div, divu, mult, multu, they can maybe be their on instruction.
-            arithmeticTMR();
-            break;
-        }
+        case mips_lui:
+
         /*  Condition instructions. */
         case mips_slt:
         case mips_sltu:
