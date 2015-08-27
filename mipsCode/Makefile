@@ -5,7 +5,7 @@
 #The all rule which compiles all the binaries.
 all: mipsSimpleAdd.out mipsAdvancedAdd.out mipsDivisionTest.out \
 		mipsModulusTest.out mipsDivisionMod.out mipsLogical.out \
-		mipsShifter.out mipsNumCounter.out mipsOneBB.out
+		mipsShifter.out mipsNumCounter.out mipsOneBB.out mipsIfElse.out
 
 #Simple add compile
 mipsSimpleAdd.out: mipsSimpleAdd.c
@@ -38,6 +38,10 @@ mipsShifter.out: mipsShifter.c
 #One basic block code.
 mipsOneBB.out: mipsOneBB.c
 	mips-linux-gcc -static -march=r3000 -O1 mipsOneBB.c -o mipsOneBB.out
+
+#If else code that test cfg layout.
+mipsIfElse.out: mipsIfElse.c
+	mips-linux-gcc -static -march=r3000 -O1 mipsIfElse.c -o mipsIfElse.out
 
 #ascii counter
 mipsNumCounter.out: mipsNumCounter.c
