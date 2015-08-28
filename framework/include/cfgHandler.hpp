@@ -45,9 +45,9 @@ class CFGhandler {
             Returns a sub cfg that contains only the specified function.
             The cfg is build by adding the nodes(blocks) that belong to
             the function. */
+        void createFunctionCFG(std::string);
         /*  Set debugging flag. */
         void setDebugging(bool mode) {debugging = mode;};
-        void createFunctionCFG(std::string);
         /* Allowed to transform this instruction */
         bool isForbiddenInstruction(SgAsmMipsInstruction*); 
         /* Check if an instruction has a new address */
@@ -60,9 +60,15 @@ class CFGhandler {
         CFG* getProgramCFG();
         /* Get the activation record pair*/
         std::pair<SgAsmMipsInstruction*, SgAsmMipsInstruction*> getActivationRecord();
+        /*  Get activation instruction. */
+        std::set<SgAsmMipsInstruction*>* getActivationInstructions() {return &activationInstruction;};
+        /*  Get deactivation instructions. */
+        std::set<SgAsmMipsInstruction*>* getDeactivationInstructions() {return &deactivationInstruction;};
         /*  Functions to get pointers to the entry and exit block. */
         SgAsmBlock* getEntryBlock() {return entryBlock;};
+        //TODO remove the single exitblock function.
         SgAsmBlock* getExitBlock()  {return exitBlock;};
+        std::set<SgAsmBlock*>* getExitBlocks() {return &exitBlocks; };
         
     private:
 /**********************************************************************
@@ -83,31 +89,40 @@ class CFGhandler {
         std::map<rose_addr_t, rose_addr_t> instructionMap;
         /* Track forbidden instructions to transform, only for this selected
             function that is being transformed, search vector with std::find */
-        std::vector<SgAsmInstruction*> forbiddenInstruction;
+        std::set<SgAsmInstruction*> forbiddenInstruction;
         /* Activation instructions, are forbidden by users to transform
             but might have to be modified by the framework, consider other storage
             than vector. */
         //TODO consider changing this to a set instead. so i cant have duplicates.
         //TODO reason is if i have a single block then i will scan it twice from
         //TODO both directions. 
-        std::vector<SgAsmInstruction*> activationInstruction;
+        //TODO i need to change this structure since if i have multiple exit blocks
+        //TODO i will potentially have more than two activation record instructions.
+        //TODO this i will need to separate int two different containers,
+        //TODO one for activation and one for deactivation. 
+        //TODO if i do that then i can remove the activation pair.
+        std::set<SgAsmMipsInstruction*> activationInstruction;
+        std::set<SgAsmMipsInstruction*> deactivationInstruction;
         /* first is the activationrecord, second is the deactivation record */
+        //TODO remove this later
         std::pair<SgAsmMipsInstruction*, SgAsmMipsInstruction*> activationPair;
         /*  Pointers to entry and exit block. */
         SgAsmBlock* entryBlock;
         //TODO i can possibly have several exit blocks.
         std::set<SgAsmBlock*> exitBlocks;
+        //TODO remove this exitBlock ptr.
         SgAsmBlock* exitBlock;
 /**********************************************************************
 * Private Functions.
 **********************************************************************/
         /*  Determine the entry block and exit block of the function. */
-        //TODO consider if this function should save entry and exit like blocks.
-        //TODO i can actually have several exit blocks, look at ifelse test code.
-        //TODO i need to save all to be able to later fix the stack.
         void findEntryAndExitBlocks();
         /* Finds activation records in the functioncfg */
-        void findActivationRecords();
+        //TODO remake this function to use information gathered by findEntryAndExitBlocks,
+        //TODO just let it iterate blocks found by the mentioned instruction.
+        void findActivationRecordsNew();
+        //TODO remove old function code and rename.
+        //void findActivationRecords();
         /* Find lowest address and highest address in the function cfg */
         void findAddressRange();
 };
