@@ -7,9 +7,11 @@
 #include "liveVariableAnalysis.hpp"
 
 /*  Constructor */
-liveVariableAnalysisHandler::liveVariableAnalysisHandler(CFG* subroutine) {
+liveVariableAnalysisHandler::liveVariableAnalysisHandler(CFGhandler* passedCFG) {
+    /*  Save reference to cfghandler. */
+    cfgObject = passedCFG;
     /* Save the cfg */
-    functionCFG = subroutine;
+    functionCFG = cfgObject->getFunctionCFG();
     /* Debug printout as default */
     debuging = false;
 }
@@ -467,7 +469,7 @@ void liveVariableAnalysisHandler::computeInOutOnBlocks() {
 /*  Function to compute OUT for the live-range analysis on blocks */
 boost::dynamic_bitset<> liveVariableAnalysisHandler::computeOutOnBlock(SgAsmBlock* rootBlock) {
     /*  Variables */
-    CFG::vertex_descriptor rootVertex;
+    CFG::vertex_descriptor outRootVertex;
     /*  Temporary bitset to calculate the OUT into */
     boost::dynamic_bitset<> outBits(numberOfVariables);
 
@@ -480,12 +482,12 @@ boost::dynamic_bitset<> liveVariableAnalysisHandler::computeOutOnBlock(SgAsmBloc
         /*  Compare the pointers */
         if (currentBlock == rootBlock) {
             /* Save the vertex */
-            rootVertex = *iterPair.first;
+            outRootVertex = *iterPair.first;
             break;
         }
     }
     /*  Iterate over all the successors and perform the OR operations. */
-    for(std::pair<CFGOEIter, CFGOEIter> edgePair = out_edges(rootVertex, *functionCFG);
+    for(std::pair<CFGOEIter, CFGOEIter> edgePair = out_edges(outRootVertex, *functionCFG);
         edgePair.first != edgePair.second; ++edgePair.first) {
         /*  Get the vertex descriptor for the target vertice, i.e a successor vertice */
         CFG::vertex_descriptor successorVertex = target(*edgePair.first, *functionCFG);
@@ -523,54 +525,32 @@ void liveVariableAnalysisHandler::initializeInOutOnBlocks() {
 //TODO information from the cfghandler and add entry and exit block
 //TODO by those means.
 void liveVariableAnalysisHandler::addEntryExit() {
-    /* find the first and last block in the cfg. */
-    std::set<CFG::vertex_descriptor> targetVertices;
-    std::set<CFG::vertex_descriptor> sourceVertices;
-
-    /* retrieve each edges target and source and save */
-    for(std::pair<CFGEIter, CFGEIter> edgeIter = edges(*functionCFG);
-        edgeIter.first != edgeIter.second; ++edgeIter.first) {
-        targetVertices.insert(target(*edgeIter.first, *functionCFG));
-        sourceVertices.insert(source(*edgeIter.first, *functionCFG));
-    }
-
-    /* At this point all vertices that are either a target or a source
-        for a edge is saved. The first and last block will only be
-        present as a target or source. */
-    for(std::set<CFG::vertex_descriptor>::iterator iter = sourceVertices.begin();
-        iter != sourceVertices.end(); ++iter) {
-        /* Find the source vertex that is not among the target vertices.
-            That vertex is the entry vertex */
-        if (targetVertices.count(*iter) == 0) {
-            /*  The current vertex is the first block in the cfg,
-                add ENTRY vertex and connect it to this block. */
+    //TODO i have entry and exit blocks available from cfg.
+    //TODO With those i can connect ENTRY to the entry block.
+    //TODO i have to search the cfg for the vertex with matching Sgasmblock.
+    SgAsmBlock* cfgEntryBlock = cfgObject->getEntryBlock();
+    /*  Search through the cfg and find the entry block and connect it.
+        To the live range analysis ENTRY block. */
+    for(std::pair<CFGVIter, CFGVIter> vpIter = vertices(*functionCFG);
+        vpIter.first != vpIter.second; ++vpIter.first) {
+        /*  Get the block pointer. */
+        SgAsmBlock* block = get(boost::vertex_name, *functionCFG, *vpIter.first);
+        /*  Check if it matches the entry block pointer. */
+        if (cfgEntryBlock == block) {
+            /*  The vertice that hold the entry block is found. Connect
+                it to the ENTRY vertice. Also save it for later use in DFS. */
             ENTRY = add_vertex(*functionCFG);
             /*  Create an empty SgAsmBlock to be used as key, save it. */
             blockENTRY = new SgAsmBlock();
             /*  Add the block to the property map. */
             put(boost::vertex_name, *functionCFG, ENTRY, blockENTRY);
             /*  Add an edge between ENTRY and the first block */
-            add_edge(ENTRY, (*iter), *functionCFG);
+            add_edge(ENTRY, (*vpIter.first), *functionCFG);
             /*  Additionally, save the block pointer to the entry block
                 of the CFG. I need it later in DFS traversal */
-            rootVertex = (*iter);
-            cfgRootBlock = get(boost::vertex_name, *functionCFG, (*iter));
-        }
-    }
-    for(std::set<CFG::vertex_descriptor>::iterator iter = targetVertices.begin();
-        iter != targetVertices.end(); ++iter) {
-        /* Find the target vertex that is not among the source vertices.
-            That vertex is the exit vertex */
-        if (sourceVertices.count(*iter) == 0) {
-            /*  The current vertex is the last block in the cfg,
-                add EXIT vertex and connect it to this block. */
-            EXIT = add_vertex(*functionCFG);
-            /*  Create an empty SgAsmBlock to be used */
-            blockEXIT = new SgAsmBlock();
-            /*  Add the block to the property map. */
-            put(boost::vertex_name, *functionCFG, EXIT, blockEXIT);
-            /*  Add an edge between ENTRY and the first block */
-            add_edge(EXIT, (*iter), *functionCFG);
+            rootVertex = *vpIter.first;
+            /*  There is only one entry block so break the loop. */
+            break;
         }
     }
     /*  I need def and use on the ENTRY block, adding it here to the defuseblockmap. */
@@ -578,6 +558,95 @@ void liveVariableAnalysisHandler::addEntryExit() {
     boost::dynamic_bitset<> second(numberOfVariables);
     bitPair entryPair (first, second);
     defuseBlockMap.insert(std::pair<SgAsmBlock*, bitPair>(blockENTRY, entryPair));
+
+    //TODO EXIT can be connected to all possible exit blocks.
+    //TODO Doing it this way eliminates the need to search the cfg to find them.
+    //TODO i only need to find the vertices that match the sgasmblock pointer
+    std::set<SgAsmBlock*>* exitBlocks = cfgObject->getExitBlocks();
+    /*  Create the exit vertice before connecting the vertices. */
+    EXIT = add_vertex(*functionCFG);
+    /*  Create an empty SgAsmBlock to be used */
+    blockEXIT = new SgAsmBlock();
+    /*  Add the block to the property map. */
+    put(boost::vertex_name, *functionCFG, EXIT, blockEXIT);
+    /*  Find the exit blocks vertice and connect it to the live variable
+        EXIT vertice. */
+    for(std::set<SgAsmBlock*>::iterator exitIter = exitBlocks->begin();
+        exitIter != exitBlocks->end(); ++exitIter) {
+        /*  Iterate the cfg vertices until the right vertice is found. */
+        for(std::pair<CFGVIter, CFGVIter> iterPair = vertices(*functionCFG);
+            iterPair.first != iterPair.second; ++iterPair.first) {
+            /*  Get the vertice block pointer. */
+            SgAsmBlock* block = get(boost::vertex_name, *functionCFG, *iterPair.first);
+            /*  Check if the block pointers match. */
+            if ((*exitIter) == block) {
+                /*  The pointers match, add edge from the vertice to the
+                    live range analysis exit block. */
+                add_edge(EXIT, (*iterPair.first), *functionCFG);
+                /* Break the inner loop since no other pointer will match. */
+                break;
+            }
+        }
+    }
+
+    //TODO need to remember that the i need the root vertex of the entry block of the function
+    //TODO to be able to determine the DFS order. 
+
+//    /* find the first and last block in the cfg. */
+//    std::set<CFG::vertex_descriptor> targetVertices;
+//    std::set<CFG::vertex_descriptor> sourceVertices;
+//
+//    /* retrieve each edges target and source and save */
+//    for(std::pair<CFGEIter, CFGEIter> edgeIter = edges(*functionCFG);
+//        edgeIter.first != edgeIter.second; ++edgeIter.first) {
+//        targetVertices.insert(target(*edgeIter.first, *functionCFG));
+//        sourceVertices.insert(source(*edgeIter.first, *functionCFG));
+//    }
+//
+//    /* At this point all vertices that are either a target or a source
+//        for a edge is saved. The first and last block will only be
+//        present as a target or source. */
+//    for(std::set<CFG::vertex_descriptor>::iterator iter = sourceVertices.begin();
+//        iter != sourceVertices.end(); ++iter) {
+//        /* Find the source vertex that is not among the target vertices.
+//            That vertex is the entry vertex */
+//        if (targetVertices.count(*iter) == 0) {
+//            /*  The current vertex is the first block in the cfg,
+//                add ENTRY vertex and connect it to this block. */
+//            ENTRY = add_vertex(*functionCFG);
+//            /*  Create an empty SgAsmBlock to be used as key, save it. */
+//            blockENTRY = new SgAsmBlock();
+//            /*  Add the block to the property map. */
+//            put(boost::vertex_name, *functionCFG, ENTRY, blockENTRY);
+//            /*  Add an edge between ENTRY and the first block */
+//            add_edge(ENTRY, (*iter), *functionCFG);
+//            /*  Additionally, save the block pointer to the entry block
+//                of the CFG. I need it later in DFS traversal */
+//            rootVertex = (*iter);
+//            cfgRootBlock = get(boost::vertex_name, *functionCFG, (*iter));
+//        }
+//    }
+//    for(std::set<CFG::vertex_descriptor>::iterator iter = targetVertices.begin();
+//        iter != targetVertices.end(); ++iter) {
+//        /* Find the target vertex that is not among the source vertices.
+//            That vertex is the exit vertex */
+//        if (sourceVertices.count(*iter) == 0) {
+//            /*  The current vertex is the last block in the cfg,
+//                add EXIT vertex and connect it to this block. */
+//            EXIT = add_vertex(*functionCFG);
+//            /*  Create an empty SgAsmBlock to be used */
+//            blockEXIT = new SgAsmBlock();
+//            /*  Add the block to the property map. */
+//            put(boost::vertex_name, *functionCFG, EXIT, blockEXIT);
+//            /*  Add an edge between ENTRY and the first block */
+//            add_edge(EXIT, (*iter), *functionCFG);
+//        }
+//    }
+//    /*  I need def and use on the ENTRY block, adding it here to the defuseblockmap. */
+//    boost::dynamic_bitset<> first(numberOfVariables);
+//    boost::dynamic_bitset<> second(numberOfVariables);
+//    bitPair entryPair (first, second);
+//    defuseBlockMap.insert(std::pair<SgAsmBlock*, bitPair>(blockENTRY, entryPair));
 }
 
 

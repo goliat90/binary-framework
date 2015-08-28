@@ -42,7 +42,7 @@ class liveDFSVisitor : public boost::default_dfs_visitor {
 class liveVariableAnalysisHandler {
     public:
     /*  Constructor */
-    liveVariableAnalysisHandler(CFG*);
+    liveVariableAnalysisHandler(CFGhandler*);
     /*  Execute the live range analysis */
     void performLiveRangeAnalysis();
     /*  enable debuging    */
@@ -81,9 +81,12 @@ class liveVariableAnalysisHandler {
     /*  Variables   */
     /*  Switch debuging on and off. */
     bool debuging;
+    /*  cfg handler pointer. */
+    CFGhandler* cfgObject;
     /*  Pointer to function cfg */
     CFG* functionCFG;
     /*  Block pointer for the basic block that is the entry block */
+    //TODO root block is probably not used.
     SgAsmBlock* cfgRootBlock;
     CFGVertex rootVertex;
     /*  ENTRY and EXIT vertices and their blocks. */
