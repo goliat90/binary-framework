@@ -65,6 +65,10 @@ void naiveHandler::naiveBlockTransform(SgAsmBlock* block) {
     SgAsmStatementPtrList transformedInstructionVector;
     /*  List used to store a region of inserted instructions. */
     std::list<SgAsmStatement*> regionList;
+    /*  Boolean passed to regionallocation notifying if the
+        instruction just before the region writes to acc. In that
+        case the acc registers will not be saved. */
+    bool preserveAcc = true;
     /*  The blocks statement list is vector based. That is not suitable during
         transforming. Instead move it over to a list. */
     SgAsmStatementPtrList& instructionVector = block->get_statementList();
@@ -87,14 +91,36 @@ void naiveHandler::naiveBlockTransform(SgAsmBlock* block) {
                     the original instruction. */
                 if (regionList.empty() == false) {
                     /* There is a region to perform allocation on, since the list is not empty. */ 
-                    regionAllocation(&regionList); 
+                    regionAllocation(&regionList, preserveAcc); 
                     /* copy over the regionList to the transformed vector. */
                     for(std::list<SgAsmStatement*>::iterator listIter = regionList.begin();
                         listIter != regionList.end(); ++listIter) {
                         transformedInstructionVector.push_back(*listIter);
                     }
+                    /*  Set the preserveAcc to true; */
+                    preserveAcc = true;
                     /* clear the regionList. */
                     regionList.clear();
+                } else {
+                    /*  The region list is empty but i want to save the kind of the original
+                        instruction that is just before a region. This is to determine
+                        if the region should preserve the accumulator or not. */
+                    switch(decodedMips.kind) {
+                        case mips_div:
+                        case mips_divu:
+                        case mips_mult:
+                        case mips_multu: {
+                            /*  The instruction writes to acc so if it is ahead of an
+                                transformed region acc should not be preserved. */
+                            preserveAcc = false;
+                            break;
+                        }
+                        default: {
+                            /*  If we encounter a original instruction again that does
+                                not write to acc we save the acc again. */
+                            preserveAcc = true;
+                        }
+                    }
                 }
                 /*  save the original instruction. */
                 transformedInstructionVector.push_back(*instIter);
@@ -104,7 +130,7 @@ void naiveHandler::naiveBlockTransform(SgAsmBlock* block) {
     /* Check if the instruction block ended with inserted instructions */
     if (regionList.empty() == false) {
         /* There is a region to perform allocation on, since the list is not empty. */ 
-        regionAllocation(&regionList); 
+        regionAllocation(&regionList, preserveAcc); 
         /* Copy over the regionList */
         for(std::list<SgAsmStatement*>::iterator listIter = regionList.begin();
             listIter != regionList.end(); ++listIter) {
@@ -116,7 +142,7 @@ void naiveHandler::naiveBlockTransform(SgAsmBlock* block) {
 }
 
 /*  Transforms a region of inserted instructions so they have real registers */
-void naiveHandler::regionAllocation(std::list<SgAsmStatement*>* regionList) {//, SgAsmStatementPtrList* instVector) {
+void naiveHandler::regionAllocation(std::list<SgAsmStatement*>* regionList, bool preserveAcc) {
     /*  We know the maximum number of registers that will be used
         by using the maximum symbolics */
     std::map<unsigned, mipsRegisterName> symbolicToHard;
@@ -163,8 +189,9 @@ void naiveHandler::regionAllocation(std::list<SgAsmStatement*>* regionList) {//,
     /* reset the offset counter for the naive stack */
     offset = 0;
     
-    /* if the accumulator register is used then add save and load instructions */
-    if (usesAcc) {
+    /* if the accumulator register is used then add save and load instructions.
+        If the preserveAcc is false then we do not preserve the acc. */
+    if (usesAcc && preserveAcc) {
         /* Save the accumulator register */
         mipsRegisterName moveReg = symbolicToHard.begin()->second;
         saveAccumulator(regionList, moveReg);
@@ -583,7 +610,8 @@ void naiveHandler::modifyStack() {
 //    }
 }
 
-/* Find the maximum amount of used symbolic registers used at the same time */
+/* Find the maximum amount of used symbolic registers used at the same time.
+    Also check if an original instruction is using the acc register. */
 void naiveHandler::determineStackModification() {
     /* counter for symbolic registers */
     int maxSymbolics = 0;
@@ -664,10 +692,6 @@ void naiveHandler::specialInstructionUse(MipsInstructionKind kind, int* currentM
     /* Switch case for instructions */
     switch(kind) {
         /* These instructions uses the accumulator register, Hi and low */
-        case mips_madd:
-        case mips_maddu:
-        case mips_msub:
-        case mips_msubu:
         case mips_mult:
         case mips_multu:
         case mips_div:

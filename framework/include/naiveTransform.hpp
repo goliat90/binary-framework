@@ -55,7 +55,7 @@ class naiveHandler{
         void naiveBlockTransform(SgAsmBlock*);
         
         /* Transform region. A region of inserted instructions is transformed. */
-        void regionAllocation(std::list<SgAsmStatement*>*); //, SgAsmStatementPtrList*);
+        void regionAllocation(std::list<SgAsmStatement*>*, bool);
         /*  Help function that will return hard registers for exchange.
             It will also create a offset for the load and store instructions */
         mipsRegisterName getHardRegister();
