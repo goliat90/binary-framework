@@ -317,7 +317,7 @@ void naiveHandler::initHardRegisters() {
     usedHardRegs = 0;
     /*  Clear the set */
     hardRegisters.clear();
-    /*  Add registers to the set */
+    /*  Add temporary registers to the set */
     hardRegisters.insert(t0);
     hardRegisters.insert(t1);
     hardRegisters.insert(t2);
@@ -328,6 +328,15 @@ void naiveHandler::initHardRegisters() {
     hardRegisters.insert(t7);
     hardRegisters.insert(t8);
     hardRegisters.insert(t9);
+    /*  Function variable registers. */
+    hardRegisters.insert(s0);
+    hardRegisters.insert(s1);
+    hardRegisters.insert(s2);
+    hardRegisters.insert(s3);
+    hardRegisters.insert(s4);
+    hardRegisters.insert(s5);
+    hardRegisters.insert(s6);
+    hardRegisters.insert(s7);
 }
 
 /*  Help function that will return hard registers for exchange.
