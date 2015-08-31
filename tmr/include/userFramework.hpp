@@ -20,10 +20,10 @@ class userFramework : public BinaryRewriter {
         //Hide default constructor again.
         userFramework();
         /*  Function that applies transformation    */
-        /*  TMR for addition, subtraction. */
-        void arithmeticTMR();
-        /*  TMR for condition testing. */
-        void conditionAndLogicalTMR();
+        /*  Median TMR function for most common instructions. */
+        void medianTMR();
+        //TODO add median tmr for acc instructions. Returns result into hi and lo.
+        void accumulatorMedianTMR();
 
         /*  Variables. */
         instructionStruct currentInst;
