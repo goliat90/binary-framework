@@ -4,9 +4,6 @@
 
 /* setup for this class */
 void CFGhandler::initialize(SgProject* root) {
-    /* Activation pair is set to null. */
-    activationPair.first = NULL;
-    activationPair.second = NULL;
     /*  Debugging bool set to false as default. */
     debugging = false;
     /* With the SgProject build the programcfg and save it */
@@ -47,12 +44,6 @@ bool CFGhandler::hasNewAddress(rose_addr_t instructionAddress) {
 }
 
 
-/* return the activation record pair */
-std::pair<SgAsmMipsInstruction*, SgAsmMipsInstruction*> CFGhandler::getActivationRecord() {
-    return activationPair;
-}
-
-
 /* Is the instruction allowed to be transformed? */
 bool CFGhandler::isForbiddenInstruction(SgAsmMipsInstruction* inst) {
     /*  See if the instruction is present in the set. */
@@ -61,20 +52,6 @@ bool CFGhandler::isForbiddenInstruction(SgAsmMipsInstruction* inst) {
     } else {
         return false;
     }
-
-//    /* Search through the vector for the instruction, return true if found. */
-//    std::vector<SgAsmInstruction*>::iterator it;
-//    /* use std::find to search vector, it returns a iterator to
-//        found value or end. */
-//    it = std::find(forbiddenInstruction.begin(), forbiddenInstruction.end(), inst);
-//    /* check if the it points to end or not */
-//    if (it != forbiddenInstruction.end()) {
-//        /* is a forbidden instruction */
-//        return true;
-//    } else {
-//        /* the instruction is allowed to be transformed */
-//        return false;
-//    }
 }
 
 /* Determines the entry and exit block of the functions cfg. */
@@ -139,7 +116,7 @@ void CFGhandler::findEntryAndExitBlocks() {
 
 /*  Identifies the activation record instruction. It achieves it
     by traversing the entry block and the exit blocks. */
-void CFGhandler::findActivationRecordsNew() {
+void CFGhandler::findActivationRecords() {
     /*  First iterate through the statementlist of the
         exit block. */
     SgAsmStatementPtrList& entryList = entryBlock->get_statementList();
@@ -235,127 +212,6 @@ void CFGhandler::findActivationRecordsNew() {
     }
 }
 
-/* Searches the function cfg for activation records.
-    These are saved for later use and also added to the forbidden
-    instructions map. */
-//TODO instead of determining the entry and exit block in this
-//TODO function maybe split into another function
-//void CFGhandler::findActivationRecords() {
-//    /* Vector for edges */ 
-//    std::set<CFG::vertex_descriptor> targetVertices;
-//    std::set<CFG::vertex_descriptor> sourceVertices;
-//    /* Block statement lists */
-//    SgAsmStatementPtrList* firstStatementList = NULL;
-//    SgAsmStatementPtrList* lastStatementList = NULL;
-//    
-//    for(std::pair<CFGEIter, CFGEIter> edgeIter = edges(*functionCFG);
-//        edgeIter.first != edgeIter.second; ++edgeIter.first) {
-//        /* retrieve each edges target and source and save */
-//        targetVertices.insert(target(*edgeIter.first, *functionCFG));
-//        sourceVertices.insert(source(*edgeIter.first, *functionCFG));
-//    }
-//
-//    /* At this point all vertices that are either a target or a source
-//        for a edge is saved. The first and last block will only be
-//        present as a target or source. */
-//    for(std::set<CFG::vertex_descriptor>::iterator iter = sourceVertices.begin();
-//        iter != sourceVertices.end(); ++iter) {
-//        /* Find the source vertex that is not among the target vertices.
-//            That vertex is the entry vertex */
-//        if (targetVertices.count(*iter) == 0) {
-//            /* The current vertex is the first block in the cfg,
-//                save the vertex block as firstBlock */
-//            entryBlock = get(boost::vertex_name, *functionCFG, (*iter));
-//            firstStatementList = &entryBlock->get_statementList();
-//        }
-//    }
-//    for(std::set<CFG::vertex_descriptor>::iterator iter = targetVertices.begin();
-//        iter != targetVertices.end(); ++iter) {
-//        /* Find the target vertex that is not among the source vertices.
-//            That vertex is the exit vertex */
-//        if (sourceVertices.count(*iter) == 0) {
-//            /* The current vertex is the last block in the cfg,
-//                save the vertex block as lastBlock */
-//            exitBlock = get(boost::vertex_name, *functionCFG, (*iter));
-//            lastStatementList = &exitBlock->get_statementList();
-//        }
-//    }
-//    /*  Check here if the statement pointers are still NULL. If so then
-//        the cfg has no edges and is basically a single block of instructions
-//        and a branch delay block with one instruction. */
-//    if (firstStatementList == NULL && lastStatementList == NULL) {
-//        std::cout << "No entry or exitblock found. Single block and delay block." << std::endl;
-//        /*  Go through the CFG and find the vertice with a block that has more instructions than 1. */
-//        for(std::pair<CFGVIter, CFGVIter> iter = vertices(*functionCFG);
-//            iter.first != iter.second; ++iter.first) {
-//            /*  Get the basic block and check the size of it. */
-//            entryBlock = get(boost::vertex_name, *functionCFG, (*iter.first));
-//            /* Get statement list reference. */
-//            SgAsmStatementPtrList& list = entryBlock->get_statementList();
-//            /*  Check the size of it. if it is larger than 1 then it is
-//                the function block. assign it as first and last statementlist. */
-//            if (1 < list.size()) {
-//                /*  Save the list as the first and last statementlist and break. */
-//                firstStatementList = &list;
-//                lastStatementList = &list;
-//                /*  Also set it as the entry and exit block. */
-//                entryBlock = entryBlock;
-//                exitBlock = entryBlock;
-//                break;
-//            }
-//        }
-//    }
-//    /* Go through the blocks and find the activation records.
-//        The instruction in question is an addiu instruction with
-//        sp as RD and as RS and constant  */
-//    for(SgAsmStatementPtrList::iterator iter = firstStatementList->begin();
-//        iter != firstStatementList->end(); ++iter) {
-//        /* decode instruction */
-//        SgAsmMipsInstruction* mipsInst = isSgAsmMipsInstruction(*iter);
-//        instructionStruct currentInst = decodeInstruction(mipsInst);
-//        /* check instruction */
-//        if (currentInst.kind == mips_addiu) {
-//            /* check if the rd and rs is sp */
-//            registerStruct destination = *currentInst.destinationRegisters.begin();
-//            registerStruct source = *currentInst.sourceRegisters.begin();
-//            if (destination.regName == sp && source.regName == sp) {
-//                /* the registers are correct, add the instruction to the forbidden list. */
-//                forbiddenInstruction.insert(mipsInst);
-//                /* Add the acivation record to the pair */
-//                activationPair.first = mipsInst;
-//                /* Add the instruction to the activation instruction vector */
-//                activationInstruction.insert(mipsInst);
-//                if (debugging) {
-//                    std::cout << "forbidden instruction found: " << std::hex << currentInst.address << std::endl;
-//                }
-//            }
-//        }
-//    }
-//    /* check the last blocks instructions. */
-//    for(SgAsmStatementPtrList::reverse_iterator iter = lastStatementList->rbegin();
-//        iter != lastStatementList->rend(); ++iter) {
-//        /* decode instruction */
-//        SgAsmMipsInstruction* mipsInst = isSgAsmMipsInstruction(*iter);
-//        instructionStruct currentInst = decodeInstruction(mipsInst);
-//        /* check instruction */
-//        if (currentInst.kind == mips_addiu) {
-//            /* check if the rd and rs is sp */
-//            registerStruct destination = *currentInst.destinationRegisters.begin();
-//            registerStruct source = *currentInst.sourceRegisters.begin();
-//            if (destination.regName == sp && source.regName == sp) {
-//                /* the registers are correct, add the instruction to the forbidden list. */
-//                forbiddenInstruction.insert(mipsInst);
-//                /* Add the acivation record to the pair */
-//                activationPair.second = mipsInst;
-//                /* Add the instruction to the activation instruction vector */
-//                activationInstruction.insert(mipsInst);
-//                if (debugging) {
-//                    std::cout << "forbidden instruction found: " << std::hex << currentInst.address << std::endl;
-//                }
-//            }
-//        }
-//    }
-//}
 
 
 /* Find the lowest and highest address in the function cfg */
@@ -476,9 +332,7 @@ void CFGhandler::createFunctionCFG(std::string newFunctionName) {
     /*  Find the entry and exit block(s). */
     findEntryAndExitBlocks();
     /* Find activation records */
-    findActivationRecordsNew();
-    //TODO old instruction below
-    //findActivationRecords();
+    findActivationRecords();
     /* Find the address range */
     findAddressRange();
 }
