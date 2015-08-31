@@ -86,8 +86,6 @@ class liveVariableAnalysisHandler {
     /*  Pointer to function cfg */
     CFG* functionCFG;
     /*  Block pointer for the basic block that is the entry block */
-    //TODO root block is probably not used.
-    SgAsmBlock* cfgRootBlock;
     CFGVertex rootVertex;
     /*  ENTRY and EXIT vertices and their blocks. */
     CFG::vertex_descriptor ENTRY;
@@ -112,15 +110,6 @@ class liveVariableAnalysisHandler {
     std::list<std::pair<int, SgAsmMipsInstruction*> > DFSInstructionOrder;
 
     /*  Storage representation for live intervals. */
-        //TODO determine a representation for the intervals, ordered by the
-        //increasing start point.
-
-    //int is the start point, easy to access. can be sorted.
-    //the pair contains the end point and the symbolic 
-    //TODO perhaps use a map so it will sort and be easy to find later?
-    //TODO map does not allow duplicate keys. can it be a problem?
-    //TODO believe so if two ranges end in the same place or begin.
-    //TODO a multimap could probably be the solution instead. 
     intervalMap startPointBiMap;
     intervalMap endPointBiMap;
 
