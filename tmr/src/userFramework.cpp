@@ -275,7 +275,7 @@ void userFramework::accumulatorMedianTMR() {
     mfloC0.format = getInstructionFormat(mips_mflo);
     /*  Get generate a regular register for the mfhi. */
     registerStruct mfloRegC0 = generateSymbolicRegister();
-    mfloC0.destinationRegisters.push_back(mfloRegB0);
+    mfloC0.destinationRegisters.push_back(mfloRegC0);
     /* Build instruction and insert it. */
     SgAsmMipsInstruction* mipsMfloC0 = buildInstruction(&mfloC0);
     insertInstruction(mipsMfloC0);
