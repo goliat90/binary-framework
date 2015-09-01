@@ -5,7 +5,7 @@
 #define TEST_H
 
 /*  Simpel addition function. */
-int simpleAddTMR(int, int);
+int simpleAdd(int, int);
 
 
 
