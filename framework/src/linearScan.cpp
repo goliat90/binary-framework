@@ -37,7 +37,7 @@ void linearScanHandler::initializeRegisterPool() {
     registerPool.push_front(t4);
     registerPool.push_front(t5);
     registerPool.push_front(t6);
-    //registerPool.push_front(t7);
+    registerPool.push_front(t7);
     /*  t8-t9 */
     //registerPool.push_front(t8);
     //registerPool.push_front(t9);
@@ -207,10 +207,6 @@ void linearScanHandler::checkAccumulatorAndFix() {
                     switch(mips->get_kind()) {
                         case mips_div:
                         case mips_divu:
-                        case mips_madd:
-                        case mips_maddu:
-                        case mips_msub:
-                        case mips_msubu:
                         case mips_mult:
                         case mips_multu:{
                             /*  These instructions writes to accumulator register. */
@@ -236,7 +232,6 @@ void linearScanHandler::checkAccumulatorAndFix() {
             /*  Retrieve the statement list */
             SgAsmStatementPtrList& stmtList = block->get_statementList();
             /*  Shadow statement list. */
-            //TODO consider other type of list. to push in front and end.
             std::list<SgAsmStatement*> shadowList;
             /*  Lists to temporary store load, stores and moves. */
             SgAsmStatementPtrList beforeInserts;
@@ -244,6 +239,10 @@ void linearScanHandler::checkAccumulatorAndFix() {
             /*  First instruction in region and a iterator for it. */
             bool firstInRegion = true;
             std::list<SgAsmStatement*>::iterator firstInst;
+            /*  Bool used to prevent adding several preservation instructions to a region.
+                It is also used to disable adding preservation if the instruction just
+                before the region writes to acc. */
+            bool preserveAcc = true;
             /*  List of instruction for a region of inserted instructions. */
             std::list<SgAsmStatement*> regionList;
             /*  Go through the statement list and look at original instructions (has address)
@@ -261,75 +260,74 @@ void linearScanHandler::checkAccumulatorAndFix() {
                         switch(mips->get_kind()) {
                             case mips_div:
                             case mips_divu:
-                            case mips_madd:
-                            case mips_maddu:
-                            case mips_msub:
-                            case mips_msubu:
                             case mips_mult:
                             case mips_multu:{
-                                /*  These instructions writes to accumulator register. */
-                                //TODO set a bool here to say that we need to save acc in this region?
-                                //TODO move below thoughts to a different instruction.
+                                if (true == preserveAcc) { 
+                                    /*  These instructions writes to accumulator register. */
+                                    //TODO set a bool here to say that we need to save acc in this region?
 
-                                //TODO move lo to a register.
-                                instructionStruct mflo;
-                                mflo.kind = mips_mflo;
-                                mflo.mnemonic = "mflo";
-                                mflo.format = getInstructionFormat(mips_mflo);
-                                /*  Get a destination symbolic. */
-                                registerStruct fromLoReg = generateSymbolicRegister();
-                                mflo.destinationRegisters.push_back(fromLoReg);
-                                /*  Build instruction and save it. */
-                                SgAsmMipsInstruction* mipsmflo = buildInstruction(&mflo);
-                                beforeInserts.push_back(mipsmflo);
-                                //TODO store it on the stack.
-                                SgAsmMipsInstruction* mipsLoStore = buildLoadOrStoreSpillInstruction(mips_sw, fromLoReg, 0);
-                                beforeInserts.push_back(mipsLoStore);
+                                    //TODO move lo to a register.
+                                    instructionStruct mflo;
+                                    mflo.kind = mips_mflo;
+                                    mflo.mnemonic = "mflo1";
+                                    mflo.format = getInstructionFormat(mips_mflo);
+                                    /*  Get a destination symbolic. */
+                                    registerStruct fromLoReg = generateSymbolicRegister();
+                                    mflo.destinationRegisters.push_back(fromLoReg);
+                                    /*  Build instruction and save it. */
+                                    SgAsmMipsInstruction* mipsmflo = buildInstruction(&mflo);
+                                    beforeInserts.push_back(mipsmflo);
+                                    //TODO store it on the stack.
+                                    SgAsmMipsInstruction* mipsLoStore = buildLoadOrStoreSpillInstruction(mips_sw, fromLoReg, 0);
+                                    beforeInserts.push_back(mipsLoStore);
 
-                                //TODO move hi to a register.
-                                instructionStruct mfhi;
-                                mfhi.kind = mips_mfhi;
-                                mfhi.mnemonic = "mfhi";
-                                mfhi.format = getInstructionFormat(mips_mfhi);
-                                /*  Get a destination symbolic. */
-                                registerStruct fromHiReg = generateSymbolicRegister();
-                                mfhi.destinationRegisters.push_back(fromHiReg);
-                                /*  Build instruction and save it. */
-                                SgAsmMipsInstruction* mipsmfhi = buildInstruction(&mfhi);
-                                beforeInserts.push_back(mipsmfhi);
-                                //TODO store it on the stack.
-                                SgAsmMipsInstruction* mipsHiStore = buildLoadOrStoreSpillInstruction(mips_sw, fromHiReg, 4);
-                                beforeInserts.push_back(mipsHiStore);
+                                    //TODO move hi to a register.
+                                    instructionStruct mfhi;
+                                    mfhi.kind = mips_mfhi;
+                                    mfhi.mnemonic = "mfhi1";
+                                    mfhi.format = getInstructionFormat(mips_mfhi);
+                                    /*  Get a destination symbolic. */
+                                    registerStruct fromHiReg = generateSymbolicRegister();
+                                    mfhi.destinationRegisters.push_back(fromHiReg);
+                                    /*  Build instruction and save it. */
+                                    SgAsmMipsInstruction* mipsmfhi = buildInstruction(&mfhi);
+                                    beforeInserts.push_back(mipsmfhi);
+                                    //TODO store it on the stack.
+                                    SgAsmMipsInstruction* mipsHiStore = buildLoadOrStoreSpillInstruction(mips_sw, fromHiReg, 4);
+                                    beforeInserts.push_back(mipsHiStore);
 
-                                //TODO prepare a load instruction to insert after.
-                                registerStruct toLoReg = generateSymbolicRegister();
-                                SgAsmMipsInstruction* mipsLoLoad = buildLoadOrStoreSpillInstruction(mips_lw, toLoReg, 0);
-                                afterInserts.push_back(mipsLoLoad);
-                                //TODO prepare a move register to acc instruction.
-                                instructionStruct mtlo;
-                                mtlo.kind = mips_mtlo;
-                                mtlo.mnemonic = "mtlo";
-                                mtlo.format = getInstructionFormat(mips_mtlo);
-                                /*  Get a destination symbolic. */
-                                mtlo.sourceRegisters.push_back(toLoReg);
-                                /*  Build instruction and save it. */
-                                SgAsmMipsInstruction* mipsmtlo = buildInstruction(&mtlo);
-                                afterInserts.push_back(mipsmtlo);
-                                //TODO prepare a load instruction to insert after.
-                                registerStruct toHiReg = generateSymbolicRegister();
-                                SgAsmMipsInstruction* mipsHiLoad = buildLoadOrStoreSpillInstruction(mips_lw, toHiReg, 4);
-                                afterInserts.push_back(mipsHiLoad);
-                                //TODO prepare a move register to acc instruction.
-                                instructionStruct mthi;
-                                mthi.kind = mips_mthi;
-                                mthi.mnemonic = "mthi";
-                                mthi.format = getInstructionFormat(mips_mthi);
-                                mthi.sourceRegisters.push_back(toHiReg);
-                                SgAsmMipsInstruction* mipsmthi = buildInstruction(&mthi);
-                                afterInserts.push_back(mipsmthi);
-                                //the instructions restoring acc need to be placed in a list for insertion
-                                //when the next original instruction is found.
+                                    //TODO prepare a load instruction to insert after.
+                                    registerStruct toLoReg = generateSymbolicRegister();
+                                    SgAsmMipsInstruction* mipsLoLoad = buildLoadOrStoreSpillInstruction(mips_lw, toLoReg, 0);
+                                    afterInserts.push_back(mipsLoLoad);
+                                    //TODO prepare a move register to acc instruction.
+                                    instructionStruct mtlo;
+                                    mtlo.kind = mips_mtlo;
+                                    mtlo.mnemonic = "mtlo2";
+                                    mtlo.format = getInstructionFormat(mips_mtlo);
+                                    /*  Get a destination symbolic. */
+                                    mtlo.sourceRegisters.push_back(toLoReg);
+                                    /*  Build instruction and save it. */
+                                    SgAsmMipsInstruction* mipsmtlo = buildInstruction(&mtlo);
+                                    afterInserts.push_back(mipsmtlo);
+                                    //TODO prepare a load instruction to insert after.
+                                    registerStruct toHiReg = generateSymbolicRegister();
+                                    SgAsmMipsInstruction* mipsHiLoad = buildLoadOrStoreSpillInstruction(mips_lw, toHiReg, 4);
+                                    afterInserts.push_back(mipsHiLoad);
+                                    //TODO prepare a move register to acc instruction.
+                                    instructionStruct mthi;
+                                    mthi.kind = mips_mthi;
+                                    mthi.mnemonic = "mthi2";
+                                    mthi.format = getInstructionFormat(mips_mthi);
+                                    mthi.sourceRegisters.push_back(toHiReg);
+                                    SgAsmMipsInstruction* mipsmthi = buildInstruction(&mthi);
+                                    afterInserts.push_back(mipsmthi);
+                                    //the instructions restoring acc need to be placed in a list for insertion
+                                    //when the next original instruction is found.
+                                    /*  Set to false to prevent making duplicate preservation instructions. */
+                                    preserveAcc = false;
                                 }
+                            }
                         }
                         /*  It is an instruction that does not use acc. Just store it. */
                         //If it is the first inserted in a region then save an iterator to it. 
@@ -355,6 +353,23 @@ void linearScanHandler::checkAccumulatorAndFix() {
                             /*  Insert instructions at the end of the region. */
                             shadowList.insert(shadowList.end(), afterInserts.begin(), afterInserts.end());
                             afterInserts.clear();
+                        }
+                        //TODO here i should do a check on the original instruction if it
+                        //TODO writes to acc, if so then we should skip the preservation of acc in the region.
+                        /*  Check if this original instruction writes to acc, if so then
+                            acc will not be preserved. */
+                        switch(mips->get_kind()) {
+                            case mips_div:
+                            case mips_divu:
+                            case mips_mult:
+                            case mips_multu:{
+                                /*  The instruction writes to acc. Skip preserving it. */
+                                preserveAcc = false;
+                                break;
+                            }
+                            default: {
+                                preserveAcc = true;
+                            }
                         }
                         /*  Save this original instruction. */
                         shadowList.push_back(*stmtIter);
