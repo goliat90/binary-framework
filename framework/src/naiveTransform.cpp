@@ -97,29 +97,25 @@ void naiveHandler::naiveBlockTransform(SgAsmBlock* block) {
                         listIter != regionList.end(); ++listIter) {
                         transformedInstructionVector.push_back(*listIter);
                     }
-                    /*  Set the preserveAcc to true; */
-                    preserveAcc = true;
                     /* clear the regionList. */
                     regionList.clear();
-                } else {
-                    /*  The region list is empty but i want to save the kind of the original
-                        instruction that is just before a region. This is to determine
-                        if the region should preserve the accumulator or not. */
-                    switch(decodedMips.kind) {
-                        case mips_div:
-                        case mips_divu:
-                        case mips_mult:
-                        case mips_multu: {
-                            /*  The instruction writes to acc so if it is ahead of an
-                                transformed region acc should not be preserved. */
-                            preserveAcc = false;
-                            break;
-                        }
-                        default: {
-                            /*  If we encounter a original instruction again that does
-                                not write to acc we save the acc again. */
-                            preserveAcc = true;
-                        }
+                }
+                /*  Check if the instruction that is potentially ahead of a region
+                    influences if the accumulator should be preserved or not. */
+                switch(decodedMips.kind) {
+                    case mips_div:
+                    case mips_divu:
+                    case mips_mult:
+                    case mips_multu: {
+                        /*  The instruction writes to acc so if it is ahead of an
+                            transformed region acc should not be preserved. */
+                        preserveAcc = false;
+                        break;
+                    }
+                    default: {
+                        /*  If we encounter a original instruction again that does
+                            not write to acc we save the acc again. */
+                        preserveAcc = true;
                     }
                 }
                 /*  save the original instruction. */
@@ -504,110 +500,6 @@ void naiveHandler::modifyStack() {
             stmtList.insert(--stmtList.end(), mipsDealloc);
         }
     }
-
-//    /*  From the cfgHandler retrieve the activation records
-//        that adjusts the stack and modify them to include
-//        naivetransformers stack */ 
-//    //TODO activation pair is not usable anymore.
-//    std::pair<SgAsmMipsInstruction*, SgAsmMipsInstruction*> activationRecordPair;
-//    activationRecordPair = cfgContainer->getActivationRecord();
-//    /*  Check if the activation record is present or one needs to be created. */
-//    if (NULL == activationRecordPair.first) {
-//        /*  There is no activation record instruction. create one. */
-//        /*  Instruction struct. */
-//        instructionStruct naiveActivation;
-//        /*  Register struct for the SP register. */
-//        registerStruct regSP;
-//        regSP.regName = sp;
-//        /*  Set kind, mnemonic, format. */
-//        naiveActivation.kind = mips_addiu;
-//        naiveActivation.mnemonic = "addiu";
-//        naiveActivation.format = getInstructionFormat(mips_addiu);
-//        /*  set the constant, which is the stack space allocated. */
-//        naiveActivation.instructionConstant = -(maximumSymbolicsUsed * 4);
-//        naiveActivation.significantBits = 32;
-//        /*  Set SP as both source and destination register. */
-//        naiveActivation.sourceRegisters.push_back(regSP);
-//        naiveActivation.destinationRegisters.push_back(regSP);
-//        /*  Build instruction. */
-//        SgAsmMipsInstruction* mipsAlloc = buildInstruction(&naiveActivation);
-//        /*  Get entry block. */
-//        SgAsmBlock* eb = cfgContainer->getEntryBlock();
-//        /*  Get statement list. */
-//        SgAsmStatementPtrList& stmtList = eb->get_statementList();
-//        /*  Insert activation instruction in the beginning of the statement list. */
-//        stmtList.insert(stmtList.begin(), mipsAlloc);
-//    } else {
-//        /*  There exists an activation record. Modify it. */
-//        SgAsmMipsInstruction* allocMips = activationRecordPair.first;
-//        /*  Retrieve the instructions operand list. */
-//        SgAsmExpressionPtrList& allocOperands = allocMips->get_operandList()->get_operands();
-//        /*  Go through the operands, find the constant, modify it. */
-//        for(SgAsmExpressionPtrList::iterator iter = allocOperands.begin();
-//            iter != allocOperands.end(); ++iter) {
-//            /*  Find the constant in the instruction */
-//            if (V_SgAsmIntegerValueExpression == (*iter)->variantT()) {
-//                /*  Get the value of it and adjust it for the new stack */
-//                SgAsmIntegerValueExpression* valConst = isSgAsmIntegerValueExpression(*iter);
-//                /* Get the current constant value */
-//                uint64_t  constant = valConst->get_absoluteValue();
-//                /*  adjust the value to reflect the new stack size, increase the
-//                    subtraction stack value.    */
-//                constant -= (maximumSymbolicsUsed * 4);
-//                /* set the new value */
-//                valConst->set_absoluteValue(constant);
-//            }
-//        }
-//    }
-//    /*  Check the deactivation record. */
-//    if (NULL == activationRecordPair.second) {
-//        /*  No deactivation record, create one. */
-//        /*  Instruction struct. */
-//        instructionStruct naiveDeactivation;
-//        /*  Register struct for the SP register. */
-//        registerStruct regSP;
-//        regSP.regName = sp;
-//        /*  Set kind, mnemonic, format. */
-//        naiveDeactivation.kind = mips_addiu;
-//        naiveDeactivation.mnemonic = "addiu";
-//        naiveDeactivation.format = getInstructionFormat(mips_addiu);
-//        /*  set the constant, which is the stack space allocated. */
-//        naiveDeactivation.instructionConstant = (maximumSymbolicsUsed * 4);
-//        naiveDeactivation.significantBits = 32;
-//        /*  Set SP as both source and destination register. */
-//        naiveDeactivation.sourceRegisters.push_back(regSP);
-//        naiveDeactivation.destinationRegisters.push_back(regSP);
-//        /*  Build instruction. */
-//        SgAsmMipsInstruction* mipsDealloc = buildInstruction(&naiveDeactivation);
-//        /*  Get entry block. */
-//        SgAsmBlock* eb = cfgContainer->getExitBlock();
-//        /*  Get statement list. */
-//        SgAsmStatementPtrList& stmtList = eb->get_statementList();
-//        /*  Insert the deactivation instruction second to last is the list. */
-//        stmtList.insert(--stmtList.end(), mipsDealloc);
-//
-//    } else {
-//        /*  deactivation record found, modify it. */
-//        SgAsmMipsInstruction* deallocMips = activationRecordPair.second;
-//        /*  Get the instructions operand list. */
-//        SgAsmExpressionPtrList& deallocOperands = deallocMips->get_operandList()->get_operands();
-//        /*  Go through the operands, find the constant, modify it. */
-//        for(SgAsmExpressionPtrList::iterator iter = deallocOperands.begin();
-//            iter != deallocOperands.end(); ++iter) {
-//            /*  Find the constant in the instruction */
-//            if (V_SgAsmIntegerValueExpression == (*iter)->variantT()) {
-//                /*  Get the value of it and adjust it for the new stack */
-//                SgAsmIntegerValueExpression* valConst = isSgAsmIntegerValueExpression(*iter);
-//                /* Get the current constant value */
-//                uint64_t  constant = valConst->get_absoluteValue();
-//                /*  adjust the value to reflect the new stack size, increase the
-//                    added value stack value.    */
-//                constant += (maximumSymbolicsUsed * 4);
-//                /* set the new value */
-//                valConst->set_absoluteValue(constant);
-//            }
-//        }
-//    }
 }
 
 /* Find the maximum amount of used symbolic registers used at the same time.
