@@ -148,6 +148,18 @@ void CFGhandler::findActivationRecords() {
                             isActivation = false;
                             break;
                         }
+                    } else if (V_SgAsmIntegerValueExpression == (*opIter)->variantT()) {
+                        /*  Check the constant if it is a negative value. If so then
+                            the instruction is allocating space on the stack and is
+                            and activation instruction is to be saved. */
+                        SgAsmIntegerValueExpression* valConst = isSgAsmIntegerValueExpression(*opIter);
+                        uint64_t constant = valConst->get_absoluteValue();
+                        /*  Check if the constant is larger than 0, which is not what it
+                            should be if it is an activation instruction. */
+                        if (0 < (int64_t)constant) {
+                            /*  Set activation to false. */
+                            isActivation = false;
+                        }
                     }
                 }
                 /*  The instruction is an activation so it needs to be stored
@@ -194,6 +206,18 @@ void CFGhandler::findActivationRecords() {
                                 /*  The register is not sp. It is not a forbidden instruction. */
                                 isDeactivation = false;
                                 break;
+                            }
+                        } else if (V_SgAsmIntegerValueExpression == (*opIter)->variantT()) {
+                            /*  Check the constant if it is a negative value. If so then
+                                the instruction is allocating space on the stack and is
+                                and activation instruction is to be saved. */
+                            SgAsmIntegerValueExpression* valConst = isSgAsmIntegerValueExpression(*opIter);
+                            uint64_t constant = valConst->get_absoluteValue();
+                            /*  Check if the constant is less than 0, which is not what it
+                                should be if it is an deactivation instruction. */
+                            if (0 > (int64_t)constant) {
+                                /*  Set activation to false. */
+                                isDeactivation = false;
                             }
                         }
                     }
