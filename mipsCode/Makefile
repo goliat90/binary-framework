@@ -6,6 +6,7 @@
 SRC = ./src
 INCLUDE = ./include
 OBJ = ./objectfiles
+ASM = ./assembly
 
 # Vpath, specifies which folders to look for files regarding dependency.
 VPATH = src:includes
@@ -19,7 +20,7 @@ all:	simpleAdd.out \
 
 # Compile the simple add to object.
 simpleAdd: simpleAdd.c
-	mips-linux-gcc -march=r3000 -O1 -I$(INCLUDE) -c $(SRC)/simpleAdd.c \
+	mips-linux-gcc -march=r3000 -O1 -fno-delayed-branch -I$(INCLUDE) -c $(SRC)/simpleAdd.c \
     -o $(OBJ)/simpleAdd.o
 
 # Compile the simple main object
@@ -35,8 +36,13 @@ simpleAdd.out: simpleAdd simpleAddMain
 
 # Compile function object.
 oneBasic: oneBasic.c
-	mips-linux-gcc -static -march=r3000 -O1 -I$(INCLUDE) -c $(SRC)/oneBasic.c \
+	mips-linux-gcc -static -march=r3000 -O1 -fno-delayed-branch -I$(INCLUDE) -c $(SRC)/oneBasic.c \
 	-o $(OBJ)/oneBasic.o
+
+# Assembly file for oneBasic
+oneBasicAssembly: oneBasic.c
+	mips-linux-gcc -S -static -march=r3000 -O1 -fno-delayed-branch -I$(INCLUDE) -c $(SRC)/oneBasic.c \
+	-o $(ASM)/oneBasic.s
 
 # Compile the simple main object
 oneBasicMain: oneBasicMain.c
@@ -48,6 +54,10 @@ oneBasic.out: oneBasic oneBasicMain
 	mips-linux-gcc -static $(OBJ)/oneBasic.o $(OBJ)/oneBasicMain.o \
 	-o oneBasic.out
 
+#Link to make output file but with assembly of the function.
+oneBasicAsm.out: oneBasicMain
+	mips-linux-gcc -static $(ASM)/oneBasic.s $(OBJ)/oneBasicMain.o \
+	-o oneBasicAsm.out
 
 
 ##Advanced add.
