@@ -4,6 +4,9 @@
 *.o
 *.obj
 
+# Assembly files.
+*.s
+
 # Precompiled Headers
 *.gch
 *.pch
