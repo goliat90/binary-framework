@@ -11,24 +11,42 @@ OBJ = ./objectfiles
 VPATH = src:includes
 
 #The all rule which compiles all the binaries.
-all: mipsSimpleAdd.out mipsAdvancedAdd.out mipsDivisionTest.out \
-		mipsModulusTest.out mipsDivisionMod.out mipsLogical.out \
-		mipsShifter.out mipsNumCounter.out mipsOneBB.out mipsIfElse.out
+all:	simpleAdd.out \
+		oneBasic.out
+#		mipsAdvancedAdd.out mipsDivisionTest.out \
+#		mipsModulusTest.out mipsDivisionMod.out mipsLogical.out \
+#		mipsShifter.out mipsNumCounter.out mipsOneBB.out mipsIfElse.out
 
 # Compile the simple add to object.
-simpleAdd: SimpleAdd.c
-	mips-linux-gcc -static -march=r3000 -O1 -I$(INCLUDE) -c $(SRC)/SimpleAdd.c \
-    -o $(OBJ)/SimpleAdd.o
+simpleAdd: simpleAdd.c
+	mips-linux-gcc -march=r3000 -O1 -I$(INCLUDE) -c $(SRC)/simpleAdd.c \
+    -o $(OBJ)/simpleAdd.o
 
 # Compile the simple main object
-simpleAddMain: SimpleAddMain.c
-	mips-linux-gcc -static -march=r3000 -O1 -I$(INCLUDE) -c $(SRC)/SimpleAddMain.c \
-	-o $(OBJ)/SimpleAddMain.o
+simpleAddMain: simpleAddMain.c
+	mips-linux-gcc -march=r3000 -O1 -I$(INCLUDE) -c $(SRC)/simpleAddMain.c \
+	-o $(OBJ)/simpleAddMain.o
 
 #Link together to an out file. 
 simpleAdd.out: simpleAdd simpleAddMain
-	mips-linux-gcc -static $(OBJ)/SimpleAdd.o $(OBJ)/SimpleAddMain.o \
+	mips-linux-gcc -static $(OBJ)/simpleAdd.o $(OBJ)/simpleAddMain.o \
 	-o simpleAdd.out
+
+
+# Compile function object.
+oneBasic: oneBasic.c
+	mips-linux-gcc -static -march=r3000 -O1 -I$(INCLUDE) -c $(SRC)/oneBasic.c \
+	-o $(OBJ)/oneBasic.o
+
+# Compile the simple main object
+oneBasicMain: oneBasicMain.c
+	mips-linux-gcc -static -march=r3000 -O1 -I$(INCLUDE) -c $(SRC)/oneBasicMain.c \
+	-o $(OBJ)/oneBasicMain.o
+
+#Link together to an out file. 
+oneBasic.out: oneBasic oneBasicMain
+	mips-linux-gcc -static $(OBJ)/oneBasic.o $(OBJ)/oneBasicMain.o \
+	-o oneBasic.out
 
 
 

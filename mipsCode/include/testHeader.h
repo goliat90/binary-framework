@@ -7,6 +7,7 @@
 /*  Simpel addition function. */
 int simpleAdd(int, int);
 
-
+/*  Function that consist of only one basic block. */
+int oneBasic(int, int);
 
 #endif
