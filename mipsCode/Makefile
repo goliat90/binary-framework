@@ -20,12 +20,12 @@ all:	simpleAdd.out \
 
 # Compile the simple add to object.
 simpleAdd: simpleAdd.c
-	mips-linux-gcc -march=r3000 -O1 -fno-delayed-branch -I$(INCLUDE) -c $(SRC)/simpleAdd.c \
+	mips-linux-gcc -static -march=r3000 -O1 -fno-delayed-branch -I$(INCLUDE) -c $(SRC)/simpleAdd.c \
     -o $(OBJ)/simpleAdd.o
 
 # Compile the simple main object
 simpleAddMain: simpleAddMain.c
-	mips-linux-gcc -march=r3000 -O1 -I$(INCLUDE) -c $(SRC)/simpleAddMain.c \
+	mips-linux-gcc -static -march=r3000 -O1 -I$(INCLUDE) -c $(SRC)/simpleAddMain.c \
 	-o $(OBJ)/simpleAddMain.o
 
 #Link together to an out file. 
@@ -58,6 +58,21 @@ oneBasic.out: oneBasic oneBasicMain
 oneBasicAsm.out: oneBasicMain
 	mips-linux-gcc -static $(ASM)/oneBasic.s $(OBJ)/oneBasicMain.o \
 	-o oneBasicAsm.out
+
+# Modulus test binary
+modulusTest: modulusTest.c
+	mips-linux-gcc -static -march=r3000 -O1 -mno-check-zero-division -fno-delayed-branch -I$(INCLUDE) -c $(SRC)/modulusTest.c \
+	-o $(OBJ)/modulusTest.o
+
+modulusTestMain: modulusTestMain.c
+	mips-linux-gcc -static -march=r3000 -O1 -fno-delayed-branch -I$(INCLUDE) -c $(SRC)/modulusTestMain.c \
+	-o $(OBJ)/modulusTestMain.o
+
+modulusTest.out: modulusTest modulusTestMain
+	mips-linux-gcc -static $(OBJ)/modulusTest.o $(OBJ)/modulusTestMain.o \
+	-o modulusTest.out
+
+
 
 
 ##Advanced add.
