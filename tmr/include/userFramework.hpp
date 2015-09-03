@@ -22,11 +22,13 @@ class userFramework : public BinaryRewriter {
         /*  Function that applies transformation    */
         /*  Median TMR function for most common instructions. */
         void medianTMR();
-        //TODO add median tmr for acc instructions. Returns result into hi and lo.
+        /*  Median TMR for instructions writing to accumulator. */
         void accumulatorMedianTMR();
 
         /*  Variables. */
         instructionStruct currentInst;
+        /*  Pointer to the instruction. */
+        SgAsmMipsInstruction* mipsInst;
 };
 
 #endif

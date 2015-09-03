@@ -48,7 +48,21 @@ int main(int argc, char** argv) {
     (a AND b) OR (b AND c) OR (c AND a). */
 void userFramework::medianTMR() {
     /* This function should be able to apply common tmr to many functions */
-    /* Save the original instruction */
+    //TODO here i need to change change destination register of the original instruction to a symbolic
+    //TODO i will also change the source register for one of the and instruction. The last
+    //TODO OR instruction will write to the original instructions destination register.
+    //TODO i only need to get to the destination register. All instructions handled
+    //TODO by this function has a destination register.
+    /*  Remember the original register- */
+//    registerStruct ordDestinationReg = currentInst.destinationRegisters.front();
+    /*  Get the operand list from the instruction. */
+    SgAsmExpressionPtrList& opList = mipsInst->get_operandList()->get_operands();
+    /*  Get a symbolic register. Then get the directregister expression. */
+    registerStruct symbolicDestination = generateSymbolicRegister();
+    /*  Set the symbolic register as destination register. */
+    opList.at(0) = buildRegister(symbolicDestination);
+
+    /* Save the original instruction, which now has a symbolic restination register. */
     saveInstruction();
     /*  Depending on the instruction kind i select what kind
         the TMR instructions should be. */
@@ -104,7 +118,9 @@ void userFramework::medianTMR() {
     firstAND.mnemonic = "and";
     firstAND.format = getInstructionFormat(mips_and);
     /* Set the source registers from duplicated instructions as source */
-    firstAND.sourceRegisters = currentInst.destinationRegisters;
+    //TODO here i need to change the original destination reg to the symbolic.
+    //firstAND.sourceRegisters = currentInst.destinationRegisters;
+    firstAND.sourceRegisters.push_back(symbolicDestination);
     firstAND.sourceRegisters.push_back(regOne);
     /*  Create a destination register for the accumulated sum.*/
     registerStruct andResOne = generateSymbolicRegister();
@@ -134,7 +150,9 @@ void userFramework::medianTMR() {
     thirdAND.mnemonic = "and";
     thirdAND.format = getInstructionFormat(mips_and);
     /*  Set the source registers. */
-    thirdAND.sourceRegisters = currentInst.destinationRegisters;
+    //TODO here i need to change the original destination reg to the symbolic.
+    thirdAND.sourceRegisters.push_back(symbolicDestination);
+    //thirdAND.sourceRegisters = currentInst.destinationRegisters;
     thirdAND.sourceRegisters.push_back(regTwo);
     /*  Create a destination registers. */
     registerStruct andResThird = generateSymbolicRegister();
@@ -465,19 +483,17 @@ void userFramework::accumulatorMedianTMR() {
     /*  Build instruction and insert. */
     SgAsmMipsInstruction* mipsMthiRes = buildInstruction(&mthiRes);
     insertInstruction(mipsMthiRes);
-
 }
 
 
 /* The user defined decision function */
 void userFramework::transformDecision(SgAsmMipsInstruction* inst) {
+    /*  Save the pointer for later potential use. */
+    mipsInst = inst;
     /* Decode the instruction to get the information  */
     currentInst = decodeInstruction(inst);
     /* Depending on the kind of instruction do appropriate transformation
         consider more functions. */
-    //TODO im missing div, divu, mult, multu, they can maybe be their on instruction.
-    //TODO the acc tmr will probably be done by a median tmr applied seperatley to
-    //TODO high and lo registers, end result are moved back to acc.
     switch(currentInst.kind) {
         case mips_div:
         case mips_divu:
