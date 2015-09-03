@@ -39,13 +39,13 @@ userRewriter.out: buildLibrary userFramework.lo
 simpletestall: simpletestnaive simpletestopt
 
 simpletestnaive:
-	./userRewriter.out ../mipsCode/mipsSimpleAdd.out simpleAdditionTMR 0
+	./userRewriter.out ../mipsCode/simpleAdd.out simpleAdd 0
 simpletestopt:
-	./userRewriter.out ../mipsCode/mipsSimpleAdd.out simpleAdditionTMR 1 
+	./userRewriter.out ../mipsCode/simpleAdd.out simpleAdd 1 
 simpledebugnaive:
-	libtool --mode=execute gdb --args ./userRewriter.out ../mipsCode/mipsSimpleAdd.out simpeAdditionTMR 0 
+	libtool --mode=execute gdb --args ./userRewriter.out ../mipsCode/simpleAdd.out simpleAdd 0 
 simpledebugopt:
-	libtool --mode=execute gdb --args ./userRewriter.out ../mipsCode/mipsSimpleAdd.out simpeAdditionTMR 1
+	libtool --mode=execute gdb --args ./userRewriter.out ../mipsCode/simpleAdd.out simpleAdd 1
 
 
 advancedtestall: advancedtestnaive advancedtestopt
