@@ -60,9 +60,14 @@ oneBasicAsm.out: oneBasicMain
 	-o oneBasicAsm.out
 
 # Modulus test binary
+# 
 modulusTest: modulusTest.c
 	mips-linux-gcc -static -march=r3000 -O1 -mno-check-zero-division -fno-delayed-branch -I$(INCLUDE) -c $(SRC)/modulusTest.c \
 	-o $(OBJ)/modulusTest.o
+
+modulusTestAssembly: modulusTest.c
+	mips-linux-gcc -S -static -march=r3000 -O1 -mno-check-zero-division -fno-delayed-branch -I$(INCLUDE) -c $(SRC)/modulusTest.c \
+	-o $(ASM)/modulusTest.s
 
 modulusTestMain: modulusTestMain.c
 	mips-linux-gcc -static -march=r3000 -O1 -fno-delayed-branch -I$(INCLUDE) -c $(SRC)/modulusTestMain.c \
@@ -72,6 +77,9 @@ modulusTest.out: modulusTest modulusTestMain
 	mips-linux-gcc -static $(OBJ)/modulusTest.o $(OBJ)/modulusTestMain.o \
 	-o modulusTest.out
 
+modulusTestAsm.out: modulusTestMain
+	mips-linux-gcc -static $(ASM)/modulusTest.s $(OBJ)/modulusTestMain.o \
+	-o modulusTestAsm.out
 
 
 
