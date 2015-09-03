@@ -87,6 +87,9 @@ void naiveHandler::naiveBlockTransform(SgAsmBlock* block) {
             if (decodedMips.address == 0) {
                 regionList.push_back(*instIter);
             } else {
+                //TODO i need to change the behavior of the code to include the
+                //TODO the instruction that is just before the region in the transformation
+                //TODO if i dont then no symbolic registers can be used in the original instruction.
                 /* A original instruction was encountered, transform region if ther is one then save
                     the original instruction. */
                 if (regionList.empty() == false) {
