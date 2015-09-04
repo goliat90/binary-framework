@@ -18,7 +18,8 @@ VPATH = src:includes
 all:	simpleAdd.out \
 		oneBasic.out \
 		modulusTest.out \
-		logicalTest.out
+		logicalTest.out \
+		advancedAdd.out
 #		mipsAdvancedAdd.out mipsDivisionTest.out \
 #		mipsDivisionMod.out mipsLogical.out \
 #		mipsShifter.out mipsNumCounter.out mipsOneBB.out mipsIfElse.out
@@ -39,7 +40,7 @@ simpleAdd.out: simpleAdd simpleAddMain
 	-o $(BIN)/simpleAdd.out
 
 
-# Compile function object.
+# One basic block test binary.
 oneBasic: oneBasic.c
 	mips-linux-gcc -static -march=r3000 -O1 -fno-delayed-branch -I$(INCLUDE) -c $(SRC)/oneBasic.c \
 	-o $(OBJ)/oneBasic.o
@@ -63,6 +64,7 @@ oneBasic.out: oneBasic oneBasicMain
 oneBasicAsm.out: oneBasicMain
 	mips-linux-gcc -static $(ASM)/oneBasic.s $(OBJ)/oneBasicMain.o \
 	-o oneBasicAsm.out
+
 
 # Modulus test binary
 modulusTest: modulusTest.c
@@ -99,6 +101,20 @@ logicalTest.out: logicalTest logicalTestMain
 	mips-linux-gcc -static $(OBJ)/logicalTest.o $(OBJ)/logicalTestMain.o \
 	-o $(BIN)/logicalTest.out
 	
+
+# Advanced add test binary. 
+advancedAdd: advancedAdd.c
+	mips-linux-gcc -static -march=r3000 -O1 $(CXXFLAGS) -I$(INCLUDE) -c $(SRC)/advancedAdd.c \
+	-o $(OBJ)/advancedAdd.o
+
+advancedAddMain: advancedAddMain.c
+	mips-linux-gcc -static -march=r3000 -O1 $(CXXFLAGS) -I$(INCLUDE) -c $(SRC)/advancedAddMain.c \
+	-o $(OBJ)/advancedAddMain.o
+
+advancedAdd.out: advancedAdd advancedAddMain
+	mips-linux-gcc -static $(OBJ)/logicalTest.o $(OBJ)/logicalTestMain.o \
+	-o $(BIN)/advancedAdd.out
+
 
 ##Advanced add.
 #mipsAdvancedAdd.out: mipsAdvancedAdd.c
