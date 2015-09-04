@@ -12,7 +12,7 @@ BIN = ./binaries
 CXXFLAGS = -mno-check-zero-division -fno-delayed-branch
 
 # Vpath, specifies which folders to look for files regarding dependency.
-VPATH = src:includes
+VPATH = src:includes:binaries
 
 #The all rule which compiles all the binaries.
 all:	simpleAdd.out \
@@ -20,7 +20,8 @@ all:	simpleAdd.out \
 		modulusTest.out \
 		logicalTest.out \
 		advancedAdd.out \
-		shiftTest.out 
+		shiftTest.out \
+		ifElseTest.out
 #		mipsAdvancedAdd.out mipsDivisionTest.out \
 #		mipsDivisionMod.out mipsLogical.out \
 #		mipsShifter.out mipsNumCounter.out mipsOneBB.out mipsIfElse.out
@@ -129,6 +130,20 @@ shiftTestMain: shiftTestMain.c
 shiftTest.out: shiftTest shiftTestMain
 	mips-linux-gcc -static $(OBJ)/shiftTest.o $(OBJ)/shiftTestMain.o \
 	-o $(BIN)/shiftTest.out
+
+
+# if else test binary.
+ifElseTest: ifElseTest.c
+	mips-linux-gcc -static -march=r3000 -O1 $(CXXFLAGS) -I$(INCLUDE) -c $(SRC)/ifElseTest.c \
+	-o $(OBJ)/ifElseTest.o
+
+ifElseTestMain: ifElseTestMain.c
+	mips-linux-gcc -static -march=r3000 -O1 $(CXXFLAGS) -I$(INCLUDE) -c $(SRC)/ifElseTestMain.c \
+	-o $(OBJ)/ifElseTestMain.o
+
+ifElseTest.out: ifElseTest ifElseTestMain
+	mips-linux-gcc -static $(OBJ)/ifElseTest.o $(OBJ)/ifElseTestMain.o \
+	-o $(BIN)/ifElseTest.out
 
 
 ##Advanced add.

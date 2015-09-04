@@ -22,6 +22,9 @@ int logicalTest(int, int);
 /*  Shift test function. */
 int shiftTest(int, int);
 
+/*  If else test function. */
+int ifElseTest(int, int);
+
 
 
 #endif
