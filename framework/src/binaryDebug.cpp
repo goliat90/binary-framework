@@ -179,7 +179,6 @@ void printAssemblyInstruction(SgAsmMipsInstruction* mipsInst) {
     assemblyStream << asmStruct.mnemonic << "\t";
     /*  Check format of the instruction and depending on the format build
         the correct assembly format. */
-    //TODO Create instructions that handle a specific part.
     switch(asmStruct.format) {
         case R_RD_RS_RT:
             assemblyRegister(&assemblyStream, &asmStruct.destinationRegisters);
@@ -192,7 +191,6 @@ void printAssemblyInstruction(SgAsmMipsInstruction* mipsInst) {
             assemblyRegister(&assemblyStream, &asmStruct.sourceRegisters);
             assemblyStream << ", ";
             assemblyConstant(&assemblyStream, &asmStruct);
-            //TODO need to add constant
             break;
         case R_RD:
             assemblyRegister(&assemblyStream, &asmStruct.destinationRegisters);
@@ -206,18 +204,15 @@ void printAssemblyInstruction(SgAsmMipsInstruction* mipsInst) {
             break;
         }
         case I_RD_RS_C:
-            //TODO check how this format differs from the R_RD_RS_C
             assemblyRegister(&assemblyStream, &asmStruct.destinationRegisters);
             assemblyStream << ", ";
             assemblyRegister(&assemblyStream, &asmStruct.sourceRegisters);
             assemblyStream << ", ";
-            //TODO add constant here, 
             assemblyConstant(&assemblyStream, &asmStruct);
             break;
         case I_RD_MEM_RS_C:
             assemblyRegister(&assemblyStream, &asmStruct.destinationRegisters);
             assemblyStream << ", ";
-            //TODO constant here
             assemblyConstant(&assemblyStream, &asmStruct);
 
             assemblyStream << "(";
@@ -227,30 +222,22 @@ void printAssemblyInstruction(SgAsmMipsInstruction* mipsInst) {
         case I_RD_C:
             assemblyRegister(&assemblyStream, &asmStruct.destinationRegisters);
             assemblyStream << ", ";
-            //TODO add constant here.
             assemblyConstant(&assemblyStream, &asmStruct);
             break;
         case I_RS_RT_C:
             assemblyRegister(&assemblyStream, &asmStruct.sourceRegisters);
             assemblyStream << ", ";
-            //TODO add constant here
             assemblyConstant(&assemblyStream, &asmStruct);
             break;
         case I_RS_MEM_RT_C:
-            //TODO this one will print source twice in each position.
-            //TODO adjust the register function to print only a specific register?
-            //TODO pass matching iterator? which is null otherwise or end??
-            //TODO create a specific function to handel printing store instructions
             assemblyStores(&assemblyStream, &asmStruct);
             break;
         case I_RS_C:
             assemblyRegister(&assemblyStream, &asmStruct.sourceRegisters);
             assemblyStream << ", ";
-            //TODO add constant here.
             assemblyConstant(&assemblyStream, &asmStruct);
             break;
         case J_C:
-            //TODO add constant here.
             assemblyConstant(&assemblyStream, &asmStruct);
             break;
         case J_RS:
@@ -286,10 +273,11 @@ void assemblyRegister(std::stringstream* regStream, std::vector<registerStruct>*
 
 /* Print instruction constants */
 void assemblyConstant(std::stringstream* conStream, instructionStruct* instStruct) {
-    //TODO If negative numbers are to large to handle then the solution could
-    //TODO be to make a string of the constant and then check its size, 
-    //TODO if it is larger than the max size then erase the higher chars.
-    *conStream << std::hex << std::showbase << instStruct->instructionConstant;
+    /*  Truncate the offset so we dont have to manually remove higher chars. */
+    //TODO this will at the moment truncate all constants present, including jump instructions. */
+    unsigned short int offset = static_cast<unsigned short int>(instStruct->instructionConstant);
+    /*  Add constant to the stream. */
+    *conStream << std::hex << std::showbase << offset;
 }
 
 /*  Handles creating all assembly store instructions. */
