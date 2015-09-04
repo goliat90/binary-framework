@@ -21,7 +21,8 @@ all:	simpleAdd.out \
 		logicalTest.out \
 		advancedAdd.out \
 		shiftTest.out \
-		ifElseTest.out
+		ifElseTest.out \
+		divisionModulusTest.out
 #		mipsAdvancedAdd.out mipsDivisionTest.out \
 #		mipsDivisionMod.out mipsLogical.out \
 #		mipsShifter.out mipsNumCounter.out mipsOneBB.out mipsIfElse.out
@@ -145,6 +146,19 @@ ifElseTest.out: ifElseTest ifElseTestMain
 	mips-linux-gcc -static $(OBJ)/ifElseTest.o $(OBJ)/ifElseTestMain.o \
 	-o $(BIN)/ifElseTest.out
 
+
+# Combined division modulus test binary.
+divisionModulusTest: divisionModulusTest.c
+	mips-linux-gcc -static -march=r3000 -O1 $(CXXFLAGS) -I$(INCLUDE) -c $(SRC)/divisionModulusTest.c \
+	-o $(OBJ)/divisionModulusTest.o
+
+divisionModulusTestMain: divisionModulusTestMain.c
+	mips-linux-gcc -static -march=r3000 -O1 $(CXXFLAGS) -I$(INCLUDE) -c $(SRC)/divisionModulusTestMain.c \
+	-o $(OBJ)/divisionModulusTestMain.o
+
+divisionModulusTest.out: divisionModulusTest divisionModulusTestMain
+	mips-linux-gcc -static $(OBJ)/divisionModulusTest.o $(OBJ)/divisionModulusTestMain.o \
+	-o $(BIN)/divisionModulusTest.out
 
 ##Advanced add.
 #mipsAdvancedAdd.out: mipsAdvancedAdd.c

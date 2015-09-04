@@ -25,6 +25,9 @@ int shiftTest(int, int);
 /*  If else test function. */
 int ifElseTest(int, int);
 
+/*  Division and modulus test function. */
+int divisionModulusTest(int, int);
+
 
 
 #endif
