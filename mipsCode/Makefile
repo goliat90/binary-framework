@@ -19,7 +19,8 @@ all:	simpleAdd.out \
 		oneBasic.out \
 		modulusTest.out \
 		logicalTest.out \
-		advancedAdd.out
+		advancedAdd.out \
+		shiftTest.out 
 #		mipsAdvancedAdd.out mipsDivisionTest.out \
 #		mipsDivisionMod.out mipsLogical.out \
 #		mipsShifter.out mipsNumCounter.out mipsOneBB.out mipsIfElse.out
@@ -114,6 +115,20 @@ advancedAddMain: advancedAddMain.c
 advancedAdd.out: advancedAdd advancedAddMain
 	mips-linux-gcc -static $(OBJ)/logicalTest.o $(OBJ)/logicalTestMain.o \
 	-o $(BIN)/advancedAdd.out
+
+
+# Shift test binary.
+shiftTest: shiftTest.c
+	mips-linux-gcc -static -march=r3000 -O1 $(CXXFLAGS) -I$(INCLUDE) -c $(SRC)/shiftTest.c \
+	-o $(OBJ)/shiftTest.o
+
+shiftTestMain: shiftTestMain.c
+	mips-linux-gcc -static -march=r3000 -O1 $(CXXFLAGS) -I$(INCLUDE) -c $(SRC)/shiftTestMain.c \
+	-o $(OBJ)/shiftTestMain.o
+
+shiftTest.out: shiftTest shiftTestMain
+	mips-linux-gcc -static $(OBJ)/shiftTest.o $(OBJ)/shiftTestMain.o \
+	-o $(BIN)/shiftTest.out
 
 
 ##Advanced add.

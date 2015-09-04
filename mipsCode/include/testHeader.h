@@ -19,6 +19,9 @@ int modulusTest(int, int, int, int);
 /*  Logical test function. */
 int logicalTest(int, int);
 
+/*  Shift test function. */
+int shiftTest(int, int);
+
 
 
 #endif

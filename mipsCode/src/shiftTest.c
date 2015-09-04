@@ -1,7 +1,9 @@
 /*  Test code consisting of main calling a simple add function. */
 
+#include "testHeader.h"
+
 /* Simple addiction function that is transformed */
-int shifterTMR(int a, int b) {
+int shiftTest(int a, int b) {
     /* add the numbers together and return them */
     int result = 0;
 
@@ -19,17 +21,3 @@ int shifterTMR(int a, int b) {
     return result;
 }
 
-/* Main sets two integer values. */
-int main(int argc, char** argv) {
-    /* values to be added */
-    int a = argv[0][0] - '0';
-    int b = argv[1][0] - '0';
-    int c;
-
-    /* call the add function */
-    if (argc > 3) {
-        c = shifterTMR(a, b);
-    } 
-    
-    return c;
-}
