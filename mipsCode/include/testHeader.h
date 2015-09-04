@@ -13,4 +13,7 @@ int oneBasic(int, int);
 /*  Modulus test function. */
 int modulusTest(int, int, int, int);
 
+/*  Logical test function. */
+int logicalTest(int, int);
+
 #endif

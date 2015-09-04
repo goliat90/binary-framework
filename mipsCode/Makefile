@@ -7,15 +7,20 @@ SRC = ./src
 INCLUDE = ./include
 OBJ = ./objectfiles
 ASM = ./assembly
+BIN = ./binaries
+
+CXXFLAGS = -mno-check-zero-division -fno-delayed-branch
 
 # Vpath, specifies which folders to look for files regarding dependency.
 VPATH = src:includes
 
 #The all rule which compiles all the binaries.
 all:	simpleAdd.out \
-		oneBasic.out
+		oneBasic.out \
+		modulusTest.out \
+		logicalTest.out
 #		mipsAdvancedAdd.out mipsDivisionTest.out \
-#		mipsModulusTest.out mipsDivisionMod.out mipsLogical.out \
+#		mipsDivisionMod.out mipsLogical.out \
 #		mipsShifter.out mipsNumCounter.out mipsOneBB.out mipsIfElse.out
 
 # Compile the simple add to object.
@@ -31,7 +36,7 @@ simpleAddMain: simpleAddMain.c
 #Link together to an out file. 
 simpleAdd.out: simpleAdd simpleAddMain
 	mips-linux-gcc -static $(OBJ)/simpleAdd.o $(OBJ)/simpleAddMain.o \
-	-o simpleAdd.out
+	-o $(BIN)/simpleAdd.out
 
 
 # Compile function object.
@@ -52,7 +57,7 @@ oneBasicMain: oneBasicMain.c
 #Link together to an out file. 
 oneBasic.out: oneBasic oneBasicMain
 	mips-linux-gcc -static $(OBJ)/oneBasic.o $(OBJ)/oneBasicMain.o \
-	-o oneBasic.out
+	-o $(BIN)/oneBasic.out
 
 #Link to make output file but with assembly of the function.
 oneBasicAsm.out: oneBasicMain
@@ -60,7 +65,6 @@ oneBasicAsm.out: oneBasicMain
 	-o oneBasicAsm.out
 
 # Modulus test binary
-# 
 modulusTest: modulusTest.c
 	mips-linux-gcc -static -march=r3000 -O1 -mno-check-zero-division -fno-delayed-branch -I$(INCLUDE) -c $(SRC)/modulusTest.c \
 	-o $(OBJ)/modulusTest.o
@@ -75,13 +79,26 @@ modulusTestMain: modulusTestMain.c
 
 modulusTest.out: modulusTest modulusTestMain
 	mips-linux-gcc -static $(OBJ)/modulusTest.o $(OBJ)/modulusTestMain.o \
-	-o modulusTest.out
+	-o $(BIN)/modulusTest.out
 
 modulusTestAsm.out: modulusTestMain
 	mips-linux-gcc -static $(ASM)/modulusTest.s $(OBJ)/modulusTestMain.o \
 	-o modulusTestAsm.out
 
 
+# Logical test binary.
+logicalTest: logicalTest.c
+	mips-linux-gcc -static -march=r3000 -O1 $(CXXFLAGS) -I$(INCLUDE) -c $(SRC)/logicalTest.c \
+	-o $(OBJ)/logicalTest.o
+
+logicalTestMain: logicalTestMain.c
+	mips-linux-gcc -static -march=r3000 -O1 $(CXXFLAGS) -I$(INCLUDE) -c $(SRC)/logicalTestMain.c \
+	-o $(OBJ)/logicalTestMain.o
+
+logicalTest.out: logicalTest logicalTestMain
+	mips-linux-gcc -static $(OBJ)/logicalTest.o $(OBJ)/logicalTestMain.o \
+	-o $(BIN)/logicalTest.out
+	
 
 ##Advanced add.
 #mipsAdvancedAdd.out: mipsAdvancedAdd.c
@@ -120,8 +137,8 @@ modulusTestAsm.out: modulusTestMain
 #	mips-linux-gcc -static -march=r3000 -O2 mipsNumCounter.c -o mipsNumCounter.out
 
 
-#Remove all binaries
+#Remove all binaries and object files.
 clean:
-	rm -f *.out
+	rm -f $(BIN)/*
 	rm -f $(OBJ)/*
 
