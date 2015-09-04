@@ -87,21 +87,27 @@ void naiveHandler::naiveBlockTransform(SgAsmBlock* block) {
             if (decodedMips.address == 0) {
                 regionList.push_back(*instIter);
             } else {
-                //TODO i need to change the behavior of the code to include the
-                //TODO the instruction that is just before the region in the transformation
-                //TODO if i dont then no symbolic registers can be used in the original instruction.
-                /* A original instruction was encountered, transform region if ther is one then save
-                    the original instruction. */
-                if (regionList.empty() == false) {
+                /*  An original instruction was encountered. If there is no region of code
+                    the the instructions is added to the regionList. If there is some
+                    instructions in the region list then do region allocation. In the
+                    worst case it will be region allocation on an alone original instruction.
+                    Other cases will be region transform on an original instruction and
+                    inserted instructions after it. */
+                if (false == regionList.empty()) {
                     /* There is a region to perform allocation on, since the list is not empty. */ 
                     regionAllocation(&regionList, preserveAcc); 
                     /* copy over the regionList to the transformed vector. */
-                    for(std::list<SgAsmStatement*>::iterator listIter = regionList.begin();
-                        listIter != regionList.end(); ++listIter) {
-                        transformedInstructionVector.push_back(*listIter);
-                    }
+                    transformedInstructionVector.insert(transformedInstructionVector.end(),
+                        regionList.begin(), regionList.end());
                     /* clear the regionList. */
                     regionList.clear();
+                    /*  Add the original instruction that signified the end of
+                        the region of inserted instructions. */
+                    regionList.push_back(*instIter);
+                } else {
+                    //if the list is empty we add the original instruction.
+                    //this is done so if it is just before a region it will be included in it. 
+                    regionList.push_back(*instIter);
                 }
                 /*  Check if the instruction that is potentially ahead of a region
                     influences if the accumulator should be preserved or not. */
@@ -121,8 +127,6 @@ void naiveHandler::naiveBlockTransform(SgAsmBlock* block) {
                         preserveAcc = true;
                     }
                 }
-                /*  save the original instruction. */
-                transformedInstructionVector.push_back(*instIter);
             }
         }
     }
@@ -131,10 +135,8 @@ void naiveHandler::naiveBlockTransform(SgAsmBlock* block) {
         /* There is a region to perform allocation on, since the list is not empty. */ 
         regionAllocation(&regionList, preserveAcc); 
         /* Copy over the regionList */
-        for(std::list<SgAsmStatement*>::iterator listIter = regionList.begin();
-            listIter != regionList.end(); ++listIter) {
-            transformedInstructionVector.push_back(*listIter);
-        }
+        transformedInstructionVector.insert(transformedInstructionVector.end(),
+            regionList.begin(), regionList.end());
     }
     /* Swap the transformedinstructionvector with the one in the basic block */
     instructionVector.swap(transformedInstructionVector);
@@ -189,8 +191,11 @@ void naiveHandler::regionAllocation(std::list<SgAsmStatement*>* regionList, bool
     offset = 0;
     
     /* if the accumulator register is used then add save and load instructions.
-        If the preserveAcc is false then we do not preserve the acc. */
-    if (usesAcc && preserveAcc) {
+        If the preserveAcc is false then we do not preserve the acc.
+        An additional condition is that we only add these instructions if
+        there has actually been an region transformation, that can be 
+        determined by checking if symbolicToHard is empty. */
+    if (usesAcc && preserveAcc && (false == symbolicToHard.empty())) {
         /* Save the accumulator register */
         mipsRegisterName moveReg = symbolicToHard.begin()->second;
         saveAccumulator(regionList, moveReg);
