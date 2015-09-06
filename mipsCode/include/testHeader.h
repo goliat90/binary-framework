@@ -28,6 +28,8 @@ int ifElseTest(int, int);
 /*  Division and modulus test function. */
 int divisionModulusTest(int, int);
 
+/*  Division test function. */
+int divistionTest(int, int, int, int);
 
 
 #endif

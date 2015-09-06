@@ -160,6 +160,20 @@ divisionModulusTest.out: divisionModulusTest divisionModulusTestMain
 	mips-linux-gcc -static $(OBJ)/divisionModulusTest.o $(OBJ)/divisionModulusTestMain.o \
 	-o $(BIN)/divisionModulusTest.out
 
+
+# Divison test binary.
+divisionTest: divisionTest.c
+	mips-linux-gcc $(CXXFLAGS) -I$(INCLUDE) -c $(SRC)/divisionTest.c \
+	-o $(OBJ)/divisionTest.o
+
+divisionTestMain: divisionTestMain.c
+	mips-linux-gcc $(CXXFLAGS) -I$(INCLUDE) -c $(SRC)/divisionTestMain.c \
+	-o $(OBJ)/divisionTestMain.o
+
+divisionTest.out: divisionTest divisionTestMain
+	mips-linux-gcc -static $(OBJ)/divisionTest.o $(OBJ)/divisionTestMain.o \
+	-o $(OBJ)/divisionTest.out
+
 ##Advanced add.
 #mipsAdvancedAdd.out: mipsAdvancedAdd.c
 #	mips-linux-gcc -static -march=r3000 -O1 mipsAdvancedAdd.c -o mipsAdvancedAdd.out
