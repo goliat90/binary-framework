@@ -9,7 +9,7 @@ OBJ = ./objectfiles
 ASM = ./assembly
 BIN = ./binaries
 
-CXXFLAGS = -mno-check-zero-division -fno-delayed-branch
+CXXFLAGS = -static -march=r3000 -O1 -mno-check-zero-division -fno-delayed-branch
 
 # Vpath, specifies which folders to look for files regarding dependency.
 VPATH = src:includes:binaries
@@ -93,11 +93,11 @@ modulusTestAsm.out: modulusTestMain
 
 # Logical test binary.
 logicalTest: logicalTest.c
-	mips-linux-gcc -static -march=r3000 -O1 $(CXXFLAGS) -I$(INCLUDE) -c $(SRC)/logicalTest.c \
+	mips-linux-gcc $(CXXFLAGS) -I$(INCLUDE) -c $(SRC)/logicalTest.c \
 	-o $(OBJ)/logicalTest.o
 
 logicalTestMain: logicalTestMain.c
-	mips-linux-gcc -static -march=r3000 -O1 $(CXXFLAGS) -I$(INCLUDE) -c $(SRC)/logicalTestMain.c \
+	mips-linux-gcc $(CXXFLAGS) -I$(INCLUDE) -c $(SRC)/logicalTestMain.c \
 	-o $(OBJ)/logicalTestMain.o
 
 logicalTest.out: logicalTest logicalTestMain
@@ -107,11 +107,11 @@ logicalTest.out: logicalTest logicalTestMain
 
 # Advanced add test binary. 
 advancedAdd: advancedAdd.c
-	mips-linux-gcc -static -march=r3000 -O1 $(CXXFLAGS) -I$(INCLUDE) -c $(SRC)/advancedAdd.c \
+	mips-linux-gcc $(CXXFLAGS) -I$(INCLUDE) -c $(SRC)/advancedAdd.c \
 	-o $(OBJ)/advancedAdd.o
 
 advancedAddMain: advancedAddMain.c
-	mips-linux-gcc -static -march=r3000 -O1 $(CXXFLAGS) -I$(INCLUDE) -c $(SRC)/advancedAddMain.c \
+	mips-linux-gcc $(CXXFLAGS) -I$(INCLUDE) -c $(SRC)/advancedAddMain.c \
 	-o $(OBJ)/advancedAddMain.o
 
 advancedAdd.out: advancedAdd advancedAddMain
@@ -121,11 +121,11 @@ advancedAdd.out: advancedAdd advancedAddMain
 
 # Shift test binary.
 shiftTest: shiftTest.c
-	mips-linux-gcc -static -march=r3000 -O1 $(CXXFLAGS) -I$(INCLUDE) -c $(SRC)/shiftTest.c \
+	mips-linux-gcc $(CXXFLAGS) -I$(INCLUDE) -c $(SRC)/shiftTest.c \
 	-o $(OBJ)/shiftTest.o
 
 shiftTestMain: shiftTestMain.c
-	mips-linux-gcc -static -march=r3000 -O1 $(CXXFLAGS) -I$(INCLUDE) -c $(SRC)/shiftTestMain.c \
+	mips-linux-gcc $(CXXFLAGS) -I$(INCLUDE) -c $(SRC)/shiftTestMain.c \
 	-o $(OBJ)/shiftTestMain.o
 
 shiftTest.out: shiftTest shiftTestMain
@@ -135,11 +135,11 @@ shiftTest.out: shiftTest shiftTestMain
 
 # if else test binary.
 ifElseTest: ifElseTest.c
-	mips-linux-gcc -static -march=r3000 -O1 $(CXXFLAGS) -I$(INCLUDE) -c $(SRC)/ifElseTest.c \
+	mips-linux-gcc $(CXXFLAGS) -I$(INCLUDE) -c $(SRC)/ifElseTest.c \
 	-o $(OBJ)/ifElseTest.o
 
 ifElseTestMain: ifElseTestMain.c
-	mips-linux-gcc -static -march=r3000 -O1 $(CXXFLAGS) -I$(INCLUDE) -c $(SRC)/ifElseTestMain.c \
+	mips-linux-gcc $(CXXFLAGS) -I$(INCLUDE) -c $(SRC)/ifElseTestMain.c \
 	-o $(OBJ)/ifElseTestMain.o
 
 ifElseTest.out: ifElseTest ifElseTestMain
@@ -149,11 +149,11 @@ ifElseTest.out: ifElseTest ifElseTestMain
 
 # Combined division modulus test binary.
 divisionModulusTest: divisionModulusTest.c
-	mips-linux-gcc -static -march=r3000 -O1 $(CXXFLAGS) -I$(INCLUDE) -c $(SRC)/divisionModulusTest.c \
+	mips-linux-gcc $(CXXFLAGS) -I$(INCLUDE) -c $(SRC)/divisionModulusTest.c \
 	-o $(OBJ)/divisionModulusTest.o
 
 divisionModulusTestMain: divisionModulusTestMain.c
-	mips-linux-gcc -static -march=r3000 -O1 $(CXXFLAGS) -I$(INCLUDE) -c $(SRC)/divisionModulusTestMain.c \
+	mips-linux-gcc $(CXXFLAGS) -I$(INCLUDE) -c $(SRC)/divisionModulusTestMain.c \
 	-o $(OBJ)/divisionModulusTestMain.o
 
 divisionModulusTest.out: divisionModulusTest divisionModulusTestMain
