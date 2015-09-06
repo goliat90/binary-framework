@@ -115,7 +115,7 @@ advancedAddMain: advancedAddMain.c
 	-o $(OBJ)/advancedAddMain.o
 
 advancedAdd.out: advancedAdd advancedAddMain
-	mips-linux-gcc -static $(OBJ)/logicalTest.o $(OBJ)/logicalTestMain.o \
+	mips-linux-gcc -static $(OBJ)/advancedAdd.o $(OBJ)/advancedAddMain.o \
 	-o $(BIN)/advancedAdd.out
 
 
