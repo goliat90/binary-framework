@@ -174,6 +174,21 @@ divisionTest.out: divisionTest divisionTestMain
 	mips-linux-gcc -static $(OBJ)/divisionTest.o $(OBJ)/divisionTestMain.o \
 	-o $(OBJ)/divisionTest.out
 
+
+# Stack allocation test binary.
+stackAllocationTest: stackAllocationTest.c
+	mips-linux-gcc $(CXXFLAGS) -I$(INCLUDE) -c $(SRC)/stackAllocationTest.c \
+	-o $(OBJ)/stackAllocationTest.o
+
+stackAllocationTestMain: stackAllocationTestMain.c
+	mips-linux-gcc $(CXXFLAGS) -I$(INCLUDE) -c $(SRC)/stackAllocationTestMain.c \
+	-o $(OBJ)/stackAllocationTestMain.o
+
+stackAllocationTest.out: stackAllocationTest stackAllocationTestMain
+	mips-linux-gcc -static $(OBJ)/stackAllocationTest.o	$(OBJ)/stackAllocationTestMain.o \
+	-o $(OBJ)/stackAllocationTest.out
+
+
 ##Advanced add.
 #mipsAdvancedAdd.out: mipsAdvancedAdd.c
 #	mips-linux-gcc -static -march=r3000 -O1 mipsAdvancedAdd.c -o mipsAdvancedAdd.out

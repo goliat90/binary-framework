@@ -31,5 +31,8 @@ int divisionModulusTest(int, int);
 /*  Division test function. */
 int divistionTest(int, int, int, int);
 
+/*  Stack alloc test function. */
+int stackAllocationTest(int, int, int, int, int);
+
 
 #endif
