@@ -5,18 +5,17 @@
 
 BINS=./binaries/*
 
-
-for bin in ./binaries/*
-
-
-
-echo "Testing all binaries."
+echo "Building graphs for binaries."
 #how about adding opt or naive as variable and the same with debugging.
 for bin in $BINS
 do
-    echo "Testing ${bin##*/}." 
+    echo "Graph for ${bin##*/}." 
+    # Get the function name from the binary.
     FUNC=$(basename $bin .out)
-    ../tmr/userRewriter.out $bin $FUNC 0 || exit
-
-# catch the failure and continue with a test.
+    # Call the graph writer.
+    ../binaryDot/CFGdot.out "$bin" "$FUNC" "0"
+    # Generate a png from the dot
+    dot "-Tpng" "${FUNC}0.dot" "-o${FUNC}0.png"
+    # Clean up by removing the dot file.
+    rm "${FUNC}0.dot"
 done
