@@ -1,6 +1,8 @@
 /*  Test code consisting of main calling a advanced add function.
     The purpose of this code is to generate code that uses accumulator functions. */
 
+#include "testHeader.h"
+
 /* Simple addiction function that is transformed */
 long long advancedAdd(int a, int b) {
     /* add the numbers together and return them */
