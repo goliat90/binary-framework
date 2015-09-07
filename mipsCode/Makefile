@@ -22,7 +22,9 @@ all:	simpleAdd.out \
 		advancedAdd.out \
 		shiftTest.out \
 		ifElseTest.out \
-		divisionModulusTest.out
+		divisionModulusTest.out \
+        divisionTest.out \
+        stackAllocationTest.out
 #		mipsAdvancedAdd.out mipsDivisionTest.out \
 #		mipsDivisionMod.out mipsLogical.out \
 #		mipsShifter.out mipsNumCounter.out mipsOneBB.out mipsIfElse.out
@@ -172,7 +174,7 @@ divisionTestMain: divisionTestMain.c
 
 divisionTest.out: divisionTest divisionTestMain
 	mips-linux-gcc -static $(OBJ)/divisionTest.o $(OBJ)/divisionTestMain.o \
-	-o $(OBJ)/divisionTest.out
+	-o $(BIN)/divisionTest.out
 
 
 # Stack allocation test binary.
@@ -186,7 +188,7 @@ stackAllocationTestMain: stackAllocationTestMain.c
 
 stackAllocationTest.out: stackAllocationTest stackAllocationTestMain
 	mips-linux-gcc -static $(OBJ)/stackAllocationTest.o	$(OBJ)/stackAllocationTestMain.o \
-	-o $(OBJ)/stackAllocationTest.out
+	-o $(BIN)/stackAllocationTest.out
 
 
 ##Advanced add.
