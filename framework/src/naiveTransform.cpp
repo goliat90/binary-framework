@@ -46,6 +46,8 @@ void naiveHandler::applyTransformation() {
     CFG* function = cfgContainer->getFunctionCFG();
     /* Find the maximum use of symbolic registers. */
     determineStackModification();
+    /*  Need to fix any load or store instructions that use
+        the old stack pointer value. */
     
     /* Go through the instructions in a basic block and  */
     for(std::pair<CFGVIter, CFGVIter> iterPair = vertices(*function);
@@ -57,6 +59,7 @@ void naiveHandler::applyTransformation() {
     }
     /*  Modify the stack. */
     modifyStack();
+
 }
 
 /* Goes applies the naive transformation in a basic block. */
@@ -392,11 +395,7 @@ mipsRegisterName naiveHandler::getHardRegister() {
 
 /*  Adjust the size of the stack. Either activation record instructions are changed
     or they are created and inserted. */
-//TODO this function relies on the old methods of modifying the stack
-//TODO need to update them. 
 void naiveHandler::modifyStack() {
-    //TODO I have sets of activation and deactivation instructions. they
-    //TODO can be checked first, if they are present then modify them.
     /*  Get the activation set and check if it contains activation instructions.
         If there are then modify them, otherwise create instructions. */
     std::set<SgAsmMipsInstruction*>* activationSet = cfgContainer->getActivationInstructions();
@@ -510,8 +509,49 @@ void naiveHandler::modifyStack() {
     }
 }
 
+
+/*  When the stack offset is modified to give space for the naives
+    load and stores the stack pointer is incorrect for other instructions
+    and needs to be adjusted. This needs to be fixed before naive
+    adds its load and store instructions. */
+void naiveHandler::repairMemoryInstructions() {
+    /*  Pointer to cfg. */
+    CFG* functionCFG = cfgContainer->getFunctionCFG();
+    //TODO go through the function cfg and iterate each block.
+    /*  Go through the CFG and each block. */
+    for(std::pair<CFGVIter, CFGVIter> iterPair = vertices(*functionCFG);
+        iterPair.first != iterPair.second; ++iterPair.first) {
+        /*  get the basic block. */
+        SgAsmBlock* basic = get(boost::vertex_name, *functionCFG, *iterPair.first);
+        /*  Get the statement list. */
+        SgAsmStatementPtrList& instList = basic->get_statementList();
+        /*  Iterate the statements and look for load or stores. */
+        for(SgAsmStatementPtrList::iterator stmtIter = instList.begin();
+            stmtIter != instList.end(); ++stmtIter) {
+            /*  Check that it is an mips instruction. */
+            if (V_SgAsmMipsInstruction == (*stmtIter)->variantT()) {
+                /*  Get a pointer. */
+                SgAsmMipsInstruction* mips = isSgAsmMipsInstruction(*stmtIter);
+                /*  Check if the instruction is an load or store. */
+                instructionType instType = getInstructionFormat(mips->get_kind());
+                if ((instType == I_RD_MEM_RS_C) || (instType == I_RS_MEM_RT_C)) {
+                    /*  Get the operand list and inspect the registers. */
+                    SgAsmExpressionPtrList& opList = mips->get_operandList()->get_operands();
+                    /*  I need to take the second operand and see if it is
+                        an register expression that is sp. If it is then get
+                        the offset and adjust it. */
+                    //TODO if it is then adjust(increase) the offset to account for naives stack space.
+                }
+            }
+        }
+    }
+
+}
+
 /* Find the maximum amount of used symbolic registers used at the same time.
     Also check if an original instruction is using the acc register. */
+//TODO in the counter i do not include original instructions using symbolics.
+//TODO should change the behavior about when to reset the counter, when an instruction uses no symbolics?
 void naiveHandler::determineStackModification() {
     /* counter for symbolic registers */
     int maxSymbolics = 0;

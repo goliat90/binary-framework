@@ -48,6 +48,9 @@ class naiveHandler{
         void determineStackModification();
         /*  Adjusts the stack size */
         void modifyStack();
+        /*  Correct load and store instructions that depend on the original
+            stack pointer. */
+        void repairMemoryInstructions();
         /*  Help function that increments register use for special registers. */
         void specialInstructionUse(MipsInstructionKind, int*);
         /*  Transforms a basic block. Inserts SW/LW instructions and replaces
