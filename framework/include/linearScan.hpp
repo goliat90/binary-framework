@@ -50,6 +50,8 @@ class linearScanHandler {
     uint64_t stackOffset;
     /*  Maximum spills offset.  */
     uint64_t maxSpillOffset;
+    /*  Set to track new memory instructions added by linear scan. */
+    std::set<SgAsmMipsInstruction*> newMemoryOps;
 
     /*  Functions. */
     /*  Sets up the register pool. */
@@ -57,6 +59,8 @@ class linearScanHandler {
     /*  Replace temporary registers with symbolic names before live-range analysis.
         The registers used by linear scan is t0-7, t8,t9. */
     void replaceHardRegisters();
+    /*  Repair memory instructions working on the old sp pointer. */
+
     /*  Linear scan allocation function */
     void linearScanAllocation();
     /*  Expire old live interval */
@@ -65,6 +69,8 @@ class linearScanHandler {
     void spillAtInterval(intervalMap::left_iterator);
     /*  Modifies stack appropriateley. */
     void linearStackModification();
+    /*  Repair memory instructions that uses the old stack pointer. */
+    void linearRepairMemoryInstructions();
     /*  Go through the instructions and replace the symbolic registers. */
     void replaceSymbolicRegisters();
     /*  help function to build load and store instructions for spilled registers. */

@@ -14,6 +14,8 @@ linearScanHandler::linearScanHandler(CFGhandler* passedCfgObject){
     stackOffset = 0;
     /*  reset spill counter */
     maxSpillOffset = 0;
+    /*  Clear set. */
+    newMemoryOps.clear();
     /*  Save the pointer to the cfg handler */
     cfgHandlerPtr = passedCfgObject;
     /*  Create the live variable analysis object */
@@ -34,13 +36,13 @@ void linearScanHandler::initializeRegisterPool() {
     registerPool.push_front(t1);
     registerPool.push_front(t2);
     registerPool.push_front(t3);
-    registerPool.push_front(t4);
-    registerPool.push_front(t5);
-    registerPool.push_front(t6);
-    registerPool.push_front(t7);
+    //registerPool.push_front(t4);
+    //registerPool.push_front(t5);
+    //registerPool.push_front(t6);
+    //registerPool.push_front(t7);
     /*  t8-t9 */
-    registerPool.push_front(t8);
-    registerPool.push_front(t9);
+    //registerPool.push_front(t8);
+    //registerPool.push_front(t9);
 }
 
 
@@ -59,12 +61,15 @@ void linearScanHandler::applyLinearScan() {
     }
     replaceHardRegisters();
 
-    //TODO here i need to check if any of the original instructions uses the accumulator.
-    //if so i have to save it when needed. */
+    /*  Check if any of the original instructions uses the accumulator.
+        Depending if the accumulator is used or not the acc will be saved.
+        If saved loads and stores are inserted. */
     if (debuging) {
         std::cout << "Checking for use of accumulator in original instructions." << std::endl;
     }
     checkAccumulatorAndFix();
+    //TODO this instruction inserts potential loads and stores that are correct
+    //TODO according to the new sp pointer.
 
     /*  Get live-range analysis done before performing register allocation. */
     if (debuging) {
@@ -77,6 +82,10 @@ void linearScanHandler::applyLinearScan() {
         std::cout << "Starting Linear Scan register allocation." << std::endl;
     }
     linearScanAllocation();
+    
+    //TODO at this point i know how much spill i have and the needed stack that will
+    //TODO be needed for the spilled variables.
+
 
     /*  Replace all symbolic registers with real register and
         insert instructions for spilled registers. */
@@ -84,6 +93,17 @@ void linearScanHandler::applyLinearScan() {
         std::cout << "Replacing symbolic registers." << std::endl; 
     }
     replaceSymbolicRegisters();
+
+    //TODO at this point i know the how much more stack space is needed
+    //TODO when temporarily saving the registers to the stack to load spilled values. (spill offset)
+    //TODO the problem is that only know the spill offset after i have inserted them.
+    //TODO so i have instructions that are working with the new sp and instructions
+    //TODO using the old sp, which have to be fixed. I have new memory instructions
+    //TODO that should not be modified so i have to track them, the only way i see i can solve it in this structure.
+    if (debuging) {
+        std::cout << "Fixing memory instructions relying on old stack pointer." << std::endl;
+    }
+    linearRepairMemoryInstructions();
 
     /*  After linear scan has been performed modify the stack. If there is no
         stack then create stack instructions. */
@@ -279,6 +299,8 @@ void linearScanHandler::checkAccumulatorAndFix() {
                                     beforeInserts.push_back(mipsmflo);
                                     //TODO store it on the stack.
                                     SgAsmMipsInstruction* mipsLoStore = buildLoadOrStoreSpillInstruction(mips_sw, fromLoReg, 0);
+                                    /*  Save the pointer for later. */
+                                    newMemoryOps.insert(mipsLoStore);
                                     beforeInserts.push_back(mipsLoStore);
 
                                     //TODO move hi to a register.
@@ -294,11 +316,15 @@ void linearScanHandler::checkAccumulatorAndFix() {
                                     beforeInserts.push_back(mipsmfhi);
                                     //TODO store it on the stack.
                                     SgAsmMipsInstruction* mipsHiStore = buildLoadOrStoreSpillInstruction(mips_sw, fromHiReg, 4);
+                                    /*  Save the pointer for later. */
+                                    newMemoryOps.insert(mipsHiStore);
                                     beforeInserts.push_back(mipsHiStore);
 
                                     //TODO prepare a load instruction to insert after.
                                     registerStruct toLoReg = generateSymbolicRegister();
                                     SgAsmMipsInstruction* mipsLoLoad = buildLoadOrStoreSpillInstruction(mips_lw, toLoReg, 0);
+                                    /*  Save the pointer for later. */
+                                    newMemoryOps.insert(mipsLoLoad);
                                     afterInserts.push_back(mipsLoLoad);
                                     //TODO prepare a move register to acc instruction.
                                     instructionStruct mtlo;
@@ -313,6 +339,8 @@ void linearScanHandler::checkAccumulatorAndFix() {
                                     //TODO prepare a load instruction to insert after.
                                     registerStruct toHiReg = generateSymbolicRegister();
                                     SgAsmMipsInstruction* mipsHiLoad = buildLoadOrStoreSpillInstruction(mips_lw, toHiReg, 4);
+                                    /*  Save the pointer for later. */
+                                    newMemoryOps.insert(mipsHiLoad);
                                     afterInserts.push_back(mipsHiLoad);
                                     //TODO prepare a move register to acc instruction.
                                     instructionStruct mthi;
@@ -401,8 +429,63 @@ void linearScanHandler::checkAccumulatorAndFix() {
                 SgAsmStatementPtrList temp(shadowList.begin(), shadowList.end());
                 stmtList.swap(temp);
         }
-        /*  Increase the stack value so we dont overwrite the acc values. */
-        stackOffset += 8;
+        /*  If the newMemoryOps set is not empty then we increase the stack. */
+        if (!newMemoryOps.empty()) {
+            stackOffset += 8;
+        }
+    }
+}
+
+
+/*  Function that fixes the offset of memory instructions that use the old
+    stack pointer value. */
+void linearScanHandler::linearRepairMemoryInstructions() {
+    /*  Get a pointer to the cfg. */
+    CFG* functionCFG = cfgHandlerPtr->getFunctionCFG();
+    /*  Iterate through the function cfg and check the instructions. */
+    for(std::pair<CFGVIter, CFGVIter> iterPair = vertices(*functionCFG);
+        iterPair.first != iterPair.second; ++iterPair.first) {
+        /*  Get the block pointer. */
+        SgAsmBlock* basic = get(boost::vertex_name, *functionCFG, *iterPair.first);
+        /*  Get the statement list. */
+        SgAsmStatementPtrList& stmtList = basic->get_statementList();
+        /*  Iterate the statement list and inspect instructions. */
+        for(SgAsmStatementPtrList::iterator stmtIter = stmtList.begin();
+            stmtIter != stmtList.end(); ++stmtIter) {
+            //TODO skip the memory instructions that have been inserted by linear scan.
+            /*  Check if it is an mips instruction. */
+            if (V_SgAsmMipsInstruction == (*stmtIter)->variantT()) {
+                /*  Cast the pointer. */
+                SgAsmMipsInstruction* mips = isSgAsmMipsInstruction(*stmtIter);
+                /*  Check if the instruction is a load or store type. */
+                instructionType instType = getInstructionFormat(mips->get_kind());
+                if ((instType == I_RD_MEM_RS_C) || (instType == I_RS_MEM_RT_C)) {
+                    /*  Get the operand list of the instruction. */
+                    SgAsmExpressionPtrList& opList = mips->get_operandList()->get_operands();
+                    /*  Extract the register used as base address from the sgasmbinaryadd. */
+                    SgAsmMemoryReferenceExpression* memRef = isSgAsmMemoryReferenceExpression(opList.at(1));
+                    SgAsmBinaryAdd* binAdd = isSgAsmBinaryAdd(memRef->get_address());
+                    /*  Decode the register and check if it is the stack pointer. */
+                    registerStruct basePointer = decodeRegister(binAdd->get_lhs());
+                    if (sp == basePointer.regName) {
+                        /*  The base pointer is Sp so the offset needs to be fixed. */
+                        SgAsmIntegerValueExpression* offsetExpr = isSgAsmIntegerValueExpression(binAdd->get_rhs());
+                        /*  Get the constant and check it. */
+                        uint64_t memOffset = offsetExpr->get_absoluteValue();
+                        /*  Check if the offset is positive or negative. */
+                        if (0 <= (int64_t) memOffset) {
+                            /*  The offset is zero or positive. */
+                            memOffset += (stackOffset + maxSpillOffset);
+                        } else if (0 > (int64_t) memOffset) {
+                            /*  The offset is negative. */
+                            memOffset -= (stackOffset + maxSpillOffset);
+                        }
+                        /*  Set the new offset. */
+                        offsetExpr->set_absoluteValue(memOffset);
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -689,6 +772,8 @@ void linearScanHandler::replaceSymbolicRegisters() {
                             spillStruct.regName = spillReg;
                             SgAsmMipsInstruction* store = buildLoadOrStoreSpillInstruction
                                 (mips_sw, spillStruct, stackOffset+spillOffset);
+                            /*  Save the memory instructions. */
+                            newMemoryOps.insert(store);
                             beforeSpillInst.push_back(store);
                             /*  The value residing in the register is temporarily stored, now the spilled
                                 value can be loaded and used in the instruction. Afterwards it is saved in memeory. */
@@ -697,6 +782,8 @@ void linearScanHandler::replaceSymbolicRegisters() {
                             /*  Build load and store instructions using the offset. */
                             SgAsmMipsInstruction* memVarLoad = buildLoadOrStoreSpillInstruction
                                 (mips_lw, spillStruct, memVariableOffset);
+                            /*  Save the memory instructions. */
+                            newMemoryOps.insert(memVarLoad);
                             beforeSpillInst.push_back(memVarLoad);
 
                             //TODO Is it really right to save the variable if it is only used as source?
@@ -708,6 +795,8 @@ void linearScanHandler::replaceSymbolicRegisters() {
                             /*  Create a load instruction to retrieve the temporary stored value. */
                             SgAsmMipsInstruction* load = buildLoadOrStoreSpillInstruction
                                 (mips_lw, spillStruct, stackOffset+spillOffset);
+                            /*  Save the memory instructions. */
+                            newMemoryOps.insert(load);
                             afterSpillInst.push_back(load);
                             /*  Increase the spill offset. */
                             spillOffset += 4;
@@ -747,6 +836,8 @@ void linearScanHandler::replaceSymbolicRegisters() {
                             spillStruct.regName = spillReg;
                             SgAsmMipsInstruction* store = buildLoadOrStoreSpillInstruction
                                 (mips_sw, spillStruct, stackOffset+spillOffset);
+                            /*  Save the memory instruction. */
+                            newMemoryOps.insert(store);
                             beforeSpillInst.push_back(store);
                             /*  The value residing in the register is temporarily stored, now the spilled
                                 value can be stored after it has recieved its new value. */
@@ -755,10 +846,14 @@ void linearScanHandler::replaceSymbolicRegisters() {
                             /*  Create a store instruction using the offset. */
                             SgAsmMipsInstruction* memVariableStore = buildLoadOrStoreSpillInstruction
                                 (mips_sw, spillStruct, memVariableOffset);
+                            /*  Save the memory instruction. */
+                            newMemoryOps.insert(memVariableStore);
                             afterSpillInst.push_back(memVariableStore);
                             /*  Create a load instruction to retrieve the temporary stored value. */
                             SgAsmMipsInstruction* load = buildLoadOrStoreSpillInstruction
                                 (mips_lw, spillStruct, stackOffset+spillOffset);
+                            /*  Save the memory instruction. */
+                            newMemoryOps.insert(load);
                             afterSpillInst.push_back(load);
                             /*  Increase the spill offset. */
                             spillOffset += 4;
@@ -873,7 +968,8 @@ void linearScanHandler::linearStackModification() {
         std::cout << "Combined: " << std::hex << (stackOffset + maxSpillOffset) << std::endl;
     }
     /*  Check if the spillmap is not empty, if so then adjust the stack. */
-    if (0 < spillMap.size()) {
+    /*  Check if any of the spill offsets are bigger than zero. */
+    if (0 < stackOffset || 0 < maxSpillOffset) {//0 < spillMap.size()) {
         /*  Get the activation set and check if it is empty or not.
             If not empty then go through it and adjust the instructions.
             Otherwise create our own instructions. */
