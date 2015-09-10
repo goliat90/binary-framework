@@ -48,6 +48,7 @@ void naiveHandler::applyTransformation() {
     determineStackModification();
     /*  Need to fix any load or store instructions that use
         the old stack pointer value. */
+    repairMemoryInstructions();
     
     /* Go through the instructions in a basic block and  */
     for(std::pair<CFGVIter, CFGVIter> iterPair = vertices(*function);
@@ -540,7 +541,28 @@ void naiveHandler::repairMemoryInstructions() {
                     /*  I need to take the second operand and see if it is
                         an register expression that is sp. If it is then get
                         the offset and adjust it. */
-                    //TODO if it is then adjust(increase) the offset to account for naives stack space.
+                    /*  Take the binary add expression and get the constant and register. */
+                    SgAsmMemoryReferenceExpression* memRef = isSgAsmMemoryReferenceExpression(opList.at(1));
+                    SgAsmBinaryAdd* binAdd = isSgAsmBinaryAdd(memRef->get_address());
+                    /*  Decode the register used as base for offset. */
+                    registerStruct pointerReg = decodeRegister(binAdd->get_lhs());
+                    /*  Check if the register is the SP register. */
+                    if (sp == pointerReg.regName) {
+                        /*  The register is sp so the offset needs to be adjusted. */
+                        SgAsmIntegerValueExpression* valExpr = isSgAsmIntegerValueExpression(binAdd->get_rhs());
+                        /*  Get the constant expression and adjust it. */
+                        uint64_t memOffset = valExpr->get_absoluteValue();
+                        /*  Check if the offset is positive of negative. */
+                        if (0 <= (int64_t) memOffset) {
+                            /*  The offset is zero or positive. Add to the offset. */
+                            memOffset += (maximumSymbolicsUsed * 4);
+                        } else if (0 > (int64_t) memOffset) {
+                            /*  The offset is negative. Remove from the offset. */
+                            memOffset -= (maximumSymbolicsUsed * 4);
+                        }
+                        /*  Assign the new offset. */
+                        valExpr->set_absoluteValue(memOffset);
+                    }
                 }
             }
         }
