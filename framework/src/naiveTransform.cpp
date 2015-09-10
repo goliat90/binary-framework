@@ -518,7 +518,6 @@ void naiveHandler::modifyStack() {
 void naiveHandler::repairMemoryInstructions() {
     /*  Pointer to cfg. */
     CFG* functionCFG = cfgContainer->getFunctionCFG();
-    //TODO go through the function cfg and iterate each block.
     /*  Go through the CFG and each block. */
     for(std::pair<CFGVIter, CFGVIter> iterPair = vertices(*functionCFG);
         iterPair.first != iterPair.second; ++iterPair.first) {
@@ -567,7 +566,6 @@ void naiveHandler::repairMemoryInstructions() {
             }
         }
     }
-
 }
 
 /* Find the maximum amount of used symbolic registers used at the same time.
