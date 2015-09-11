@@ -17,6 +17,10 @@ VPATH = src:include:objectfiles
 
 all: libConvenience.la
 
+binaryChanger.lo: binaryChanger.cpp binaryChanger.hpp
+	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o $(OBJDIR)/binaryChanger.lo \
+	$(SRCDIR)/binaryChanger.cpp
+
 graphDAG.lo: graphDAG.cpp graphDAG.hpp
 	libtool --mode=compile g++ -g $(ROSE_INCLUDES) -I./include -I/home/$(PATHDIFF) -c -o $(OBJDIR)/graphDAG.lo \
 	$(SRCDIR)/graphDAG.cpp
@@ -64,7 +68,7 @@ test.lo: test.cpp
 
 # Compile a library object file
 libConvenience.la: binaryRewriter.lo symbolicRegisters.lo mipsISA.lo binaryDebug.lo cfgHandler.lo naiveTransform.lo \
-		linearScan.lo liveVariableAnalysis.lo listScheduler.lo graphDAG.lo
+		linearScan.lo liveVariableAnalysis.lo listScheduler.lo graphDAG.lo binaryChanger.lo
 	libtool --mode=link g++ $(ROSE_LIBS) -o libConvenience.la $(OBJDIR)/*.lo
 
 # Executable rule that can be used in case
