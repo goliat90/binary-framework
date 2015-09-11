@@ -50,10 +50,6 @@ class CFGhandler {
         void setDebugging(bool mode) {debugging = mode;};
         /* Allowed to transform this instruction */
         bool isForbiddenInstruction(SgAsmMipsInstruction*); 
-        /* Check if an instruction has a new address */
-        bool hasNewAddress(rose_addr_t);
-        /* Get the new address of an instruction */
-        rose_addr_t getNewAddress(rose_addr_t);
         /* return pointer to function cfg */
         CFG* getFunctionCFG();
         /* return pointer to program CFG */
@@ -106,6 +102,9 @@ class CFGhandler {
         /* Finds activation records in the functioncfg */
         void findActivationRecords();
         /* Find lowest address and highest address in the function cfg */
+        //TODO this function servers no purpose. If i reuse the handler for
+        //TODO several functions then the addresses will differ.
+        //or Track it for total? as in the overall highest and lowest address?
         void findAddressRange();
 };
 

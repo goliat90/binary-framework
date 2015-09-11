@@ -24,25 +24,6 @@ CFG* CFGhandler::getProgramCFG() {
     return programCFG;
 }
 
-/* Get the new address for the instruction */
-rose_addr_t CFGhandler::getNewAddress(rose_addr_t oldAddress) {
-    /* search address map for entry */
-    return instructionMap.find(oldAddress)->second;
-}
-
-
-/* Check if the address has been relocated */
-bool CFGhandler::hasNewAddress(rose_addr_t instructionAddress) {
-    /* search address map for entry */
-    int found = instructionMap.count(instructionAddress);
-    /* address i present then found is 1, otherwise 0 */
-    if (found == 1) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
 
 /* Is the instruction allowed to be transformed? */
 bool CFGhandler::isForbiddenInstruction(SgAsmMipsInstruction* inst) {
@@ -288,6 +269,8 @@ void CFGhandler::findAddressRange() {
 }
 
 /* Makes a cfg for a specific function */
+//TODO I need to adjust this if i want to be able to reuse the handler for each function.
+//TODO clear activation/deactivation sets for example. They will not affect but take up space in the sets.
 void CFGhandler::createFunctionCFG(std::string newFunctionName) {
     /* Save the programcfg and the function name. */
     functionName = newFunctionName;
