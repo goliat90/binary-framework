@@ -457,31 +457,35 @@ void linearScanHandler::linearRepairMemoryInstructions() {
             if (V_SgAsmMipsInstruction == (*stmtIter)->variantT()) {
                 /*  Cast the pointer. */
                 SgAsmMipsInstruction* mips = isSgAsmMipsInstruction(*stmtIter);
-                /*  Check if the instruction is a load or store type. */
-                instructionType instType = getInstructionFormat(mips->get_kind());
-                if ((instType == I_RD_MEM_RS_C) || (instType == I_RS_MEM_RT_C)) {
-                    /*  Get the operand list of the instruction. */
-                    SgAsmExpressionPtrList& opList = mips->get_operandList()->get_operands();
-                    /*  Extract the register used as base address from the sgasmbinaryadd. */
-                    SgAsmMemoryReferenceExpression* memRef = isSgAsmMemoryReferenceExpression(opList.at(1));
-                    SgAsmBinaryAdd* binAdd = isSgAsmBinaryAdd(memRef->get_address());
-                    /*  Decode the register and check if it is the stack pointer. */
-                    registerStruct basePointer = decodeRegister(binAdd->get_lhs());
-                    if (sp == basePointer.regName) {
-                        /*  The base pointer is Sp so the offset needs to be fixed. */
-                        SgAsmIntegerValueExpression* offsetExpr = isSgAsmIntegerValueExpression(binAdd->get_rhs());
-                        /*  Get the constant and check it. */
-                        uint64_t memOffset = offsetExpr->get_absoluteValue();
-                        /*  Check if the offset is positive or negative. */
-                        if (0 <= (int64_t) memOffset) {
-                            /*  The offset is zero or positive. */
-                            memOffset += (stackOffset + maxSpillOffset);
-                        } else if (0 > (int64_t) memOffset) {
-                            /*  The offset is negative. */
-                            memOffset -= (stackOffset + maxSpillOffset);
+                /*  Check if the pointer belongs to an new memory instruction,
+                    if true then skip adjusting it since that will make it incorrect. */
+                if (1 != newMemoryOps.count(mips)) {
+                    /*  Check if the instruction is a load or store type. */
+                    instructionType instType = getInstructionFormat(mips->get_kind());
+                    if ((instType == I_RD_MEM_RS_C) || (instType == I_RS_MEM_RT_C)) {
+                        /*  Get the operand list of the instruction. */
+                        SgAsmExpressionPtrList& opList = mips->get_operandList()->get_operands();
+                        /*  Extract the register used as base address from the sgasmbinaryadd. */
+                        SgAsmMemoryReferenceExpression* memRef = isSgAsmMemoryReferenceExpression(opList.at(1));
+                        SgAsmBinaryAdd* binAdd = isSgAsmBinaryAdd(memRef->get_address());
+                        /*  Decode the register and check if it is the stack pointer. */
+                        registerStruct basePointer = decodeRegister(binAdd->get_lhs());
+                        if (sp == basePointer.regName) {
+                            /*  The base pointer is Sp so the offset needs to be fixed. */
+                            SgAsmIntegerValueExpression* offsetExpr = isSgAsmIntegerValueExpression(binAdd->get_rhs());
+                            /*  Get the constant and check it. */
+                            uint64_t memOffset = offsetExpr->get_absoluteValue();
+                            /*  Check if the offset is positive or negative. */
+                            if (0 <= (int64_t) memOffset) {
+                                /*  The offset is zero or positive. */
+                                memOffset += (stackOffset + maxSpillOffset);
+                            } else if (0 > (int64_t) memOffset) {
+                                /*  The offset is negative. */
+                                memOffset -= (stackOffset + maxSpillOffset);
+                            }
+                            /*  Set the new offset. */
+                            offsetExpr->set_absoluteValue(memOffset);
                         }
-                        /*  Set the new offset. */
-                        offsetExpr->set_absoluteValue(memOffset);
                     }
                 }
             }

@@ -59,7 +59,6 @@ class linearScanHandler {
     /*  Replace temporary registers with symbolic names before live-range analysis.
         The registers used by linear scan is t0-7, t8,t9. */
     void replaceHardRegisters();
-    /*  Repair memory instructions working on the old sp pointer. */
 
     /*  Linear scan allocation function */
     void linearScanAllocation();
