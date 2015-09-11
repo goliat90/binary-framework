@@ -8,6 +8,7 @@
 
 /*  Includes. */
 #include "cfgHandler.hpp"
+#include "rose.h"
 
 class binaryChanger {
     public:
@@ -19,8 +20,20 @@ class binaryChanger {
     binaryChanger();
 
     /*  Private variables. */
+    /*  Cfg handler pointer. */
     CFGhandler* cfgObject;
+    /*  Container for the block pointers. */
 
+    /*  Container map old addresses from new. */
+    //TODO Consider hving this as a boost bimap. could i need mapping between new and old?
+    std::map<rose_addr_t, rose_addr_t> oldToNewAddrMap;
+
+    /*  Container to track a basic blocks end address. */
+    //TODO knowing the end address might be essential to be able to handle address gaps in the block.
+    std::map<rose_addr_t, rose_addr_t> blockGrowth;
+
+    /*  Track the size or end address of basic blocks... */
+    //TODO knowing how much an block has grown will be useful.
 };
 
 #endif

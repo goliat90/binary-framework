@@ -11,6 +11,7 @@
 #include "naiveTransform.hpp"
 #include "linearScan.hpp"
 #include "listScheduler.hpp"
+#include "binaryChanger.hpp"
 
 // Boost lib headers
 #include <boost/graph/adjacency_list.hpp>
