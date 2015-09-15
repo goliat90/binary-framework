@@ -10,30 +10,55 @@
 #include "cfgHandler.hpp"
 #include "rose.h"
 
+
+/*  Struct with overloaded () operator used for sorting the basic blocks. */
+struct blockSortStruct {
+    bool operator()(SgAsmBlock* i, SgAsmBlock* j) const {
+        return (i->get_address() < j->get_address());
+    }
+};
+
 class binaryChanger {
     public:
     /*  Take CFG handler pointer so the program cfg is available. */
     binaryChanger(CFGhandler*);
+    /*  Initial analysis of the of the binary before the transformation. */
+    void preTransformAnalysis();
+    /*  Post transformation work. */
+    void postTransformationWork();
 
     private:
     /*  Hide default constructor. */
     binaryChanger();
 
     /*  Private variables. */
+    /*  Debugging variable. */
+    bool debugging;
     /*  Cfg handler pointer. */
     CFGhandler* cfgObject;
-    /*  Container for the block pointers. */
+    /*  Container for the block pointers.
+        It will be sorted according to address. */
+    std::vector<SgAsmBlock*> basicBlockVector;
 
-    /*  Container map old addresses from new. */
-    //TODO Consider hving this as a boost bimap. could i need mapping between new and old?
+    /*  Map for the blocks starting address. I assume it is
+        the blocks address or the first instructions. */
+    std::map<SgAsmBlock*, rose_addr_t> blockStartAddrMap;
+    /*  Map for the blocks end address. */
+    std::map<SgAsmBlock*, rose_addr_t> blockEndAddrMap;
+
+    /*  Map between old addresses and new. */
     std::map<rose_addr_t, rose_addr_t> oldToNewAddrMap;
 
-    /*  Container to track a basic blocks end address. */
-    //TODO knowing the end address might be essential to be able to handle address gaps in the block.
-    std::map<rose_addr_t, rose_addr_t> blockGrowth;
+    /*  Map storing the original block size of blocks.
+        Retrieved before transforming. */
+    std::map<SgAsmBlock*, int> blockOriginalSize;
+    /*  The new size of basic blocks, if their size has changed
+        then they have an entry here. */
+    std::map<SgAsmBlock*, int> blockNewSize;
 
-    /*  Track the size or end address of basic blocks... */
-    //TODO knowing how much an block has grown will be useful.
+    //TODO some kind of structure to store the segments, perhaps ordered.
+    //TODO use it when rezising.
+    //TODO perhaps have structure for after changes have been done.
 };
 
 #endif
