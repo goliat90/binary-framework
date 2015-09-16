@@ -84,6 +84,8 @@ class BinaryRewriter {
         SgProject* binaryProjectPtr;
         /* Cfghandler pointer */
         CFGhandler* cfgContainer;
+        /*  Binary changer pointer. */
+        binaryChanger* sizeHandler;
         //Shadow statement list. This list will be swaped with the statementlist
         //att the end of traversing a basic blocks statement list. (vector)
         SgAsmStatementPtrList* shadowStatementListPtr;

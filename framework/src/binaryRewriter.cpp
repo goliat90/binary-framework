@@ -30,6 +30,8 @@ void BinaryRewriter::initialize(int argc, char **binaryFile) {
 }
 
 /* Used to select the function to be transformed and builds the functioncfg */
+//TODO this function needs to be changed to handle several names.
+//TODO pass a container of strings?
 void BinaryRewriter::functionSelect(std::string fName) {
     /* call on cfghandler to build the functioncfg */
     /* Check if debuging should be active. */
@@ -47,6 +49,17 @@ void BinaryRewriter::printInformation() {
 // Does the actual traversal and applies transformations to the binary.
 //This function will traverse the block cfg.
 void BinaryRewriter::transformBinary() {
+    /*  Perform analysis on the program cfg for later use when resizing. */
+    sizeHandler = new binaryChanger(cfgContainer);
+    sizeHandler->setDebugging(debugging);
+    /*  Call pre transformation analysis. */
+    sizeHandler->preTransformationAnalysis();
+
+    //Testing.
+    std::vector<SgAsmElfSection*> elfs;
+    elfs = SageInterface::querySubTree<SgAsmElfSection>(binaryProjectPtr);
+    std::cout << "elfs found: " << elfs.size() << std::endl;
+
 
     /* Traverse the function cfg and apply the user transformations.
         Get the function CFG and traverse its blocks. */

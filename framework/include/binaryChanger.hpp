@@ -23,9 +23,11 @@ class binaryChanger {
     /*  Take CFG handler pointer so the program cfg is available. */
     binaryChanger(CFGhandler*);
     /*  Initial analysis of the of the binary before the transformation. */
-    void preTransformAnalysis();
+    void preTransformationAnalysis();
     /*  Post transformation work. */
     void postTransformationWork();
+    /*  Sets debug mode. */
+    void setDebugging(bool mode) {debugging = mode;};
 
     private:
     /*  Hide default constructor. */
@@ -56,8 +58,8 @@ class binaryChanger {
         then they have an entry here. */
     std::map<SgAsmBlock*, int> blockNewSize;
 
-    //TODO some kind of structure to store the segments, perhaps ordered.
-    //TODO use it when rezising.
+    //TODO some kind of structure to store the segments, possibly ordered.
+    //TODO If it is ordered i could iterate it and change accordingly. 
     //TODO perhaps have structure for after changes have been done.
 };
 

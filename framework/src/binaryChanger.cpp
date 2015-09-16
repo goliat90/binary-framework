@@ -45,7 +45,7 @@ binaryChanger::binaryChanger(CFGhandler* cfgH) {
 
 /*  This function performs analysis on the binary before
     the transformations are applied. */
-void binaryChanger::preTransformAnalysis() {
+void binaryChanger::preTransformationAnalysis() {
     /*  Get the program cfg pointer. */
     CFG* entireCFG = cfgObject->getProgramCFG();
     /*  Go through the program CFG and extract all the basic blocks. */
@@ -57,16 +57,48 @@ void binaryChanger::preTransformAnalysis() {
         basicBlockVector.push_back(nodeBlock);
         /*  Retrieve the size of the basic block, that is the
             number of instructions in the block. */
+        SgAsmStatementPtrList& stmtList = nodeBlock->get_statementList();
+        int blockSize = stmtList.size();
+        blockOriginalSize.insert(std::pair<SgAsmBlock*, int>(nodeBlock, blockSize));
 
         /*  Get the address of the block and store it. */
-
+        blockStartAddrMap.insert(std::pair<SgAsmBlock*, rose_addr_t>(nodeBlock, nodeBlock->get_id()));
         /*  Get the address of the last instruction in the block and store it. */
+        rose_addr_t lastAddress;
+        if (!stmtList.empty()) {
+            /*  There are statements so get the last one. */
+            SgAsmStatement* lastStatement = stmtList.back();
+            lastAddress = lastStatement->get_address();
+        } else {
+            /*  The block is empty. The last address is then the first address. */
+            if (debugging) {
+                std::cout << "Found a block with no instructions." << std::endl;
+                lastAddress = nodeBlock->get_id();
+            }
+        }
+        blockEndAddrMap.insert(std::pair<SgAsmBlock*, rose_addr_t>(nodeBlock, lastAddress));
 
+        /*  Debug print. */
+//        if (debugging) {
+//            std::cout << "Block with start address: "
+//                << std::showbase << std::hex << nodeBlock->get_id() << std::endl
+//                << "last address: " << std::hex << lastAddress << std::endl
+//                << "size: " << std::dec << blockSize << std::endl
+//                << "stored." << std::endl;
+//        }
+    }
+    if (debugging) {
+        std::cout << "Information about " << basicBlockVector.size() << " blocks collected." << std::endl;
     }
 
     /*  All the basic blocks have been inserted. Sort the 
         vector according to blocks address size. */
     std::sort(basicBlockVector.begin(), basicBlockVector.end(), blockSortStruct());
+
+    /*  At this point i have a orderded vector of basic blocks, from low to high.
+        For each block i know the starting address and ending address.
+        The original size of each block is known. */
+    //TODO i should get access to the segments here, or even earlier.
 }
 
 
