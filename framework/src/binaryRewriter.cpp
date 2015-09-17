@@ -29,17 +29,11 @@ void BinaryRewriter::initialize(int argc, char **binaryFile) {
     cfgContainer->initialize(binaryProjectPtr);
 }
 
-/* Used to select the function to be transformed and builds the functioncfg */
-//TODO this function needs to be changed to handle several names.
-//TODO pass a container of strings?
-void BinaryRewriter::functionSelect(std::string fName) {
-    /* call on cfghandler to build the functioncfg */
-    /* Check if debuging should be active. */
-    if (debugging) {
-        cfgContainer->setDebugging(debugging);
-    }
-    cfgContainer->createFunctionCFG(fName);
+/* Used to select the function to be transformed. */
+void BinaryRewriter::functionSelect(std::list<std::string>* names) {
+    functionVector = names;
 }
+
 
 void BinaryRewriter::printInformation() {
     std::cout << "Decisions made " << decisionsMade << std::endl;
@@ -60,91 +54,106 @@ void BinaryRewriter::transformBinary() {
     elfs = SageInterface::querySubTree<SgAsmElfSection>(binaryProjectPtr);
     std::cout << "elfs found: " << elfs.size() << std::endl;
 
-
-    /* Traverse the function cfg and apply the user transformations.
-        Get the function CFG and traverse its blocks. */
-    CFG* functionGraph = cfgContainer->getFunctionCFG();
-
-    /* Iterater through all the blocks and apply transformations */
-    for(std::pair<CFGVIter, CFGVIter> vPair = vertices(*functionGraph);
-        vPair.first != vPair.second; ++vPair.first) {
-        /* get the basic block from the property map */
-        SgAsmBlock* currentBB = get(boost::vertex_name, *functionGraph, *vPair.first);
-        /* If debugging is active then print the block before transformation */
-        if (debugging) {
-            std::cout << std::endl;
-            printBasicBlockInstructions(currentBB);
-        }
-        /* get the statement list of the block, which is the instructions */
-        SgAsmStatementPtrList* orgStmtPtrList = &currentBB->get_statementList();
-        /* Initialize the shadowstatement list */
-        shadowStatementListPtr = new SgAsmStatementPtrList;
-        /* Iterate through the statment list and check each instruction */
-        for(SgAsmStatementPtrList::iterator stmtIter = orgStmtPtrList->begin();
-            stmtIter != orgStmtPtrList->end(); ++stmtIter) {
-            /* Check that the statement is a mipsinstruction and if it is
-                forbidden or not. */
-            if ((*stmtIter)->variantT() == V_SgAsmMipsInstruction) {
-                /* cast the instruction to mips */
-                inspectedInstruction = isSgAsmMipsInstruction(*stmtIter);
-                /* check if the instruction is allowed to be transformed or not */ 
-                if(cfgContainer->isForbiddenInstruction(inspectedInstruction) == false) {
-                    /* The instruction is allowed to be transformed.
-                        Call the user decision function. */
-                    transformDecision(inspectedInstruction);
-                } else {
-                    /* Instruction is not allowed to be transformed save it and move on */
-                    saveInstruction();
-                    if (debugging) {
-                        std::cout << "Forbidden instruction, skip transform" << std::endl;
-                    }
-                }
-            }
-        }
-        /* The blocks statement list has been traversed. swap the list with
-            the shadow list and continue with the next block */
-        orgStmtPtrList->swap(*shadowStatementListPtr);
-        if (debugging) {
-            std::cout << "Block transformed" << std::endl;
-            printBasicBlockInstructions(currentBB);
-        }
-    }
-
-    /*  Apply naivetransform or optimized. */
-    if (true == useOptimized) {
-        /*  Optimized, linear scan and list scheduling. */
-        linearScanHandler linearObject(cfgContainer);
-        /*  if debuging is set pass it on. */
-        linearObject.selectDebuging(debugging);
-        /*  Call optimized transform */
-        linearObject.applyLinearScan();
-        
-        /*  Build list scheduler. */
-        listScheduler listObject(cfgContainer);
-        /*  Set debuging. */
-        listObject.setDebuging(debugging);
-        /*  Perform scheduling. */
-        listObject.performScheduling();
-
-    } else {
-        /* Apply naive transformation. */
-        naiveHandler naiveObject(cfgContainer);
-        /* Start naive framework transformation */
-        naiveObject.applyTransformation();
-    }
-
-    /* Debug print */
     if (debugging) {
-        std::cout << "post framework transformation." << std::endl;
+        cfgContainer->setDebugging(debugging);
+    }
+
+    //TODO code below should be put in a loop that on each iteration goes transforms a new function.
+    for(std::list<std::string>::iterator functionNameIter = functionVector->begin();
+        functionNameIter != functionVector->end(); ++functionNameIter) {
+        /*  Take the CFG handler and select the function to transform
+            and build its function cfg. */
+        cfgContainer->createFunctionCFG(*functionNameIter);
+        /*  debugging printout. */
+        if (debugging) {
+            std::cout << "Transforming function: " << *functionNameIter << std::endl;
+        }
+
+        /* Traverse the function cfg and apply the user transformations.
+            Get the function CFG and traverse its blocks. */
+        CFG* functionGraph = cfgContainer->getFunctionCFG();
+
+        /* Iterater through all the blocks and apply transformations */
         for(std::pair<CFGVIter, CFGVIter> vPair = vertices(*functionGraph);
             vPair.first != vPair.second; ++vPair.first) {
             /* get the basic block from the property map */
             SgAsmBlock* currentBB = get(boost::vertex_name, *functionGraph, *vPair.first);
-            /* Print the block, both debug and assembly. */
-            printBasicBlockInstructions(currentBB);
-            std::cout << std::endl;
-            printBasicBlockAsAssembly(currentBB);
-            std::cout << std::endl;
+            /* If debugging is active then print the block before transformation */
+            if (debugging) {
+                std::cout << std::endl;
+                printBasicBlockInstructions(currentBB);
+            }
+            /* get the statement list of the block, which is the instructions */
+            SgAsmStatementPtrList* orgStmtPtrList = &currentBB->get_statementList();
+            /* Initialize the shadowstatement list */
+            shadowStatementListPtr = new SgAsmStatementPtrList;
+            /* Iterate through the statment list and check each instruction */
+            for(SgAsmStatementPtrList::iterator stmtIter = orgStmtPtrList->begin();
+                stmtIter != orgStmtPtrList->end(); ++stmtIter) {
+                /* Check that the statement is a mipsinstruction and if it is
+                    forbidden or not. */
+                if ((*stmtIter)->variantT() == V_SgAsmMipsInstruction) {
+                    /* cast the instruction to mips */
+                    inspectedInstruction = isSgAsmMipsInstruction(*stmtIter);
+                    /* check if the instruction is allowed to be transformed or not */ 
+                    if(cfgContainer->isForbiddenInstruction(inspectedInstruction) == false) {
+                        /* The instruction is allowed to be transformed.
+                            Call the user decision function. */
+                        transformDecision(inspectedInstruction);
+                    } else {
+                        /* Instruction is not allowed to be transformed save it and move on */
+                        saveInstruction();
+                        if (debugging) {
+                            std::cout << "Forbidden instruction, skip transform" << std::endl;
+                        }
+                    }
+                }
+            }
+            /* The blocks statement list has been traversed. swap the list with
+                the shadow list and continue with the next block */
+            orgStmtPtrList->swap(*shadowStatementListPtr);
+            if (debugging) {
+                std::cout << "Block transformed" << std::endl;
+                printBasicBlockInstructions(currentBB);
+            }
+        }
+
+        /*  Apply naivetransform or optimized. */
+        if (true == useOptimized) {
+            /*  Optimized, linear scan and list scheduling. */
+            linearScanHandler linearObject(cfgContainer);
+            /*  if debuging is set pass it on. */
+            linearObject.selectDebuging(debugging);
+            /*  Call optimized transform */
+            linearObject.applyLinearScan();
+            
+            /*  Build list scheduler. */
+            listScheduler listObject(cfgContainer);
+            /*  Set debuging. */
+            listObject.setDebuging(debugging);
+            /*  Perform scheduling. */
+            listObject.performScheduling();
+
+        } else {
+            /* Apply naive transformation. */
+            naiveHandler naiveObject(cfgContainer);
+            /* Start naive framework transformation */
+            naiveObject.applyTransformation();
+        }
+
+        /* Debug print */
+        if (debugging) {
+            std::cout << "post framework transformation." << std::endl;
+            for(std::pair<CFGVIter, CFGVIter> vPair = vertices(*functionGraph);
+                vPair.first != vPair.second; ++vPair.first) {
+                /* get the basic block from the property map */
+                SgAsmBlock* currentBB = get(boost::vertex_name, *functionGraph, *vPair.first);
+                /* Print the block, both debug and assembly. */
+                printBasicBlockInstructions(currentBB);
+                std::cout << std::endl;
+                printBasicBlockAsAssembly(currentBB);
+                std::cout << std::endl;
+            }
         }
     }
 

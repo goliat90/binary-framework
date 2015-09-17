@@ -44,7 +44,7 @@ class BinaryRewriter {
         //enable debugg printing.
         void setDebug(bool);
         /* Function that is to be transformed */
-        void functionSelect(std::string);
+        void functionSelect(std::list<std::string>* functionNames);
 
         /**********************************************************************
         * Traversal functions. 
@@ -97,6 +97,8 @@ class BinaryRewriter {
         bool debugging;
         /* boolean to determine if to use naive or optimized transform */
         bool useOptimized;
+        /* Container pointer for storing the names of functions being transformed. */
+        std::list<std::string>* functionVector;
 
         /**********************************************************************
         * Private Functions. 
