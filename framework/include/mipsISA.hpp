@@ -76,7 +76,7 @@ struct instructionStruct {
 
     //if the instruction uses a constant then save it and significant bits.
     //The constant value
-    uint64_t instructionConstant;
+    rose_addr_t instructionConstant;
     //How many of the bits in the constant value are significant
     int significantBits;
     //if the value is signed.
