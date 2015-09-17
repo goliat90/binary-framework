@@ -16,11 +16,16 @@ void assemblyRegister(std::stringstream*, std::vector<registerStruct>*);
 void assemblyConstant(std::stringstream*, instructionStruct*);
 /*  Handles building assembly stores. */
 void assemblyStores(std::stringstream*, instructionStruct*);
+/*  Replaces addresses in branch instructions with labels. */
+void assemblyLabel(std::stringstream*, instructionStruct*);
 /*  Initfunction for the register enum to assembly string map. */
 std::map<mipsRegisterName, std::string> initAssemblyMap();
 
 /* Map that is mapping enum to corresponding string */
 static std::map<mipsRegisterName, std::string> assemblyMap = initAssemblyMap();
+/*  Map tracking all the blocks address which are substituted
+    with a label in the assembly printer. */
+static std::map<rose_addr_t, std::string> addressToLabelMap;
 
 /* print the instructions contained in a basicblock */
 void printBasicBlockInstructions(SgAsmBlock* block) {
@@ -81,7 +86,7 @@ void printConstant(std::stringstream* conStream, instructionStruct* instStruct) 
         case I_RD_MEM_RS_C:
         case I_RS_MEM_RT_C: {
             /* instructions that work with memory and has constant 
-               has instructionConstatn, significantBits, memoryreferencesize */
+               has instructionConstant, significantBits, memoryreferencesize */
             *conStream << "Constant: 0x" << std::hex << instStruct->instructionConstant << " ";
             *conStream << "SignificantBits: " << std::dec << instStruct->significantBits << " ";
             *conStream << "DataSize: " << std::dec << instStruct->memoryReferenceSize << " bits ";
@@ -90,6 +95,7 @@ void printConstant(std::stringstream* conStream, instructionStruct* instStruct) 
         }
         case R_RD_RS_C:
         case I_RD_RS_C:
+        case I_RS_RT_C:
         case I_RD_C:
         case I_RS_C: {
             /* instructions with regular constant
@@ -148,11 +154,29 @@ void printRegisters(std::stringstream* regStream, std::vector<registerStruct>* r
 void printBasicBlockAsAssembly(SgAsmBlock* block) {
     //get the list of instructions in the block.
     SgAsmStatementPtrList* stmtlistPtr = &block->get_statementList();
+    /*  block address. */
+    rose_addr_t blockId = block->get_id();
     /* print the block number */
     std::cout << "#********** "
-              << "Block: " << std::hex << block->get_id()
+              << "Block: " << std::hex << blockId
               << " **********" << std::endl
               << std::dec; //dont print hex numbers in after this
+
+    //TODO Insert label for the block. Make one or use existing.
+    if (1 == addressToLabelMap.count(blockId)) {
+        /*  there Is a label for the block. use it. */
+        std::string label = addressToLabelMap.find(blockId)->second;
+        std::cout << label << ":" << std::endl;
+    } else {
+        /*  There is no label for the block yet, create one. */
+        int mapSize = addressToLabelMap.size();
+        /*  build label string and print it. */
+        std::stringstream labelStream;
+        labelStream << "blockLabel_" << mapSize;
+        std::cout << labelStream.str() << ":" << std::endl;
+        /*  Save the label in the map. */
+        addressToLabelMap.insert(std::pair<rose_addr_t, std::string>(blockId, labelStream.str()));
+    }
 
     /* iterate through the statement list and print. */
     for(SgAsmStatementPtrList::iterator instIter = stmtlistPtr->begin();
@@ -227,15 +251,16 @@ void printAssemblyInstruction(SgAsmMipsInstruction* mipsInst) {
         case I_RS_RT_C:
             assemblyRegister(&assemblyStream, &asmStruct.sourceRegisters);
             assemblyStream << ", ";
-            assemblyConstant(&assemblyStream, &asmStruct);
+            assemblyLabel(&assemblyStream, &asmStruct);
             break;
         case I_RS_MEM_RT_C:
             assemblyStores(&assemblyStream, &asmStruct);
             break;
         case I_RS_C:
+            //TODO this is bgez, bgezal, bgtz, blez, bltz change constant for label.
             assemblyRegister(&assemblyStream, &asmStruct.sourceRegisters);
             assemblyStream << ", ";
-            assemblyConstant(&assemblyStream, &asmStruct);
+            assemblyLabel(&assemblyStream, &asmStruct);
             break;
         case J_C:
             assemblyConstant(&assemblyStream, &asmStruct);
@@ -274,10 +299,31 @@ void assemblyRegister(std::stringstream* regStream, std::vector<registerStruct>*
 /* Print instruction constants */
 void assemblyConstant(std::stringstream* conStream, instructionStruct* instStruct) {
     /*  Truncate the offset so we dont have to manually remove higher chars. */
-    //TODO this will at the moment truncate all constants present, including jump instructions. */
     unsigned short int offset = static_cast<unsigned short int>(instStruct->instructionConstant);
     /*  Add constant to the stream. */
     *conStream << std::hex << std::showbase << offset;
+}
+
+/*  Instead of a instruction address in the branch and jump instructions
+    a label is set instead. */
+void assemblyLabel(std::stringstream* labelStream, instructionStruct* instStruct) {
+    /*  Get the address that is the target address. */
+    rose_addr_t address = instStruct->instructionConstant;
+    /*  Check if the address has a label already or needs one. */
+    if (1 == addressToLabelMap.count(address)) {
+        /*  There is a label, use it. */
+        std::string label = addressToLabelMap.find(address)->second;
+        *labelStream << label;
+    } else {
+        /*  No label available, generate one. */
+        int mapSize = addressToLabelMap.size();
+        /*  build label string and print it. */
+        std::stringstream newLabelStream;
+        newLabelStream << "blockLabel_" << mapSize;
+        *labelStream << newLabelStream.str();
+        /*  Save the label in the map. */
+        addressToLabelMap.insert(std::pair<rose_addr_t, std::string>(address, newLabelStream.str()));
+    }
 }
 
 /*  Handles creating all assembly store instructions. */
@@ -386,3 +432,9 @@ std::map<mipsRegisterName, std::string> initRegStringMap() {
     /* return the filled map */
     return regMap;
 }
+
+/*  Function to clear the address to label map. */
+void clearAddressLabelMap() {
+    addressToLabelMap.clear();
+}
+

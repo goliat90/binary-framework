@@ -26,6 +26,8 @@ std::string getRegisterString(mipsRegisterName);
 void printBasicBlockAsAssembly(SgAsmBlock*);
 /*  Print instruction in functional assembly format. */
 void printAssemblyInstruction(SgAsmMipsInstruction*);
+/*  Clear the address to label map. */
+void clearAddressLabelMap();
 
 #endif
 
