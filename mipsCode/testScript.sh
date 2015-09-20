@@ -26,7 +26,8 @@ do
     if [ ! "$RETVAL" -eq "0" ]
     then 
         # the Return value is a failure value.
-        echo -e "Opt transform on function $FUNC in binary $bin failed.\n" 
+        echo -e "Opt transform on function $FUNC in binary $bin failed.\n"
+        exit
     else
         echo -e "Opt transformation on ${FUNC} in binary ${bin##*/} successful\n" 
     fi
