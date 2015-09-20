@@ -141,19 +141,19 @@ void BinaryRewriter::transformBinary() {
             naiveObject.applyTransformation();
         }
 
-        /* Debug print */
-        if (debugging) {
-            std::cout << "post framework transformation." << std::endl;
-            for(std::pair<CFGVIter, CFGVIter> vPair = vertices(*functionGraph);
-                vPair.first != vPair.second; ++vPair.first) {
-                /* get the basic block from the property map */
-                SgAsmBlock* currentBB = get(boost::vertex_name, *functionGraph, *vPair.first);
-                /* Print the block, both debug and assembly. */
+        /*  After transformation printout. */
+        std::cout << "post framework transformation." << std::endl;
+        for(std::pair<CFGVIter, CFGVIter> vPair = vertices(*functionGraph);
+            vPair.first != vPair.second; ++vPair.first) {
+            /* get the basic block from the property map */
+            SgAsmBlock* currentBB = get(boost::vertex_name, *functionGraph, *vPair.first);
+            /* Print the block, assembly and debug if selected.. */
+            if (debugging) {
                 printBasicBlockInstructions(currentBB);
                 std::cout << std::endl;
-                printBasicBlockAsAssembly(currentBB);
-                std::cout << std::endl;
             }
+            printBasicBlockAsAssembly(currentBB);
+            std::cout << std::endl;
         }
     }
 
