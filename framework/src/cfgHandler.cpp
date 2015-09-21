@@ -139,7 +139,8 @@ void CFGhandler::findActivationRecords() {
                             should be if it is an activation instruction. */
                         if (0 < (int64_t)constant) {
                             /*  Set activation to false. */
-                            isActivation = false;
+                            //TODO this evaluation should not trigger but it does.
+                            //isActivation = false;
                         }
                     }
                 }

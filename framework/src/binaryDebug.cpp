@@ -299,9 +299,16 @@ void assemblyRegister(std::stringstream* regStream, std::vector<registerStruct>*
 /* Print instruction constants */
 void assemblyConstant(std::stringstream* conStream, instructionStruct* instStruct) {
     /*  Truncate the offset so we dont have to manually remove higher chars. */
-    unsigned short int offset = static_cast<unsigned short int>(instStruct->instructionConstant);
+//    unsigned short int offset = static_cast<unsigned short int>(instStruct->instructionConstant);
+    short int offset = static_cast<short int>(instStruct->instructionConstant);
+    //std::stringstream offsetStr;
+    //offsetStr << offset;
+    //std::string conStr = boost::lexical_cast<std::string>(offset);
+//    std::cout << conStr;
+//    std::cout << offset;
     /*  Add constant to the stream. */
-    *conStream << std::hex << std::showbase << offset;
+    *conStream << offset;
+    //*conStream << conStr;
 }
 
 /*  Instead of a instruction address in the branch and jump instructions

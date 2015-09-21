@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
     /*  Crate framework object. */
     userFramework* ut = new userFramework(2, argv);
     /* enable printing */
-    ut->setDebug(true);
+//    ut->setDebug(true);
 
     /* set which function is to be transformed */
     ut->functionSelect(&functionNameList);

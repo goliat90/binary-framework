@@ -36,13 +36,13 @@ void linearScanHandler::initializeRegisterPool() {
     registerPool.push_front(t1);
     registerPool.push_front(t2);
     registerPool.push_front(t3);
-    //registerPool.push_front(t4);
-    //registerPool.push_front(t5);
-    //registerPool.push_front(t6);
-    //registerPool.push_front(t7);
+    registerPool.push_front(t4);
+    registerPool.push_front(t5);
+    registerPool.push_front(t6);
+    registerPool.push_front(t7);
     /*  t8-t9 */
-    //registerPool.push_front(t8);
-    //registerPool.push_front(t9);
+    registerPool.push_front(t8);
+    registerPool.push_front(t9);
 }
 
 
