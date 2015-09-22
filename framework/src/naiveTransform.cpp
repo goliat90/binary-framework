@@ -156,6 +156,32 @@ void naiveHandler::regionAllocation(std::list<SgAsmStatement*>* regionList, bool
     std::map<unsigned, mipsRegisterName> symbolicToHard;
     /*  Initialize the set of registers available for allocation */
     initHardRegisters();
+
+    /*  Get the destination register of the last instruction in the region.
+        That register is the an out of region register that will not be preserved.
+        If this is not done then there are situations where a result that should
+        leave a region is overwritten in the end by loads. */
+    SgAsmStatement* lastInst = regionList->back();
+    if (V_SgAsmMipsInstruction == lastInst->variantT()) {
+        /*  Cast the instruction to mips pointer. */
+        SgAsmMipsInstruction* mips = isSgAsmMipsInstruction(lastInst);
+        /*  Decode the instruction. */
+        instructionStruct lastMips = decodeInstruction(mips);
+        /*  Check if the instruction has a destination register. */
+        if (false == lastMips.destinationRegisters.empty()) {
+            /*  There is a destination register, get it. */
+            registerStruct destReg = lastMips.destinationRegisters.front();
+            /*  Check if the destination register is one that is used by
+                naive transformed we remove it from the hard registers set
+                to prevent it being used and overwritten. */
+            if (1 == hardRegisters.count(destReg.regName)) {
+                /*  The register is used by naive. Remove it from the set
+                    to make it unavailable. */
+                std::cout << "erased register." << std::endl;
+                hardRegisters.erase(destReg.regName);
+            } 
+        }
+    }
     /* Go through the instructions and exchange the symbolic registers for hard. */
     for(std::list<SgAsmStatement*>::iterator regionIter = regionList->begin();
         regionIter != regionList->end(); ++regionIter) {
@@ -189,6 +215,7 @@ void naiveHandler::regionAllocation(std::list<SgAsmStatement*>* regionList, bool
                         (*opIter) = hardReg;
                     }
                 }
+                //TODO im missing actually checking memory instructions if the register for the base address is symbolic.
             }
         }
     }
