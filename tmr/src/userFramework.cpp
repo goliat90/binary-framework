@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
     /*  Crate framework object. */
     userFramework* ut = new userFramework(2, argv);
     /* enable printing */
-//    ut->setDebug(true);
+    //ut->setDebug(true);
 
     /* set which function is to be transformed */
     ut->functionSelect(&functionNameList);
@@ -65,7 +65,7 @@ void userFramework::medianTMR() {
     //TODO i only need to get to the destination register. All instructions handled
     //TODO by this function has a destination register.
     /*  Remember the original register- */
-//    registerStruct ordDestinationReg = currentInst.destinationRegisters.front();
+    //registerStruct orgDestinationReg = currentInst.destinationRegisters.front();
     /*  Get the operand list from the instruction. */
     SgAsmExpressionPtrList& opList = mipsInst->get_operandList()->get_operands();
     /*  Get a symbolic register. Then get the directregister expression. */
@@ -196,7 +196,7 @@ void userFramework::medianTMR() {
     secondOR.sourceRegisters.push_back(andResThird);
     secondOR.sourceRegisters.push_back(orResOne);
     /*  Create a destination register. */
-    registerStruct orResTwo = generateSymbolicRegister();
+    //registerStruct orResTwo = generateSymbolicRegister();
     /*  Set the destination register. */
     secondOR.destinationRegisters = currentInst.destinationRegisters;
     //secondOR.destinationRegisters.push_back(orResTwo);
