@@ -234,15 +234,15 @@ SgAsmOperandList* buildOperandList(instructionStruct* inst,
         /* Build RD register expression */
         SgAsmDirectRegisterExpression* regRD = buildRegister(inst->destinationRegisters.back());
         /* Remove the register from the vector */
-        inst->destinationRegisters.pop_back();
+        //inst->destinationRegisters.pop_back();
         /* Add the rd register to the operand list */
         exprList.push_back(regRD);
     }
     if (true == hasRS) {
         /* Build RS register expression */
-        SgAsmDirectRegisterExpression* regRS = buildRegister(inst->sourceRegisters.back());
+        SgAsmDirectRegisterExpression* regRS = buildRegister(inst->sourceRegisters.front());
         /* Remove the register from the vector */
-        inst->sourceRegisters.pop_back();
+        //inst->sourceRegisters.pop_back();
         /* Add the rs register to the operand list */
         exprList.push_back(regRS);
     }
@@ -250,7 +250,7 @@ SgAsmOperandList* buildOperandList(instructionStruct* inst,
         /* Build RT register expression */
         SgAsmDirectRegisterExpression* regRT = buildRegister(inst->sourceRegisters.back());
         /* Remove the register from the vector */
-        inst->sourceRegisters.pop_back();
+        //inst->sourceRegisters.pop_back();
         /* Add the rs register to the operand list */
         exprList.push_back(regRT);
     }
