@@ -1023,10 +1023,10 @@ SgAsmMipsInstruction* linearScanHandler::buildLoadOrStoreSpillInstruction
         loadstoreStruct.kind = mips_sw;
         loadstoreStruct.mnemonic = "sw";
         loadstoreStruct.format = getInstructionFormat(mips_sw);
-        /*  Set the sp to the source register. */
-        loadstoreStruct.sourceRegisters.push_back(spStruct);
         /*  set the source register which is being saved. */
         loadstoreStruct.sourceRegisters.push_back(destinationOrSource);
+        /*  Set the sp to the source register. */
+        loadstoreStruct.sourceRegisters.push_back(spStruct);
     } else {
         /* Failure, the kind is neither a load or store. */
         ASSERT_not_reachable("Invalid instruction kind passed");
