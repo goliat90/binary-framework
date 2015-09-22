@@ -180,6 +180,47 @@ void linearScanHandler::replaceHardRegisters() {
                                 opList.at(i) = usedDRE;
                             }
                         }
+                    } else if (V_SgAsmMemoryReferenceExpression == expr->variantT()) {
+                        /*  Memory expression has a register. Check it. */
+                        SgAsmMemoryReferenceExpression* memRef = isSgAsmMemoryReferenceExpression(expr);
+                        /*  Get the address, which is the register plus a constant, i want the register. */
+                        SgAsmBinaryAdd* binAdd = isSgAsmBinaryAdd(memRef->get_address());
+                        /*  Decode the register which is the left hand of the binary add. */
+                        registerStruct reg = decodeRegister(binAdd->get_lhs());
+                        /*  Determine if the register should be replaced or not.
+                            Also check if it has been replaced already. */
+                        if (registerPool.end() != std::find(registerPool.begin(), registerPool.end(), reg.regName)) {
+                            /*  The register should be replaced, check if it has a symbolic or not */
+                            if (0 == physicalToSymbolic.count(reg.regName)) {
+                                /*  First time it has been encountered, generate a symbolic */
+                                registerStruct symReg = generateSymbolicRegister();
+                                /*  Debug printout */
+                                if (debuging) {
+                                    std::cout << "Replaced a register with sym_" << std::dec
+                                                << symReg.symbolicNumber << " saved to map." << std::endl;
+                                }
+                                /*  Insert values into the map */
+                                physicalToSymbolic.insert(std::pair<mipsRegisterName, registerStruct>(reg.regName, symReg));
+                                /*  Build the register expression */
+                                SgAsmDirectRegisterExpression* DRE = buildRegister(symReg);
+                                /*  Insert the symbolic register in the binary add expression.
+                                    Thus replacing the left hand side. */
+                                binAdd->set_lhs(DRE);
+                            } else {
+                                /*  The register should be replaced, it has been replaced before. */
+                                registerStruct usedSymReg = physicalToSymbolic.find(reg.regName)->second;
+                                /*  Debug printout */
+                                if (debuging) {
+                                    std::cout << "Replaced a register with sym_" << std::dec
+                                                << usedSymReg.symbolicNumber << std::endl;
+                                }
+                                /*  Get the register expression */
+                                SgAsmDirectRegisterExpression* usedDRE = buildRegister(usedSymReg);
+                                /*  Insert the symbolic register in the binary add expression.
+                                    Thus replacing the left hand side. */
+                                binAdd->set_lhs(usedDRE);
+                            }
+                        }
                     }
                 }
             }
@@ -726,6 +767,29 @@ void linearScanHandler::replaceSymbolicRegisters() {
                                 regsUsed.insert(newHardReg.regName);
                             }
                         }
+                    } else if (V_SgAsmMemoryReferenceExpression == (*opIter)->variantT()) {
+                        /*  Memory expression has a register. Check it. */
+                        SgAsmMemoryReferenceExpression* memRef = isSgAsmMemoryReferenceExpression(*opIter);
+                        /*  Get the address, which is the register plus a constant, i want the register. */
+                        SgAsmBinaryAdd* binAdd = isSgAsmBinaryAdd(memRef->get_address());
+                        /*  Decode the register which is the left hand of the binary add. */
+                        registerStruct regS = decodeRegister(binAdd->get_lhs());
+                        /*  Check if the register is symbolic. */
+                        if (symbolic_reg == regS.regName) {
+                            /*  Check if the register is allocated. */
+                            if (1 == allocationMap.count(regS.symbolicNumber)) {
+                                /*  Register struct */
+                                registerStruct newHardReg;
+                                /*  The symbolic is allocated. Retrieve which register it is allocated. */
+                                newHardReg.regName = allocationMap.find(regS.symbolicNumber)->second;
+                                /*  Build the register expression. */
+                                SgAsmDirectRegisterExpression* newRegExpr = buildRegister(newHardReg);
+                                /*  Set the real register as the left hand side argument. */
+                                binAdd->set_lhs(newRegExpr);
+                                /*  Save the register to the set for later checking. */
+                                regsUsed.insert(newHardReg.regName);
+                            }
+                        }
                     }
                 }
                 /*  Now all symbolic allocated have been given their registers in the instruction.
@@ -886,6 +950,25 @@ void linearScanHandler::replaceSymbolicRegisters() {
                                 /*  Set the new expression. */
                                 (*oIter) = regExpr;
                             } 
+                        }
+                    } else if (V_SgAsmMemoryReferenceExpression == (*oIter)->variantT()) {
+                        /*  Memory expression has a register. Check it. */
+                        SgAsmMemoryReferenceExpression* memRef = isSgAsmMemoryReferenceExpression(*oIter);
+                        /*  Get the address, which is the register plus a constant, i want the register. */
+                        SgAsmBinaryAdd* binAdd = isSgAsmBinaryAdd(memRef->get_address());
+                        /*  Decode the register which is the left hand of the binary add. */
+                        registerStruct regS = decodeRegister(binAdd->get_lhs());
+                        /*   Check if the register is symbolic. */
+                        if (symbolic_reg == regS.regName) {
+                            /* Check if the register is a spilled and which register will use as spill reg. */
+                            if (1 == spillRegs.count(regS.symbolicNumber)) {
+                                /*  Get the register, change the register name in the struct. */
+                                regS.regName = spillRegs.find(regS.symbolicNumber)->second;
+                                /*  Build a register expression. */
+                                SgAsmDirectRegisterExpression* regExpr = buildRegister(regS);
+                                /*  Set the new register expression. */
+                                binAdd->set_lhs(regExpr);
+                            }
                         }
                     }
                 }
