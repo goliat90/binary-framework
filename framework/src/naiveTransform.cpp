@@ -147,6 +147,9 @@ void naiveHandler::naiveBlockTransform(SgAsmBlock* block) {
 }
 
 /*  Transforms a region of inserted instructions so they have real registers */
+//TODO this function will sometimes use the destination register in the region
+//TODO resulting in the computed result for the region being overwritten in the end since
+//TODO the register will be restored to the value it had before the region.
 void naiveHandler::regionAllocation(std::list<SgAsmStatement*>* regionList, bool preserveAcc) {
     /*  We know the maximum number of registers that will be used
         by using the maximum symbolics */
@@ -247,10 +250,10 @@ SgAsmMipsInstruction* naiveHandler::buildLoadOrStoreInstruction(MipsInstructionK
             loadstoreStruct.kind = mips_sw;
             loadstoreStruct.mnemonic = "sw";
             loadstoreStruct.format = getInstructionFormat(mips_sw);;
-            // set sp in the source register
-            loadstoreStruct.sourceRegisters.push_back(spStruct);
             // set the source register, which is being saved
             loadstoreStruct.sourceRegisters.push_back(destinationOrSource);
+            // set sp in the source register
+            loadstoreStruct.sourceRegisters.push_back(spStruct);
         } else {
             /* fail if a incorrect kind is supplied */
             ASSERT_not_reachable("Invalid kind supplied for load/store build function");
