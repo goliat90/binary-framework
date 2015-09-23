@@ -147,9 +147,8 @@ void naiveHandler::naiveBlockTransform(SgAsmBlock* block) {
 }
 
 /*  Transforms a region of inserted instructions so they have real registers */
-//TODO this function will sometimes use the destination register in the region
-//TODO resulting in the computed result for the region being overwritten in the end since
-//TODO the register will be restored to the value it had before the region.
+//TODO Some times this function overwrites the arguments passed to the region.
+//TODO the effect is that instructions will compute the incorrect result since the argument has been corrupted.
 void naiveHandler::regionAllocation(std::list<SgAsmStatement*>* regionList, bool preserveAcc) {
     /*  We know the maximum number of registers that will be used
         by using the maximum symbolics */
@@ -177,11 +176,30 @@ void naiveHandler::regionAllocation(std::list<SgAsmStatement*>* regionList, bool
             if (1 == hardRegisters.count(destReg.regName)) {
                 /*  The register is used by naive. Remove it from the set
                     to make it unavailable. */
-                std::cout << "erased register." << std::endl;
                 hardRegisters.erase(destReg.regName);
             } 
         }
     }
+    
+    /*  Go thorugh the regionlist and check if the source registers are
+        real ones, if they are we can not use them inside the region. */
+    for(std::list<SgAsmStatement*>::iterator regionIter = regionList->begin();
+        regionIter != regionList->end(); ++regionIter) {
+        /*  Cast the instruction to mips pointer. */
+        SgAsmMipsInstruction* mips = isSgAsmMipsInstruction(*regionIter);
+        /*  Decode the instruction. */
+        instructionStruct decMips = decodeInstruction(mips);
+        /*  Check the source registers if they are real or symbolic. */
+        for(regStructVector::iterator rsIter = decMips.sourceRegisters.begin();
+            rsIter != decMips.sourceRegisters.end(); ++rsIter) {
+            /*  Check if the register is in the hard register set. */
+            if (1 == hardRegisters.count((*rsIter).regName)) {
+                /*  It is present so remove it so it cant be used. */
+                hardRegisters.erase((*rsIter).regName); 
+            }
+        }
+    }
+
     /* Go through the instructions and exchange the symbolic registers for hard. */
     for(std::list<SgAsmStatement*>::iterator regionIter = regionList->begin();
         regionIter != regionList->end(); ++regionIter) {
