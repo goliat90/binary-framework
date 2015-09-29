@@ -140,6 +140,8 @@ void CFGhandler::findActivationRecords() {
                         if (0 < (int64_t)constant) {
                             /*  Set activation to false. */
                             //TODO this evaluation should not trigger but it does.
+                            //TODO it triggers since i do not get the cast to int64_t to work well.
+                            //TODO when the number is negative it still gets taken as possitive.
                             //isActivation = false;
                         }
                     }

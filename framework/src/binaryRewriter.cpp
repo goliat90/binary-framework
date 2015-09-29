@@ -49,10 +49,6 @@ void BinaryRewriter::transformBinary() {
     /*  Call pre transformation analysis. */
     sizeHandler->preTransformationAnalysis();
 
-    //Testing.
-    std::vector<SgAsmElfSection*> elfs;
-    elfs = SageInterface::querySubTree<SgAsmElfSection>(binaryProjectPtr);
-    std::cout << "elfs found: " << elfs.size() << std::endl;
 
     if (debugging) {
         cfgContainer->setDebugging(debugging);
@@ -154,6 +150,37 @@ void BinaryRewriter::transformBinary() {
             }
             printBasicBlockAsAssembly(currentBB);
             std::cout << std::endl;
+        }
+    }
+
+    //Testing.
+    std::vector<SgAsmElfSection*> elfs;
+    elfs = SageInterface::querySubTree<SgAsmElfSection>(binaryProjectPtr);
+    std::cout << "elfs found: " << elfs.size() << std::endl;
+
+    for(std::vector<SgAsmElfSection*>::iterator elfIter = elfs.begin();
+        elfIter != elfs.end(); ++elfIter) {
+        /* Check the reason of the section. */
+        SgAsmElfSection::SectionPurpose pur = (*elfIter)->get_purpose();
+
+        switch((*elfIter)->get_purpose()) {
+            case SgAsmElfSection::SP_UNSPECIFIED:
+                std::cout << "Unknown elf" << std::endl;
+                break;
+            case SgAsmElfSection::SP_PROGRAM:
+                std::cout << "Program-supplied, code, data etc." << std::endl;
+                break;
+            case SgAsmElfSection::SP_HEADER:
+                std::cout << "header for executable format" << std::endl;
+                break;
+            case SgAsmElfSection::SP_SYMTAB:
+                std::cout << "symbol table" << std::endl;
+                break;
+            case SgAsmElfSection::SP_OTHER:
+                std::cout << "file specified purpose than other categories." << std::endl;
+                break;
+            default:
+                break;
         }
     }
 
