@@ -61,9 +61,9 @@ void BinaryRewriter::transformBinary() {
             and build its function cfg. */
         cfgContainer->createFunctionCFG(*functionNameIter);
         /*  debugging printout. */
-        if (debugging) {
+//        if (debugging) {
             std::cout << "Transforming function: " << *functionNameIter << std::endl;
-        }
+//        }
 
         /* Traverse the function cfg and apply the user transformations.
             Get the function CFG and traverse its blocks. */
@@ -163,6 +163,11 @@ void BinaryRewriter::transformBinary() {
         /* Check the reason of the section. */
         SgAsmElfSection::SectionPurpose pur = (*elfIter)->get_purpose();
 
+        /*  Extract the name of the segment. */
+        SgAsmGenericString* elfString = (*elfIter)->get_name();
+        /*  Get the string name. */
+        std::cout << "Name: " << elfString->get_string() << std::endl;
+
         switch((*elfIter)->get_purpose()) {
             case SgAsmElfSection::SP_UNSPECIFIED:
                 std::cout << "Unknown elf" << std::endl;
@@ -182,6 +187,24 @@ void BinaryRewriter::transformBinary() {
             default:
                 break;
         }
+        /*  Print flags of the section. */
+        if ((*elfIter)->get_mapped_rperm()) {
+            std::cout << "Readable." << std::endl;
+        }
+        if ((*elfIter)->get_mapped_wperm()) {
+            std::cout << "Writable." << std::endl;
+        }
+        if ((*elfIter)->get_mapped_xperm()) {
+            std::cout << "Executable." << std::endl;
+        }
+        /* print base address of section. */
+        std::cout << "Address (mapped_preferred_va): " << std::hex << (*elfIter)->get_mapped_preferred_va() << std::endl;
+        /* size of section. */
+        std::cout << "Size: " << std::hex << (*elfIter)->get_size() << std::endl;
+        /*  offset. */
+        std::cout << "Offset: " << std::hex << (*elfIter)->get_offset() << std::endl;
+
+        std::cout << std::endl << std::endl;
     }
 
     /* Correct addresses */
