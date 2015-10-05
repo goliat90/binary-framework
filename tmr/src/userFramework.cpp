@@ -16,7 +16,7 @@ int main(int argc, char** argv) {
     if (4 > argc) {
         std::cout << "Wrong number of arguments." << std::endl
             << "Needed: Binary that is to be transformed." << std::endl
-            << "        Function name of function to transform." << std::endl
+            << "        Function name(s) of function to transform." << std::endl
             << "        Transformation mode (0 or 1), 1 is optimized mode." << std::endl;
         exit(0);
     }
@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
     /*  Crate framework object. */
     userFramework* ut = new userFramework(2, argv);
     /* enable printing */
-    //ut->setDebug(true);
+    ut->setDebug(true);
 
     /* set which function is to be transformed */
     ut->functionSelect(&functionNameList);

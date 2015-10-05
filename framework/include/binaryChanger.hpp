@@ -21,7 +21,7 @@ struct blockSortStruct {
 class binaryChanger {
     public:
     /*  Take CFG handler pointer so the program cfg is available. */
-    binaryChanger(CFGhandler*);
+    binaryChanger(CFGhandler*, SgProject*);
     /*  Initial analysis of the of the binary before the transformation. */
     void preTransformationAnalysis();
     /*  Post transformation work. */
@@ -36,8 +36,19 @@ class binaryChanger {
     /*  Private variables. */
     /*  Debugging variable. */
     bool debugging;
+    /*  Pointer for the SgProject. It is available here for
+        to be able to extract the segments and other information. */
+    SgProject* changerProjectPtr;
     /*  Cfg handler pointer. */
     CFGhandler* cfgObject;
+    /*  A vector containing all elf sections present. */
+    std::vector<SgAsmElfSection*> elfSections;
+    /*  Vector of pointers to segments that are sections. */
+    std::vector<SgAsmElfSection*> sectionVector;
+    /*  Vector of pointers to relevant segments.
+        Will contain all segments, including data.
+        This is to have a entire picture. */
+    std::vector<SgAsmElfSection*> segmentVector;
     /*  Container for the block pointers.
         It will be sorted according to address. */
     std::vector<SgAsmBlock*> basicBlockVector;

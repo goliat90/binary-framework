@@ -34,9 +34,11 @@
 
 
 /*  Constructor. */
-binaryChanger::binaryChanger(CFGhandler* cfgH) {
+binaryChanger::binaryChanger(CFGhandler* cfgH, SgProject* passedProjectPtr) {
     /*  Save the cfg handler pointer. */
     cfgObject = cfgH;
+    /*  Save the project pointer. */
+    changerProjectPtr = passedProjectPtr;
     /*  set debugging to false as default. */
     debugging = false;
 
@@ -99,6 +101,101 @@ void binaryChanger::preTransformationAnalysis() {
         For each block i know the starting address and ending address.
         The original size of each block is known. */
     //TODO i should get access to the segments here, or even earlier.
+
+    elfSections = SageInterface::querySubTree<SgAsmElfSection>(changerProjectPtr);
+    if (debugging) {
+        std::cout << "elfs found: " << elfSections.size() << std::endl;
+    }
+
+    for(std::vector<SgAsmElfSection*>::iterator elfIter = elfSections.begin();
+        elfIter != elfSections.end(); ++elfIter) {
+        /* Check the reason of the section. */
+        SgAsmElfSection::SectionPurpose pur = (*elfIter)->get_purpose();
+
+        /*  Extract the name of the segment. */
+        SgAsmGenericString* elfString = (*elfIter)->get_name();
+
+        switch((*elfIter)->get_purpose()) {
+            case SgAsmElfSection::SP_UNSPECIFIED:
+                std::cout << "Unknown elf" << std::endl;
+                break;
+            case SgAsmElfSection::SP_PROGRAM:
+                /*  Add all the segments. */
+                //TODO or add all the segments that are read and writable. then check the boundaries.
+                segmentVector.push_back(*elfIter);
+                break;
+            case SgAsmElfSection::SP_HEADER:
+                /*  Header Check here if the section is Read and Executable. */
+                if (true == (*elfIter)->get_mapped_rperm() && true == (*elfIter)->get_mapped_xperm()) {
+                    /*  The section is relevant, save it. */
+                    segmentVector.push_back(*elfIter);
+                }
+                /*  Check if the header if Read and Writable. */
+                if (true == (*elfIter)->get_mapped_rperm() && true == (*elfIter)->get_mapped_wperm()) {
+                    /*  The section is relevant, save it. */
+                    segmentVector.push_back(*elfIter);
+                }
+                break;
+            case SgAsmElfSection::SP_SYMTAB:
+                std::cout << "symbol table" << std::endl;
+                break;
+            case SgAsmElfSection::SP_OTHER:
+                std::cout << "file specified purpose than other categories." << std::endl;
+                break;
+            default:
+                break;
+        }
+
+        /*  Debug printout of all sgasmsections. */
+        if (debugging) {
+            switch((*elfIter)->get_purpose()) {
+                case SgAsmElfSection::SP_UNSPECIFIED:
+                    std::cout << "Unknown elf" << std::endl;
+                    break;
+                case SgAsmElfSection::SP_PROGRAM:
+                    std::cout << "Program-supplied, code, data etc." << std::endl;
+                    break;
+                case SgAsmElfSection::SP_HEADER:
+                    std::cout << "header for executable format" << std::endl;
+                    break;
+                case SgAsmElfSection::SP_SYMTAB:
+                    std::cout << "symbol table" << std::endl;
+                    break;
+                case SgAsmElfSection::SP_OTHER:
+                    std::cout << "file specified purpose than other categories." << std::endl;
+                    break;
+                default:
+                    break;
+            }   
+            /*  Get the string name. */
+            std::cout << "Name: " << elfString->get_string() << std::endl;
+            /*  Print flags of the section. */
+            if ((*elfIter)->get_mapped_rperm()) {
+                std::cout << "Readable." << std::endl;
+            }   
+            if ((*elfIter)->get_mapped_wperm()) {
+                std::cout << "Writable." << std::endl;
+            }   
+            if ((*elfIter)->get_mapped_xperm()) {
+                std::cout << "Executable." << std::endl;
+            }
+            /* Check if it should be mapped. */
+            std::cout << "Is mapped: " << std::boolalpha << (*elfIter)->is_mapped() << std::endl;
+            /* print base address of section. */
+            std::cout << "Address (mapped_preferred_va): " << std::hex << (*elfIter)->get_mapped_preferred_va() << std::endl;
+            /* size of section. */
+            std::cout << "Size (mapped): " << std::hex << (*elfIter)->get_mapped_size() << std::endl;
+            std::cout << "Size (file)  : " << std::hex << (*elfIter)->get_size() << std::endl;
+            /*  offsets. */
+            //std::cout << "Offset(va)  : " << std::hex << (*elfIter)->get_va_offset() << std::endl;
+            std::cout << "Offset(file) : " << std::hex << (*elfIter)->get_offset() << std::endl;
+
+            std::cout << std::endl;
+        }
+    }
+
+    //TODO have a printout here of what has been saved in the segment and section vectors.? 
+ 
 }
 
 

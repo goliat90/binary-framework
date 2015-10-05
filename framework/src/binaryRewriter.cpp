@@ -44,7 +44,7 @@ void BinaryRewriter::printInformation() {
 //This function will traverse the block cfg.
 void BinaryRewriter::transformBinary() {
     /*  Perform analysis on the program cfg for later use when resizing. */
-    sizeHandler = new binaryChanger(cfgContainer);
+    sizeHandler = new binaryChanger(cfgContainer, binaryProjectPtr);
     sizeHandler->setDebugging(debugging);
     /*  Call pre transformation analysis. */
     sizeHandler->preTransformationAnalysis();
@@ -151,60 +151,6 @@ void BinaryRewriter::transformBinary() {
             printBasicBlockAsAssembly(currentBB);
             std::cout << std::endl;
         }
-    }
-
-    //Testing.
-    std::vector<SgAsmElfSection*> elfs;
-    elfs = SageInterface::querySubTree<SgAsmElfSection>(binaryProjectPtr);
-    std::cout << "elfs found: " << elfs.size() << std::endl;
-
-    for(std::vector<SgAsmElfSection*>::iterator elfIter = elfs.begin();
-        elfIter != elfs.end(); ++elfIter) {
-        /* Check the reason of the section. */
-        SgAsmElfSection::SectionPurpose pur = (*elfIter)->get_purpose();
-
-        /*  Extract the name of the segment. */
-        SgAsmGenericString* elfString = (*elfIter)->get_name();
-        /*  Get the string name. */
-        std::cout << "Name: " << elfString->get_string() << std::endl;
-
-        switch((*elfIter)->get_purpose()) {
-            case SgAsmElfSection::SP_UNSPECIFIED:
-                std::cout << "Unknown elf" << std::endl;
-                break;
-            case SgAsmElfSection::SP_PROGRAM:
-                std::cout << "Program-supplied, code, data etc." << std::endl;
-                break;
-            case SgAsmElfSection::SP_HEADER:
-                std::cout << "header for executable format" << std::endl;
-                break;
-            case SgAsmElfSection::SP_SYMTAB:
-                std::cout << "symbol table" << std::endl;
-                break;
-            case SgAsmElfSection::SP_OTHER:
-                std::cout << "file specified purpose than other categories." << std::endl;
-                break;
-            default:
-                break;
-        }
-        /*  Print flags of the section. */
-        if ((*elfIter)->get_mapped_rperm()) {
-            std::cout << "Readable." << std::endl;
-        }
-        if ((*elfIter)->get_mapped_wperm()) {
-            std::cout << "Writable." << std::endl;
-        }
-        if ((*elfIter)->get_mapped_xperm()) {
-            std::cout << "Executable." << std::endl;
-        }
-        /* print base address of section. */
-        std::cout << "Address (mapped_preferred_va): " << std::hex << (*elfIter)->get_mapped_preferred_va() << std::endl;
-        /* size of section. */
-        std::cout << "Size: " << std::hex << (*elfIter)->get_size() << std::endl;
-        /*  offset. */
-        std::cout << "Offset: " << std::hex << (*elfIter)->get_offset() << std::endl;
-
-        std::cout << std::endl << std::endl;
     }
 
     /* Correct addresses */
