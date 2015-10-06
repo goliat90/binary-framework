@@ -11,7 +11,7 @@ for bin in $BINS
 do
     FUNC=$(basename $bin .out)
     echo "Testing naive mode on ${bin##*/} and transforming function ${FUNC}" 
-    ../tmr/userRewriter.out "$bin" "$FUNC" "0" > /dev/null 2>&1
+    ../tmr/userRewriter.out "$bin" "$FUNC" "0" "0" > /dev/null 2>&1
     RETVAL=$?
     if [ ! "$RETVAL" -eq "0" ]
     then 
@@ -22,7 +22,7 @@ do
     fi
     # Test the optimized version for the same binary
     echo "Testing optimized mode on ${bin##*/} and transforming function ${FUNC}" 
-    ../tmr/userRewriter.out "$bin" "$FUNC" "1" > /dev/null 2>&1
+    ../tmr/userRewriter.out "$bin" "$FUNC" "1" "0" > /dev/null 2>&1
     if [ ! "$RETVAL" -eq "0" ]
     then 
         # the Return value is a failure value.

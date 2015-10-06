@@ -13,18 +13,19 @@ userFramework::userFramework(int argc, char** argv) {
 
 int main(int argc, char** argv) {
     /*  Check that an function name has been supplied as argument. */
-    if (4 > argc) {
+    if (5 > argc) {
         std::cout << "Wrong number of arguments." << std::endl
             << "Needed: Binary that is to be transformed." << std::endl
             << "        Function name(s) of function to transform." << std::endl
-            << "        Transformation mode (0 or 1), 1 is optimized mode." << std::endl;
+            << "        Transformation mode (0 or 1), 1 is optimized mode." << std::endl
+            << "        Enable debug (0 or 1), 1 = true." << std::endl;
         exit(0);
     }
     /*  String variable containing the function name. */
     std::list<std::string> functionNameList;
     /*  Go through argv and collect the names of functions
         that are goint to be transformed. */
-    for (int i = 2; i < argc-1; i++) {
+    for (int i = 2; i < argc-2; i++) {
         /*  Create string object. */
         std::string fName = std::string(argv[i]);
         /*  Add string to list. */
@@ -32,12 +33,16 @@ int main(int argc, char** argv) {
     }
 
     /*  Check the mode that is used. */
-    int mode = strtol(&argv[argc-1][0], NULL, 0);
+    int mode = strtol(&argv[argc-2][0], NULL, 0);
+    /*  Check if debug mode is set. */
+    int verbose = strtol(&argv[argc-1][0], NULL, 0);
 
     /*  Crate framework object. */
     userFramework* ut = new userFramework(2, argv);
     /* enable printing */
-    ut->setDebug(true);
+    if (1 == verbose) {
+        ut->setDebug(true);
+    }
 
     /* set which function is to be transformed */
     ut->functionSelect(&functionNameList);
