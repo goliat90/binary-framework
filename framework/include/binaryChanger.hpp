@@ -32,6 +32,10 @@ class binaryChanger {
     private:
     /*  Hide default constructor. */
     binaryChanger();
+    /*  Collect information about basic blocks. */
+    void preBlockInformationCollection();
+    /*  Collect information about sections and segments. */
+    void preSegmentSectionCollection();
 
     /*  Private variables. */
     /*  Debugging variable. */

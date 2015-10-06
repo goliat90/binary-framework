@@ -6,11 +6,11 @@
 */
 
 /*  Steps that need to be done.
+    4. extend an existing ELF segment or add a new one
+    5. move later segments to higher addresses
     1. change the addresses for the subsequent instructions.
     2. fix up target addresses for branch instructions
     3. fix symbol tables to point to new addresses
-    4. extend an existing ELF segment or add a new one
-    5. move later segments to higher addresses
     6. fix the ELF segment table
 */
 
@@ -24,6 +24,10 @@
     all needed information to perform changes correctly.
 
     2. After transforms calculate the new segment sizes.
+
+    3. Determine if a segment can grow in the current place.
+    If not then move it to a new space. Start with the segment
+    that has grown the most, then the one after that.
 
     3. Rewrite the addresses of instructions, branches,
     fix symbol tables.
@@ -48,6 +52,18 @@ binaryChanger::binaryChanger(CFGhandler* cfgH, SgProject* passedProjectPtr) {
 /*  This function performs analysis on the binary before
     the transformations are applied. */
 void binaryChanger::preTransformationAnalysis() {
+    /*  Collect needed data and structures for sections, segments etc. */
+    preSegmentSectionCollection();
+
+    /*  Analyze all the basic blocks and collect information about them. */
+    preBlockInformationCollection();
+ 
+}
+
+
+/*  Collect information about basic blocks that i need before any
+    transformations are applied. */
+void binaryChanger::preBlockInformationCollection() {
     /*  Get the program cfg pointer. */
     CFG* entireCFG = cfgObject->getProgramCFG();
     /*  Go through the program CFG and extract all the basic blocks. */
@@ -96,12 +112,14 @@ void binaryChanger::preTransformationAnalysis() {
     /*  All the basic blocks have been inserted. Sort the 
         vector according to blocks address size. */
     std::sort(basicBlockVector.begin(), basicBlockVector.end(), blockSortStruct());
+}
 
-    /*  At this point i have a orderded vector of basic blocks, from low to high.
-        For each block i know the starting address and ending address.
-        The original size of each block is known. */
-    //TODO i should get access to the segments here, or even earlier.
 
+/*  Collect information about section and segments in the binary
+    before any transformations are applied. */
+void binaryChanger::preSegmentSectionCollection() {
+
+    /*  Retrieve the sections. */
     elfSections = SageInterface::querySubTree<SgAsmElfSection>(changerProjectPtr);
     if (debugging) {
         std::cout << "elfs found: " << elfSections.size() << std::endl;
@@ -193,9 +211,6 @@ void binaryChanger::preTransformationAnalysis() {
             std::cout << std::endl;
         }
     }
-
-    //TODO have a printout here of what has been saved in the segment and section vectors.? 
- 
 }
 
 
