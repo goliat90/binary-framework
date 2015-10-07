@@ -53,11 +53,21 @@ binaryChanger::binaryChanger(CFGhandler* cfgH, SgProject* passedProjectPtr) {
     the transformations are applied. */
 void binaryChanger::preTransformationAnalysis() {
     /*  Collect needed data and structures for sections, segments etc. */
+    //TODO consider adding in this function finding the gaps in the address space.
+    //TODO 
     preSegmentSectionCollection();
 
     /*  Analyze all the basic blocks and collect information about them. */
     preBlockInformationCollection();
  
+}
+
+
+/*  Post tranformation function. Fixes the binary so it
+    is fixed. */
+void binaryChanger::postTransformationWork() {
+    /*  Check how the blocks have changed in size. */
+
 }
 
 
@@ -135,11 +145,12 @@ void binaryChanger::preSegmentSectionCollection() {
 
         switch((*elfIter)->get_purpose()) {
             case SgAsmElfSection::SP_UNSPECIFIED:
-                std::cout << "Unknown elf" << std::endl;
+                //std::cout << "Unknown elf" << std::endl;
                 break;
             case SgAsmElfSection::SP_PROGRAM:
                 /*  Add all the segments. */
                 //TODO or add all the segments that are read and writable. then check the boundaries.
+                //TODO if i add just those segment i could then use the sections addresses as boundaries.
                 segmentVector.push_back(*elfIter);
                 break;
             case SgAsmElfSection::SP_HEADER:
@@ -155,10 +166,10 @@ void binaryChanger::preSegmentSectionCollection() {
                 }
                 break;
             case SgAsmElfSection::SP_SYMTAB:
-                std::cout << "symbol table" << std::endl;
+                //std::cout << "symbol table" << std::endl;
                 break;
             case SgAsmElfSection::SP_OTHER:
-                std::cout << "file specified purpose than other categories." << std::endl;
+                //std::cout << "file specified purpose than other categories." << std::endl;
                 break;
             default:
                 break;
@@ -183,6 +194,7 @@ void binaryChanger::preSegmentSectionCollection() {
                     std::cout << "file specified purpose than other categories." << std::endl;
                     break;
                 default:
+                    std::cout << "unknown purpose enum." << std::endl;
                     break;
             }   
             /*  Get the string name. */
@@ -214,11 +226,6 @@ void binaryChanger::preSegmentSectionCollection() {
 }
 
 
-/*  Post tranformation function. Fixes the binary so it
-    is fixed. */
-void binaryChanger::postTransformationWork() {
-
-}
 
 
 
