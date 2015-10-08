@@ -8,6 +8,7 @@
 
 /*  Includes. */
 #include "cfgHandler.hpp"
+#include "boost/bimap.hpp"
 #include "rose.h"
 
 
@@ -16,7 +17,17 @@ struct blockSortStruct {
     bool operator()(SgAsmBlock* i, SgAsmBlock* j) const {
         return (i->get_address() < j->get_address());
     }
-};
+} blockOrder;
+
+/*  Sort segments or sections according to their address. */
+struct elfSectionSortStruct {
+    bool operator()(SgAsmElfSection* i, SgAsmElfSection* j) const {
+        return (i->get_mapped_preferred_va() < j->get_mapped_preferred_va());
+    }
+} elfSectionOrder;
+
+/* typedefs. */
+typedef std::vector<SgAsmElfSection*> asmElfVector; 
 
 class binaryChanger {
     public:
@@ -37,9 +48,20 @@ class binaryChanger {
     /*  Collect information about sections and segments. */
     void preSegmentSectionCollection();
 
+    /*  Check how blocks have changed due to transformations. */
+    void postBlockChanges();
+    /*  Function to reallocate segment and start adjusting their size. */
+    void reallocateSegments();
+    /*  Find open spaces within the virtual address space.
+        This is to find suitable open spaces to move segments. */
+    void findFreeVirtualSpace();
+
     /*  Private variables. */
     /*  Debugging variable. */
     bool debugging;
+    /*  Address bound addresses. */
+    rose_addr_t lowerVirtualAddressLimit;
+    rose_addr_t upperVirtualAddressLimit;
     /*  Pointer for the SgProject. It is available here for
         to be able to extract the segments and other information. */
     SgProject* changerProjectPtr;
@@ -53,6 +75,12 @@ class binaryChanger {
         Will contain all segments, including data.
         This is to have a entire picture. */
     std::vector<SgAsmElfSection*> segmentVector;
+    /*  Hashmap containing information regarding if there
+        is space between a two segments. If a segment is present
+        then there is some address space available between the
+        segment and the next one. */
+    boost::bimap<rose_addr_t, SgAsmElfSection*> addressVoids;
+
     /*  Container for the block pointers.
         It will be sorted according to address. */
     std::vector<SgAsmBlock*> basicBlockVector;
