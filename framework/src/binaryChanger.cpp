@@ -67,7 +67,7 @@ void binaryChanger::preTransformationAnalysis() {
     is fixed. */
 void binaryChanger::postTransformationWork() {
     /*  Check how the blocks have changed in size. */
-    postBlockChanges();
+    postChanges();
 
     /*  Reallocate segments. */
     reallocateSegments();
@@ -127,7 +127,7 @@ void binaryChanger::preBlockInformationCollection() {
 
     /*  All the basic blocks have been inserted. Sort the 
         vector according to blocks address size. */
-    std::sort(basicBlockVector.begin(), basicBlockVector.end(), blockOrder);
+    std::sort(basicBlockVector.begin(), basicBlockVector.end(), blockSortStruct());
 }
 
 
@@ -247,7 +247,7 @@ void binaryChanger::preSegmentSectionCollection() {
         /*  For each section check its address (virtual). */
         rose_addr_t elfVa = (*elfIter)->get_mapped_preferred_va();
         /*  See if it should be added or not. */
-        if (lowerVirtualAddressLimit <= elfVa && elfVa <= upperVirtualAddressLimit) {
+        if (lowerVirtualAddressLimit <= elfVa && elfVa < upperVirtualAddressLimit) {
             /* The section is within the bound, check so it is not the
                 section itself by searching the sectionVector. */
             if (sectionVector.end() == std::find(sectionVector.begin(), 
@@ -259,10 +259,10 @@ void binaryChanger::preSegmentSectionCollection() {
     }
 
     /*  Sort the section according to addresses. */
-    std::sort(sectionVector.begin(), sectionVector.end(), elfSectionOrder);
+    std::sort(sectionVector.begin(), sectionVector.end(), elfSectionSortStruct());
 
     /*  Sort the segments according to their virtual addresses. */
-    std::sort(segmentVector.begin(), segmentVector.end(), elfSectionOrder);
+    std::sort(segmentVector.begin(), segmentVector.end(), elfSectionSortStruct());
 
     /*  Print if debugging. */
     if (debugging) {
@@ -335,7 +335,7 @@ void binaryChanger::preSegmentSectionCollection() {
 
 
 /*  Check how the transformatins have affected the blocks. */
-void binaryChanger::postBlockChanges() {
+void binaryChanger::postChanges() {
     /*  Go through the block vector and check the size changes. */
     for(std::vector<SgAsmBlock*>::iterator blockIter = basicBlockVector.begin();
         blockIter != basicBlockVector.end(); ++blockIter) {
@@ -348,18 +348,75 @@ void binaryChanger::postBlockChanges() {
             save the difference. */
         if(orgSize != newSize) {
             /*  save the new size. */
-            blockNewSize.insert(std::pair<SgAsmBlock*, int>((*blockIter), newSize));
+            blockSizeDifference.insert(std::pair<SgAsmBlock*, int>((*blockIter), (newSize - orgSize)));
         }
     }
 
     //TODO perhaps go through here and check the sizes of segments
     //TODO probbably need to take gaps between the bloocks in into
     //TODO consideration when calculating the size of a segment.
+
+    /*  Go through the segments and for each one determine which basic
+        blocks belongs to it and check if their size have change.
+        If so remember that the segment has changed it size also. */
+    for(asmElfVector::iterator segIter = segmentVector.begin();
+        segIter != segmentVector.end(); ++segIter) {
+        /*  Get the virtual address of the segment and the size.
+            Use that to determine the range of the segment.
+            With that check which blocks are in the segment. */
+        bool segmentModified = false;
+        int64_t segDiff = 0;
+        rose_addr_t segAddr = (*segIter)->get_mapped_preferred_va();
+        rose_addr_t segMappedSize = (*segIter)->get_mapped_size();
+        rose_addr_t segEndAddr = segAddr + segMappedSize;
+
+        /*  Iterate over the blocks and check their address, if they belong
+            in the segment then check if their size has changed. */
+        for(std::vector<SgAsmBlock*>::iterator blockIter = basicBlockVector.begin();
+            blockIter != basicBlockVector.end(); ++blockIter) {
+            /*  Get the blocks start address. */
+            rose_addr_t blockAddr = (*blockIter)->get_id();
+            /*  Check if the address of the block is within the current segment. */
+            if (segAddr <= blockAddr && blockAddr <= segEndAddr) {
+                /* Block is within the segment, Check if it has a new size. */
+                if (1 == blockSizeDifference.count(*blockIter)) {
+                    /*  Add the difference to the segDiff. */
+                    int blockDiff = blockSizeDifference.find(*blockIter)->second;
+                    segDiff += blockDiff;
+                    /*  Set boolean to true. */
+                    segmentModified = true;
+                }
+            }
+        }
+        /*  If the segment size has changed then save the difference. */
+        if (true == segmentModified) {
+            segmentSizeDifference.insert(std::pair<SgAsmElfSection*, rose_addr_t>(*segIter, segDiff));
+            /*  Printout debugging information. */
+            if (debugging) {
+                /*  Extract the name of the segment. */
+                SgAsmGenericString* elfString = (*segIter)->get_name();
+                /*  Get the string name. */
+                std::cout << "Name: " << elfString->get_string()
+                    << " Size has changed with " << (segDiff*4) << " bytes." << std::endl;
+            }
+        }
+    }
 }
 
 
-/*  Start moving segments that can not grow in its current place. */
+/*  Start moving segments that can not grow in its current place.
+    The largest segment will be moved first, then continue with
+    the second largest, e.t.c. If this function can't find a
+    place for a segment the transformation fails. */
 void binaryChanger::reallocateSegments() {
+    /*  Find the segment that has grown the most, check if it
+        can remain in its current position or if it has to be moved. */
+
+    /*  If it cant grow in its position then move it to an address
+        space where it fits. Perhaps try and take a space that it fills out well. */
+
+    //TODO possible conservative restriction, do not allow placement
+    //TODO of segments on an address below the first original segment.
 
 }
 
@@ -367,7 +424,6 @@ void binaryChanger::reallocateSegments() {
 //TODO consider calling this function when i have moved a segment so
 //TODO can continue placement
 void binaryChanger::findFreeVirtualSpace() {
-    
 }
 
 

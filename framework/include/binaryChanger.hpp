@@ -17,14 +17,14 @@ struct blockSortStruct {
     bool operator()(SgAsmBlock* i, SgAsmBlock* j) const {
         return (i->get_address() < j->get_address());
     }
-} blockOrder;
+};
 
 /*  Sort segments or sections according to their address. */
 struct elfSectionSortStruct {
     bool operator()(SgAsmElfSection* i, SgAsmElfSection* j) const {
         return (i->get_mapped_preferred_va() < j->get_mapped_preferred_va());
     }
-} elfSectionOrder;
+};
 
 /* typedefs. */
 typedef std::vector<SgAsmElfSection*> asmElfVector; 
@@ -48,8 +48,9 @@ class binaryChanger {
     /*  Collect information about sections and segments. */
     void preSegmentSectionCollection();
 
-    /*  Check how blocks have changed due to transformations. */
-    void postBlockChanges();
+    /*  Check how blocks have changed due to transformations and
+        the segments they belong to. Not the sizes. */
+    void postChanges();
     /*  Function to reallocate segment and start adjusting their size. */
     void reallocateSegments();
     /*  Find open spaces within the virtual address space.
@@ -84,7 +85,6 @@ class binaryChanger {
     /*  Container for the block pointers.
         It will be sorted according to address. */
     std::vector<SgAsmBlock*> basicBlockVector;
-
     /*  Map for the blocks starting address. I assume it is
         the blocks address or the first instructions. */
     std::map<SgAsmBlock*, rose_addr_t> blockStartAddrMap;
@@ -97,9 +97,14 @@ class binaryChanger {
     /*  Map storing the original block size of blocks.
         Retrieved before transforming. */
     std::map<SgAsmBlock*, int> blockOriginalSize;
-    /*  The new size of basic blocks, if their size has changed
+    /*  The difference in size of basic blocks, if their size has changed
         then they have an entry here. */
-    std::map<SgAsmBlock*, int> blockNewSize;
+    //TODO the difference is the number of instructions.
+    std::map<SgAsmBlock*, int> blockSizeDifference;
+    /*  Segment difference for section. */
+    //TODO the value right now is the difference in number of instructions, not bytes.
+    //TODO perhaps use int as value and sort them according to greater?
+    std::map<SgAsmElfSection*, int64_t>  segmentSizeDifference;
 
     //TODO some kind of structure to store the segments, possibly ordered.
     //TODO If it is ordered i could iterate it and change accordingly. 

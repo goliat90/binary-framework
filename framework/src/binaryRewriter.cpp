@@ -153,6 +153,9 @@ void BinaryRewriter::transformBinary() {
         }
     }
 
+    /*  Analyze the changes to the binary and make adjustment to make it functional. */
+    sizeHandler->postTransformationWork();
+
     /* Correct addresses */
 
     /* Debug print */
