@@ -156,6 +156,8 @@ void BinaryRewriter::transformBinary() {
     /*  Analyze the changes to the binary and make adjustment to make it functional. */
     sizeHandler->postTransformationWork();
 
+    /*  Pass the program to Rose backend that produces the binary. */
+
     /* Correct addresses */
 
     /* Debug print */

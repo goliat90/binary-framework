@@ -9,6 +9,8 @@
 /*  Includes. */
 #include "cfgHandler.hpp"
 #include "boost/bimap.hpp"
+#include "boost/bimap/set_of.hpp"
+#include "boost/bimap/multiset_of.hpp"
 #include "rose.h"
 
 
@@ -104,7 +106,8 @@ class binaryChanger {
     /*  Segment difference for section. */
     //TODO the value right now is the difference in number of instructions, not bytes.
     //TODO perhaps use int as value and sort them according to greater?
-    std::map<SgAsmElfSection*, int64_t>  segmentSizeDifference;
+//    std::map<SgAsmElfSection*, int64_t>  segmentSizeDifference;
+    boost::bimap<boost::bimaps::set_of<SgAsmElfSection*>, boost::bimaps::multiset_of<int64_t, std::greater<int64_t> > > segmentSizeDifference;
 
     //TODO some kind of structure to store the segments, possibly ordered.
     //TODO If it is ordered i could iterate it and change accordingly. 

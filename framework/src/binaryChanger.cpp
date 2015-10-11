@@ -73,7 +73,7 @@ void binaryChanger::postTransformationWork() {
     reallocateSegments();
 
     /*  Calculate the space between segments. */
-    findFreeVirtualSpace();
+    //findFreeVirtualSpace();
 }
 
 
@@ -390,7 +390,8 @@ void binaryChanger::postChanges() {
         }
         /*  If the segment size has changed then save the difference. */
         if (true == segmentModified) {
-            segmentSizeDifference.insert(std::pair<SgAsmElfSection*, rose_addr_t>(*segIter, segDiff));
+    //        segmentSizeDifference.insert(std::pair<SgAsmElfSection*, rose_addr_t>(*segIter, segDiff));
+        segmentSizeDifference.left.insert(std::pair<SgAsmElfSection*, rose_addr_t>(*segIter, segDiff));
             /*  Printout debugging information. */
             if (debugging) {
                 /*  Extract the name of the segment. */
@@ -411,6 +412,7 @@ void binaryChanger::postChanges() {
 void binaryChanger::reallocateSegments() {
     /*  Find the segment that has grown the most, check if it
         can remain in its current position or if it has to be moved. */
+
 
     /*  If it cant grow in its position then move it to an address
         space where it fits. Perhaps try and take a space that it fills out well. */
