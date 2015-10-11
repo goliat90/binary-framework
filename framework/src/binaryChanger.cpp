@@ -410,12 +410,24 @@ void binaryChanger::postChanges() {
     the second largest, e.t.c. If this function can't find a
     place for a segment the transformation fails. */
 void binaryChanger::reallocateSegments() {
-    /*  Find the segment that has grown the most, check if it
-        can remain in its current position or if it has to be moved. */
+
+    /*  Find all segments that have been changed and add them to
+        some kind of container. When a segment has is determined
+        to be in a space it can be in then it is removed from the
+        container. Continue until the container is empty. */
+
+        /*  Find all the current free address spaces. */
+
+        /*  Start with the segment that has grown the most, check if it
+            can remain in its current position or if it has to be moved. */
 
 
-    /*  If it cant grow in its position then move it to an address
-        space where it fits. Perhaps try and take a space that it fills out well. */
+        /*  If it cant grow in its position then move it to an address
+            space where it fits. At this moment adjust the size so it is correct. */
+
+        /*  Remove the segment from the list of modified segments since it
+            is in a acceptable place. */
+
 
     //TODO possible conservative restriction, do not allow placement
     //TODO of segments on an address below the first original segment.
@@ -426,6 +438,20 @@ void binaryChanger::reallocateSegments() {
 //TODO consider calling this function when i have moved a segment so
 //TODO can continue placement
 void binaryChanger::findFreeVirtualSpace() {
+    //TODO perhaps clear the container specifying the free space.
+
+
+    //TODO Go through the segment list and check between each segment
+    //TODO if there is any space between them.
+    //TODO first segment address + size,
+    //TODO compare with the second segments address to see if there is any space there.
+
+    //TODO special case is when im looking at the first segment and last in the list.
+    //TODO with the last i need to check against the following section.
+    //TODO with the first i might not need to care other than i do not allow anything to be moved above
+    //TODO the first segments address.
+
+    //TODO need to consider preventing movement of certain segments also.
 }
 
 
