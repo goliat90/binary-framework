@@ -165,7 +165,7 @@ void binaryChanger::preSegmentSectionCollection() {
                     /*  Remember the address of this segment to get a lower
                         address boundary which i can not move segments below.
                         This has the limitation if i have more executable sections it will be incorrect. */
-                    lowerVirtualAddressLimit = (*elfIter)->get_mapped_preferred_va();
+                    lowerVirtualAddressLimit = (*elfIter)->get_mapped_preferred_rva();
                 }
                 /*  Check if the header if Read and Writable. */
                 if (true == (*elfIter)->get_mapped_rperm() && true == (*elfIter)->get_mapped_wperm()) {
@@ -174,7 +174,7 @@ void binaryChanger::preSegmentSectionCollection() {
                     /*  Save the base address for this section. It will be used
                         as a upper limit. This is assuming that this section is
                         after the code segment and there is only one data segment. */
-                    upperVirtualAddressLimit = (*elfIter)->get_mapped_preferred_va();
+                    upperVirtualAddressLimit = (*elfIter)->get_mapped_preferred_rva();
                 }
                 break;
             case SgAsmElfSection::SP_SYMTAB:
@@ -230,7 +230,7 @@ void binaryChanger::preSegmentSectionCollection() {
             /* Check if it should be mapped. */
             std::cout << "Is mapped: " << std::boolalpha << (*elfIter)->is_mapped() << std::endl;
             /* print base address of section. */
-            std::cout << "Address (mapped_preferred_va): " << std::hex << (*elfIter)->get_mapped_preferred_va() << std::endl;
+            std::cout << "Address (mapped_preferred_rva): " << std::hex << (*elfIter)->get_mapped_preferred_rva() << std::endl;
             /* size of section. */
             std::cout << "Size (mapped): " << std::hex << (*elfIter)->get_mapped_size() << std::endl;
             std::cout << "Size (file)  : " << std::hex << (*elfIter)->get_size() << std::endl;
@@ -287,7 +287,7 @@ void binaryChanger::preSegmentSectionCollection() {
             /* Check if it should be mapped. */
             std::cout << "Is mapped: " << std::boolalpha << (*elfIter)->is_mapped() << std::endl;
             /* print base address of section. */
-            std::cout << "Address (mapped_preferred_va): " << std::hex << (*elfIter)->get_mapped_preferred_va() << std::endl;
+            std::cout << "Address (mapped_preferred_rva): " << std::hex << (*elfIter)->get_mapped_preferred_rva() << std::endl;
             /* size of section. */
             std::cout << "Size (mapped)   : " << std::hex << (*elfIter)->get_mapped_size() << std::endl;
             std::cout << "Size (file)     : " << std::hex << (*elfIter)->get_size() << std::endl;
@@ -321,7 +321,7 @@ void binaryChanger::preSegmentSectionCollection() {
             /* Check if it should be mapped. */
             std::cout << "Is mapped: " << std::boolalpha << (*elfIter)->is_mapped() << std::endl;
             /* print base address of section. */
-            std::cout << "Address (mapped_preferred_va): " << std::hex << (*elfIter)->get_mapped_preferred_va() << std::endl;
+            std::cout << "Address (mapped_preferred_rva): " << std::hex << (*elfIter)->get_mapped_preferred_rva() << std::endl;
             /* size of section. */
             std::cout << "Size (mapped): " << std::hex << (*elfIter)->get_mapped_size() << std::endl;
             std::cout << "Size (file)  : " << std::hex << (*elfIter)->get_size() << std::endl;
@@ -432,6 +432,8 @@ void binaryChanger::reallocateSegments() {
         findFreeVirtualSpace();
         /*  Start with the segment that has grown the most, check if it
             can remain in its current position or if it has to be moved. */
+        //TODO the space might have to be multiplied by 4, if it is the number of instructions.
+        //TODO one instruction is 4 bytes
         rose_addr_t neededSegSpace = modifiedElfSections.back();
         SgAsmElfSection* checkedSegment = segmentSizeDifference.right.find(neededSegSpace)->second;
         rose_addr_t segSize = checkedSegment->get_mapped_size();
@@ -472,13 +474,19 @@ void binaryChanger::reallocateSegments() {
             addrVoidIter != addressVoids.left.end(); ++addrVoidIter) {
             /*  Check if the space is large enough. It needs to be able to
                 hold the original size plus the new space. */
-            if ((segSize + neededSegSpace) >= addrVoidIter->first) {
+            if ((segSize + neededSegSpace) <= addrVoidIter->first) {
                 /*  Found space after a segment that is large enough. */
                 SgAsmElfSection* segment = addrVoidIter->second;
                 /*  Calculate the new base address for the segment. */
                 newAddress = segment->get_mapped_preferred_rva() + segment->get_mapped_size();
                 /*  Set flag to true. */
                 segmentMoved = true;
+                /*  debugging. */
+                if (debugging) {
+                    SgAsmGenericString* elfString = segment->get_name();
+                    std::cout << "Placing segment after segment " << elfString->get_string() << std::endl
+                                << "New calculated address: " << std::hex << newAddress << std::endl;
+                }
                 /*  Break loop. */
                 break;
             }
@@ -494,9 +502,9 @@ void binaryChanger::reallocateSegments() {
             if (debugging) {
                 SgAsmGenericString* elfString = checkedSegment->get_name();
                 std::cout << "Segment: " <<  elfString->get_string() << " moved." << std::endl
-                    << "new address: " << checkedSegment->get_mapped_preferred_va() << std::endl
+                    << "new address: " << std::hex << checkedSegment->get_mapped_preferred_va() << std::endl
                     //TODO the size might be wrong here, migth need to multiply with bytes. (*4)
-                    << "new size: " << checkedSegment->get_mapped_size() << std::endl;
+                    << "new size: " << std::hex << checkedSegment->get_mapped_size() << std::endl;
             }
         } else {
             /*  Failed to move segment so throw error. */
