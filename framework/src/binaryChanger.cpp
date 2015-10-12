@@ -72,8 +72,8 @@ void binaryChanger::postTransformationWork() {
     /*  Reallocate segments. */
     reallocateSegments();
 
-    /*  Calculate the space between segments. */
-    //findFreeVirtualSpace();
+    /*  Segments have now been moved if they needed to be and
+        their mapped size fixed to include the changes. */
 }
 
 
@@ -354,10 +354,6 @@ void binaryChanger::postChanges() {
         }
     }
 
-    //TODO perhaps go through here and check the sizes of segments
-    //TODO probbably need to take gaps between the bloocks in into
-    //TODO consideration when calculating the size of a segment.
-
     /*  Go through the segments and for each one determine which basic
         blocks belongs to it and check if their size have change.
         If so remember that the segment has changed it size also. */
@@ -393,6 +389,7 @@ void binaryChanger::postChanges() {
         /*  If the segment size has changed then save the difference. */
         if (true == segmentModified) {
     //        segmentSizeDifference.insert(std::pair<SgAsmElfSection*, rose_addr_t>(*segIter, segDiff));
+            segDiff *= 4;
             segmentSizeDifference.left.insert(std::pair<SgAsmElfSection*, rose_addr_t>(*segIter, segDiff));
             /*  Printout debugging information. */
             if (debugging) {
@@ -400,7 +397,7 @@ void binaryChanger::postChanges() {
                 SgAsmGenericString* elfString = (*segIter)->get_name();
                 /*  Get the string name. */
                 std::cout << "Name: " << elfString->get_string()
-                    << " Size has changed with " << (segDiff*4) << " bytes." << std::endl;
+                    << " Size has changed with " << segDiff << " bytes." << std::endl;
             }
         }
     }
@@ -432,10 +429,9 @@ void binaryChanger::reallocateSegments() {
         findFreeVirtualSpace();
         /*  Start with the segment that has grown the most, check if it
             can remain in its current position or if it has to be moved. */
-        //TODO the space might have to be multiplied by 4, if it is the number of instructions.
-        //TODO one instruction is 4 bytes
         rose_addr_t neededSegSpace = modifiedElfSections.back();
         SgAsmElfSection* checkedSegment = segmentSizeDifference.right.find(neededSegSpace)->second;
+        /*  Size of the checked segment. */
         rose_addr_t segSize = checkedSegment->get_mapped_size();
 
         if (debugging) {
@@ -445,10 +441,8 @@ void binaryChanger::reallocateSegments() {
                 << " needs to be moved." << std::endl;
         }
 
-        /*  If it cant grow in its position then move it to an address
-            space where it fits. At this moment adjust the size so it is correct. */
-        //TODO can i use the addressvoids map? If a segment has an entry then i know if it can grow there.
-        //TODO otherwise i need to move it. 
+        /*  Check if the segment has some space after it and if it is
+            enough to fit the changes to the segment. */
         if (1 == addressVoids.right.count(checkedSegment)) {
             /*  The segment has space after it, check if it is enough. */
             rose_addr_t addrSpace = addressVoids.right.find(checkedSegment)->second;
@@ -458,9 +452,11 @@ void binaryChanger::reallocateSegments() {
                 if (debugging) {
                     std::cout << "Segment can grow in place, no move needed." << std::endl;
                 }
-                //TODO leave segment in place and adjust the size of it.
-                //TODO remove the segment from the modified list. by poping back
-                //TODO perhaps have a continue here?
+                /*  Adjust the segment size to include the changes. */
+                rose_addr_t newSize =  + neededSegSpace;
+                /*  Remove the segment from the list, done by poping it. */
+                modifiedElfSections.pop_back();
+                /*  Continue with the next segment that has changed. */
                 continue;
             }
         }
@@ -496,36 +492,63 @@ void binaryChanger::reallocateSegments() {
         if (true == segmentMoved) {
             /*  Set the new virtual address of the segment and set the new size of it.
                 This is so when the next address voids are found it will not be incorrect. */
-            //TODO the address is not correct.
             checkedSegment->set_mapped_preferred_rva(newAddress);
             checkedSegment->set_mapped_size(segSize + neededSegSpace);
             if (debugging) {
                 SgAsmGenericString* elfString = checkedSegment->get_name();
                 std::cout << "Segment: " <<  elfString->get_string() << " moved." << std::endl
                     << "new address: " << std::hex << checkedSegment->get_mapped_preferred_va() << std::endl
-                    //TODO the size might be wrong here, migth need to multiply with bytes. (*4)
                     << "new size: " << std::hex << checkedSegment->get_mapped_size() << std::endl;
             }
         } else {
             /*  Failed to move segment so throw error. */
         }
-
-        modifiedElfSections.clear();
-
         /*  Remove the segment from the list of modified segments since it
-            is in a acceptable place. */
+            is in a acceptable place. It is done by poping the back sector. */
+        modifiedElfSections.pop_back();
     }
 
-    //TODO possible conservative restriction, do not allow placement
-    //TODO of segments on an address below the first original segment.
+    /*  Print segments as debug. */
+    if (debugging) {
+        /*  Sort the segments before printing. */
+        std::sort(segmentVector.begin(), segmentVector.end(), elfSectionSortStruct());
+        std::cout << "---- Segments ----" << std::endl;
+        /*  Printout the segments that are within the virtual address boundary. */
+        for(asmElfVector::iterator elfIter = segmentVector.begin();
+            elfIter != segmentVector.end(); ++elfIter) {
+            /*  Extract the name of the segment. */
+            SgAsmGenericString* elfString = (*elfIter)->get_name();
+            /*  Get the string name. */
+            std::cout << "Name: " << elfString->get_string() << std::endl;
+            /*  Print flags of the section. */
+            if ((*elfIter)->get_mapped_rperm()) {
+                std::cout << "Readable." << std::endl;
+            }
+            if ((*elfIter)->get_mapped_wperm()) {
+                std::cout << "Writable." << std::endl;
+            }
+            if ((*elfIter)->get_mapped_xperm()) {
+                std::cout << "Executable." << std::endl;
+            }
+            /* Check if it should be mapped. */
+            std::cout << "Is mapped: " << std::boolalpha << (*elfIter)->is_mapped() << std::endl;
+            /* print base address of section. */
+            std::cout << "Address (mapped_preferred_rva): " << std::hex << (*elfIter)->get_mapped_preferred_rva() << std::endl;
+            /* size of section. */
+            std::cout << "Size (mapped): " << std::hex << (*elfIter)->get_mapped_size() << std::endl;
+            std::cout << "Size (file)  : " << std::hex << (*elfIter)->get_size() << std::endl;
+            /*  offsets. */
+            std::cout << "Offset(file) : " << std::hex << (*elfIter)->get_offset() << std::endl;
 
+            std::cout << std::endl;
+
+        }
+        std::cout << "---- End Segments ----" << std::endl << std::endl;
+    }
 }
 
 /*  Go through the address space and find the open spaces. */
-//TODO consider calling this function when i have moved a segment so
-//TODO can continue placement
 void binaryChanger::findFreeVirtualSpace() {
-    //TODO perhaps clear the container specifying the free space.
     /*  Clearing address voids. */
     addressVoids.clear();
 
@@ -558,7 +581,7 @@ void binaryChanger::findFreeVirtualSpace() {
                 first segment and the space available. */
             rose_addr_t addrSpace = nextSegAddr - (segAddr + segSize);
             addressVoids.left.insert(std::pair<rose_addr_t, SgAsmElfSection*>(addrSpace, (*segIter)));
-            //TODO add debuging printout
+            /*  Debug print. */
             if (debugging) {
                 /*  Get the string name. */
                 SgAsmGenericString* elfString = (*segIter)->get_name();
@@ -566,7 +589,6 @@ void binaryChanger::findFreeVirtualSpace() {
                 std::cout << "Space found after segment " 
                     << elfString->get_string() << std::endl
                     << "Available space is " << std::hex << addrSpace << " bytes" << std::endl;
-                    //TODO verify that it is bytes i have here.
             }
         }
     }
