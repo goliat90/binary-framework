@@ -28,6 +28,13 @@ struct elfSectionSortStruct {
     }
 };
 
+/*  Sort segments according to the file offset. */
+struct elfSectionFileSortStruct {
+    bool operator()(SgAsmElfSection* i, SgAsmElfSection* j) const {
+        return (i->get_offset() < j->get_offset());
+    }
+};
+
 /* typedefs. */
 typedef std::vector<SgAsmElfSection*> asmElfVector; 
 typedef boost::bimap<boost::bimaps::set_of<SgAsmElfSection*>, 
@@ -99,7 +106,6 @@ class binaryChanger {
     std::map<SgAsmBlock*, rose_addr_t> blockStartAddrMap;
     /*  Map for the blocks end address. */
     std::map<SgAsmBlock*, rose_addr_t> blockEndAddrMap;
-
     /*  Map between old addresses and new. */
     std::map<rose_addr_t, rose_addr_t> oldToNewAddrMap;
 
@@ -107,18 +113,15 @@ class binaryChanger {
         Retrieved before transforming. */
     std::map<SgAsmBlock*, int> blockOriginalSize;
     /*  The difference in size of basic blocks, if their size has changed
-        then they have an entry here. */
-    //TODO the difference is the number of instructions.
+        then they have an entry here. The numbers here is not bytes
+        but the number of instructions added or removed. */
     std::map<SgAsmBlock*, int> blockSizeDifference;
-    /*  Segment difference for section. */
-    //TODO the value right now is the difference in number of instructions, not bytes.
-    //TODO perhaps use int as value and sort them according to greater?
+    /*  Segment difference for section. The diff value is the number of bytes
+        that the inserted instructions requires. */
+    //TODO need to consider changing rose_addr_t to a signed type. Otherwise how do i handle shrinkage?
     boost::bimap<boost::bimaps::set_of<SgAsmElfSection*>, 
                     boost::bimaps::multiset_of<rose_addr_t, std::greater<rose_addr_t> > > segmentSizeDifference;
 
-    //TODO some kind of structure to store the segments, possibly ordered.
-    //TODO If it is ordered i could iterate it and change accordingly. 
-    //TODO perhaps have structure for after changes have been done.
 };
 
 #endif
