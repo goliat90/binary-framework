@@ -241,7 +241,7 @@ void binaryChanger::preSegmentSectionCollection() {
         }
     }
 
-    /* Go through the elf sections and add any section that is whithin the address range. */
+    /* Go through the elf sections and add any segment that is whithin the address range. */
     for(asmElfVector::iterator elfIter = elfSections.begin();
         elfIter != elfSections.end(); ++elfIter) {
         /*  For each section check its address (virtual). */
@@ -258,7 +258,7 @@ void binaryChanger::preSegmentSectionCollection() {
         }
     }
 
-    /*  Sort the section according to addresses. */
+    /*  Sort the section according to their virtual addresses. */
     std::sort(sectionVector.begin(), sectionVector.end(), elfSectionSortStruct());
 
     /*  Sort the segments according to their virtual addresses. */
@@ -289,10 +289,12 @@ void binaryChanger::preSegmentSectionCollection() {
             /* print base address of section. */
             std::cout << "Address (mapped_preferred_va): " << std::hex << (*elfIter)->get_mapped_preferred_va() << std::endl;
             /* size of section. */
-            std::cout << "Size (mapped): " << std::hex << (*elfIter)->get_mapped_size() << std::endl;
-            std::cout << "Size (file)  : " << std::hex << (*elfIter)->get_size() << std::endl;
+            std::cout << "Size (mapped)   : " << std::hex << (*elfIter)->get_mapped_size() << std::endl;
+            std::cout << "Size (file)     : " << std::hex << (*elfIter)->get_size() << std::endl;
+            /*  Alignment of section in file. */
+            std::cout << "alignment (file): " << std::hex << (*elfIter)->get_file_alignment() << std::endl;
             /*  offsets. */
-            std::cout << "Offset(file) : " << std::hex << (*elfIter)->get_offset() << std::endl;
+            std::cout << "Offset(file)    : " << std::hex << (*elfIter)->get_offset() << std::endl;
 
             std::cout << std::endl;
         }
@@ -365,7 +367,7 @@ void binaryChanger::postChanges() {
             Use that to determine the range of the segment.
             With that check which blocks are in the segment. */
         bool segmentModified = false;
-        int64_t segDiff = 0;
+        rose_addr_t segDiff = 0;
         rose_addr_t segAddr = (*segIter)->get_mapped_preferred_va();
         rose_addr_t segMappedSize = (*segIter)->get_mapped_size();
         rose_addr_t segEndAddr = segAddr + segMappedSize;
@@ -391,7 +393,7 @@ void binaryChanger::postChanges() {
         /*  If the segment size has changed then save the difference. */
         if (true == segmentModified) {
     //        segmentSizeDifference.insert(std::pair<SgAsmElfSection*, rose_addr_t>(*segIter, segDiff));
-        segmentSizeDifference.left.insert(std::pair<SgAsmElfSection*, rose_addr_t>(*segIter, segDiff));
+            segmentSizeDifference.left.insert(std::pair<SgAsmElfSection*, rose_addr_t>(*segIter, segDiff));
             /*  Printout debugging information. */
             if (debugging) {
                 /*  Extract the name of the segment. */
@@ -410,24 +412,101 @@ void binaryChanger::postChanges() {
     the second largest, e.t.c. If this function can't find a
     place for a segment the transformation fails. */
 void binaryChanger::reallocateSegments() {
-
     /*  Find all segments that have been changed and add them to
         some kind of container. When a segment has is determined
         to be in a space it can be in then it is removed from the
         container. Continue until the container is empty. */
+    std::vector<rose_addr_t> modifiedElfSections;
+    for(segDiffType::left_iterator leftSegIter = segmentSizeDifference.left.begin();
+        leftSegIter != segmentSizeDifference.left.end(); ++leftSegIter) {
+        /*  Copy over the elfsection to the set. */
+        modifiedElfSections.push_back(leftSegIter->second);
+    }
+    /*  Sort it small to large. */
+    std::sort(modifiedElfSections.begin(), modifiedElfSections.end(), std::greater<rose_addr_t>());
 
+    /*  While there still are not controlled elfsections continue
+        checking them. */
+    while(!modifiedElfSections.empty()) {
         /*  Find all the current free address spaces. */
-
+        findFreeVirtualSpace();
         /*  Start with the segment that has grown the most, check if it
             can remain in its current position or if it has to be moved. */
+        rose_addr_t neededSegSpace = modifiedElfSections.back();
+        SgAsmElfSection* checkedSegment = segmentSizeDifference.right.find(neededSegSpace)->second;
+        rose_addr_t segSize = checkedSegment->get_mapped_size();
 
+        if (debugging) {
+            /*  Extract the name of the segment. */
+            SgAsmGenericString* elfString = checkedSegment->get_name();
+            std::cout << "Checking if " << elfString->get_string() 
+                << " needs to be moved." << std::endl;
+        }
 
         /*  If it cant grow in its position then move it to an address
             space where it fits. At this moment adjust the size so it is correct. */
+        //TODO can i use the addressvoids map? If a segment has an entry then i know if it can grow there.
+        //TODO otherwise i need to move it. 
+        if (1 == addressVoids.right.count(checkedSegment)) {
+            /*  The segment has space after it, check if it is enough. */
+            rose_addr_t addrSpace = addressVoids.right.find(checkedSegment)->second;
+            /*  Check if the available space is enough. */
+            if (neededSegSpace <= addrSpace) {
+                /*  The space is enough. */
+                if (debugging) {
+                    std::cout << "Segment can grow in place, no move needed." << std::endl;
+                }
+                //TODO leave segment in place and adjust the size of it.
+                //TODO remove the segment from the modified list. by poping back
+                //TODO perhaps have a continue here?
+                continue;
+            }
+        }
+        /*  Boolean is set if a new space is found. */
+        bool segmentMoved = false;
+        /*  New address for the segment. */
+        rose_addr_t newAddress = 0;
+        /*  If we reach here then the segment needs to be moved.
+            Go through the free spaces and use the first one that fits. */
+        for(addressVoidType::left_iterator addrVoidIter = addressVoids.left.begin();
+            addrVoidIter != addressVoids.left.end(); ++addrVoidIter) {
+            /*  Check if the space is large enough. It needs to be able to
+                hold the original size plus the new space. */
+            if ((segSize + neededSegSpace) >= addrVoidIter->first) {
+                /*  Found space after a segment that is large enough. */
+                SgAsmElfSection* segment = addrVoidIter->second;
+                /*  Calculate the new base address for the segment. */
+                newAddress = segment->get_mapped_preferred_rva() + segment->get_mapped_size();
+                /*  Set flag to true. */
+                segmentMoved = true;
+                /*  Break loop. */
+                break;
+            }
+        }
+
+        /*  Check if the segment was reallocated or it failed. */
+        if (true == segmentMoved) {
+            /*  Set the new virtual address of the segment and set the new size of it.
+                This is so when the next address voids are found it will not be incorrect. */
+            //TODO the address is not correct.
+            checkedSegment->set_mapped_preferred_rva(newAddress);
+            checkedSegment->set_mapped_size(segSize + neededSegSpace);
+            if (debugging) {
+                SgAsmGenericString* elfString = checkedSegment->get_name();
+                std::cout << "Segment: " <<  elfString->get_string() << " moved." << std::endl
+                    << "new address: " << checkedSegment->get_mapped_preferred_va() << std::endl
+                    //TODO the size might be wrong here, migth need to multiply with bytes. (*4)
+                    << "new size: " << checkedSegment->get_mapped_size() << std::endl;
+            }
+        } else {
+            /*  Failed to move segment so throw error. */
+        }
+
+        modifiedElfSections.clear();
 
         /*  Remove the segment from the list of modified segments since it
             is in a acceptable place. */
-
+    }
 
     //TODO possible conservative restriction, do not allow placement
     //TODO of segments on an address below the first original segment.
@@ -439,19 +518,61 @@ void binaryChanger::reallocateSegments() {
 //TODO can continue placement
 void binaryChanger::findFreeVirtualSpace() {
     //TODO perhaps clear the container specifying the free space.
+    /*  Clearing address voids. */
+    addressVoids.clear();
 
+    /*  Sort the segment so they are in order before iterating over it. */
+    std::sort(segmentVector.begin(), segmentVector.end(), elfSectionSortStruct());
 
-    //TODO Go through the segment list and check between each segment
-    //TODO if there is any space between them.
-    //TODO first segment address + size,
-    //TODO compare with the second segments address to see if there is any space there.
+    for(asmElfVector::iterator segIter = segmentVector.begin();
+        segIter != segmentVector.end(); ++segIter) {
+        /*  Get address and size of the segment. */
+        rose_addr_t segAddr = (*segIter)->get_mapped_preferred_va();
+        rose_addr_t segSize = (*segIter)->get_mapped_size();
+        /*  Calculate the end address of the segment. */
+        rose_addr_t segEndAddr = segAddr + segSize;
+        /*  Retrieve the next segments start address, or
+            if it is the last segment then the next sections start address. */
+        rose_addr_t nextSegAddr = 0;
+        if (segmentVector.end() != (segIter+1)) {
+            /*  It is not the last segment we are checking so
+                there is another segment which an address can be retrieved from. */
+            nextSegAddr = (*(segIter+1))->get_mapped_preferred_va();
+        } else {
+            /*  It is the last segment in the section so we have to check
+                the following sections start address. The address i use is
+                therefore the upperVirtualAddressLimit variable. */
+            nextSegAddr = upperVirtualAddressLimit;
+        }
+        /*  Check if the segments address plus size is equal to the next address. */
+        if (nextSegAddr != (segAddr + segSize)) {
+            /*  There is space available, make a map entry with the
+                first segment and the space available. */
+            rose_addr_t addrSpace = nextSegAddr - (segAddr + segSize);
+            addressVoids.left.insert(std::pair<rose_addr_t, SgAsmElfSection*>(addrSpace, (*segIter)));
+            //TODO add debuging printout
+            if (debugging) {
+                /*  Get the string name. */
+                SgAsmGenericString* elfString = (*segIter)->get_name();
+                /*  Print name and space available. */
+                std::cout << "Space found after segment " 
+                    << elfString->get_string() << std::endl
+                    << "Available space is " << std::hex << addrSpace << " bytes" << std::endl;
+                    //TODO verify that it is bytes i have here.
+            }
+        }
+    }
 
-    //TODO special case is when im looking at the first segment and last in the list.
-    //TODO with the last i need to check against the following section.
-    //TODO with the first i might not need to care other than i do not allow anything to be moved above
-    //TODO the first segments address.
+        //TODO Go through the segment list and check between each segment
+        //TODO if there is any space between them.
+        //TODO first segment address + size,
+        //TODO compare with the second segments address to see if there is any space there.
 
-    //TODO need to consider preventing movement of certain segments also.
+        //TODO special case is when im looking at the first segment and last in the list.
+        //TODO with the last i need to check against the following section.
+        //TODO with the first i might not need to care other than i do not allow anything to be moved above
+        //TODO the first segments address.
+
 }
 
 

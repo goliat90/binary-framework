@@ -21,7 +21,7 @@ struct blockSortStruct {
     }
 };
 
-/*  Sort segments or sections according to their address. */
+/*  Sort segments or sections according to their virtual address. */
 struct elfSectionSortStruct {
     bool operator()(SgAsmElfSection* i, SgAsmElfSection* j) const {
         return (i->get_mapped_preferred_va() < j->get_mapped_preferred_va());
@@ -30,6 +30,9 @@ struct elfSectionSortStruct {
 
 /* typedefs. */
 typedef std::vector<SgAsmElfSection*> asmElfVector; 
+typedef boost::bimap<boost::bimaps::set_of<SgAsmElfSection*>, 
+                    boost::bimaps::multiset_of<rose_addr_t, std::greater<rose_addr_t> > > segDiffType;
+typedef boost::bimap<rose_addr_t, SgAsmElfSection*> addressVoidType; 
 
 class binaryChanger {
     public:
@@ -65,6 +68,10 @@ class binaryChanger {
     /*  Address bound addresses. */
     rose_addr_t lowerVirtualAddressLimit;
     rose_addr_t upperVirtualAddressLimit;
+    /*  Lowest allowed segment address. It will be the address
+        of the first segment. */
+    rose_addr_t firstSegmentAddress;
+
     /*  Pointer for the SgProject. It is available here for
         to be able to extract the segments and other information. */
     SgProject* changerProjectPtr;
@@ -106,8 +113,8 @@ class binaryChanger {
     /*  Segment difference for section. */
     //TODO the value right now is the difference in number of instructions, not bytes.
     //TODO perhaps use int as value and sort them according to greater?
-//    std::map<SgAsmElfSection*, int64_t>  segmentSizeDifference;
-    boost::bimap<boost::bimaps::set_of<SgAsmElfSection*>, boost::bimaps::multiset_of<int64_t, std::greater<int64_t> > > segmentSizeDifference;
+    boost::bimap<boost::bimaps::set_of<SgAsmElfSection*>, 
+                    boost::bimaps::multiset_of<rose_addr_t, std::greater<rose_addr_t> > > segmentSizeDifference;
 
     //TODO some kind of structure to store the segments, possibly ordered.
     //TODO If it is ordered i could iterate it and change accordingly. 
