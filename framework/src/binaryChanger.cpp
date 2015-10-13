@@ -497,8 +497,10 @@ void binaryChanger::reallocateSegments() {
                 /*  Calculate the new base address for the segment. */
                 newAddress = segment->get_mapped_preferred_rva() + segment->get_mapped_size();
                 //TODO check the address so the last number hex number is 0,4,8,c...
+                //TODO this is actually alignment of the mapped section, i can get that parameter.
+                //TODO then modulo the address, if the result is zero then it is okay,
+                //TODO otherwise add appropriate value to get the segment starting address aligned.
                 //TODO looks like i need to adjust the address over with alignment.
-                //TODO or is that needed?
                 /*  Set flag to true. */
                 segmentMoved = true;
                 /*  debugging. */
