@@ -73,7 +73,25 @@ void binaryChanger::postTransformationWork() {
     reallocateSegments();
 
     /*  Segments have now been moved if they needed to be and
-        their mapped size fixed to include the changes. */
+        their mapped size fixed to include the changes.
+        Now the basicblocks will be moved to the new address space.*/
+    moveSegmentBasicBlocks();
+
+    /*  After the segments have their basic blocks moved then
+        go through all basic blocks and check all jump instructions
+        and correct their jump target to the new address space. */
+
+
+    /*  At this point segments have been moved, their basic blocks as well,
+        branches have been corrected. However the symboltable is possibly
+        incorrect since it will still contain old addresses. It needs to be
+        checked and adjusted so instructions such as jalr are correct. */
+
+
+    /*  The physical file offsets need to be fixed, since some segments
+        have grown the physical size of it needs to be fixed. Then
+        all preceding segments needs to have their offset fixed. */
+
 }
 
 
@@ -245,7 +263,7 @@ void binaryChanger::preSegmentSectionCollection() {
     for(asmElfVector::iterator elfIter = elfSections.begin();
         elfIter != elfSections.end(); ++elfIter) {
         /*  For each section check its address (virtual). */
-        rose_addr_t elfVa = (*elfIter)->get_mapped_preferred_va();
+        rose_addr_t elfVa = (*elfIter)->get_mapped_preferred_rva();
         /*  See if it should be added or not. */
         if (lowerVirtualAddressLimit <= elfVa && elfVa < upperVirtualAddressLimit) {
             /* The section is within the bound, check so it is not the
@@ -289,10 +307,11 @@ void binaryChanger::preSegmentSectionCollection() {
             /* print base address of section. */
             std::cout << "Address (mapped_preferred_rva): " << std::hex << (*elfIter)->get_mapped_preferred_rva() << std::endl;
             /* size of section. */
-            std::cout << "Size (mapped)   : " << std::hex << (*elfIter)->get_mapped_size() << std::endl;
-            std::cout << "Size (file)     : " << std::hex << (*elfIter)->get_size() << std::endl;
+            std::cout << "Size (mapped)      : " << std::hex << (*elfIter)->get_mapped_size() << std::endl;
+            std::cout << "Size (file)        : " << std::hex << (*elfIter)->get_size() << std::endl;
             /*  Alignment of section in file. */
-            std::cout << "alignment (file): " << std::hex << (*elfIter)->get_file_alignment() << std::endl;
+            std::cout << "alignment (mapped ): " << std::hex << (*elfIter)->get_mapped_alignment() << std::endl;
+            std::cout << "alignment (file)   : " << std::hex << (*elfIter)->get_file_alignment() << std::endl;
             /*  offsets. */
             std::cout << "Offset(file)    : " << std::hex << (*elfIter)->get_offset() << std::endl;
 
@@ -323,10 +342,12 @@ void binaryChanger::preSegmentSectionCollection() {
             /* print base address of section. */
             std::cout << "Address (mapped_preferred_rva): " << std::hex << (*elfIter)->get_mapped_preferred_rva() << std::endl;
             /* size of section. */
-            std::cout << "Size (mapped): " << std::hex << (*elfIter)->get_mapped_size() << std::endl;
-            std::cout << "Size (file)  : " << std::hex << (*elfIter)->get_size() << std::endl;
+            std::cout << "Size (mapped)      : " << std::hex << (*elfIter)->get_mapped_size() << std::endl;
+            std::cout << "Size (file)        : " << std::hex << (*elfIter)->get_size() << std::endl;
+            /*  mapped alignment */
+            std::cout << "alignment (mapped ): " << std::hex << (*elfIter)->get_mapped_alignment() << std::endl;
             /*  offsets. */
-            std::cout << "Offset(file) : " << std::hex << (*elfIter)->get_offset() << std::endl;
+            std::cout << "Offset(file)       : " << std::hex << (*elfIter)->get_offset() << std::endl;
 
             std::cout << std::endl;
             
@@ -364,7 +385,7 @@ void binaryChanger::postChanges() {
             With that check which blocks are in the segment. */
         bool segmentModified = false;
         rose_addr_t segDiff = 0;
-        rose_addr_t segAddr = (*segIter)->get_mapped_preferred_va();
+        rose_addr_t segAddr = (*segIter)->get_mapped_preferred_rva();
         rose_addr_t segMappedSize = (*segIter)->get_mapped_size();
         rose_addr_t segEndAddr = segAddr + segMappedSize;
 
@@ -475,6 +496,9 @@ void binaryChanger::reallocateSegments() {
                 SgAsmElfSection* segment = addrVoidIter->second;
                 /*  Calculate the new base address for the segment. */
                 newAddress = segment->get_mapped_preferred_rva() + segment->get_mapped_size();
+                //TODO check the address so the last number hex number is 0,4,8,c...
+                //TODO looks like i need to adjust the address over with alignment.
+                //TODO or is that needed?
                 /*  Set flag to true. */
                 segmentMoved = true;
                 /*  debugging. */
@@ -490,18 +514,26 @@ void binaryChanger::reallocateSegments() {
 
         /*  Check if the segment was reallocated or it failed. */
         if (true == segmentMoved) {
+            /*  Save the segments old address and size. Will be used to find its basic blocks. */
+            segmentOldAddr.insert(std::pair<SgAsmElfSection*, rose_addr_t>
+                                        (checkedSegment, checkedSegment->get_mapped_preferred_rva()));
+            segmentOldSize.insert(std::pair<SgAsmElfSection*, rose_addr_t>
+                                        (checkedSegment, checkedSegment->get_mapped_size()));
             /*  Set the new virtual address of the segment and set the new size of it.
                 This is so when the next address voids are found it will not be incorrect. */
             checkedSegment->set_mapped_preferred_rva(newAddress);
             checkedSegment->set_mapped_size(segSize + neededSegSpace);
+
             if (debugging) {
                 SgAsmGenericString* elfString = checkedSegment->get_name();
                 std::cout << "Segment: " <<  elfString->get_string() << " moved." << std::endl
-                    << "new address: " << std::hex << checkedSegment->get_mapped_preferred_va() << std::endl
+                    << "new address: " << std::hex << checkedSegment->get_mapped_preferred_rva() << std::endl
                     << "new size: " << std::hex << checkedSegment->get_mapped_size() << std::endl;
             }
         } else {
             /*  Failed to move segment so throw error. */
+            SgAsmGenericString* elfString = checkedSegment->get_name();
+            ASSERT_not_reachable("Unable to find new place for segment: " + elfString->get_string());
         }
         /*  Remove the segment from the list of modified segments since it
             is in a acceptable place. It is done by poping the back sector. */
@@ -558,7 +590,7 @@ void binaryChanger::findFreeVirtualSpace() {
     for(asmElfVector::iterator segIter = segmentVector.begin();
         segIter != segmentVector.end(); ++segIter) {
         /*  Get address and size of the segment. */
-        rose_addr_t segAddr = (*segIter)->get_mapped_preferred_va();
+        rose_addr_t segAddr = (*segIter)->get_mapped_preferred_rva();
         rose_addr_t segSize = (*segIter)->get_mapped_size();
         /*  Calculate the end address of the segment. */
         rose_addr_t segEndAddr = segAddr + segSize;
@@ -568,7 +600,7 @@ void binaryChanger::findFreeVirtualSpace() {
         if (segmentVector.end() != (segIter+1)) {
             /*  It is not the last segment we are checking so
                 there is another segment which an address can be retrieved from. */
-            nextSegAddr = (*(segIter+1))->get_mapped_preferred_va();
+            nextSegAddr = (*(segIter+1))->get_mapped_preferred_rva();
         } else {
             /*  It is the last segment in the section so we have to check
                 the following sections start address. The address i use is
@@ -607,5 +639,71 @@ void binaryChanger::findFreeVirtualSpace() {
 
 
 
+/*  Moves basic blocks to the new location of the segment. It finds the basic
+    blocks that are in that segment and assigns them new addresses in the new
+    address space of the segment. */
+void binaryChanger::moveSegmentBasicBlocks() {
+    /*  Go through all the modified segments and rewrite blocks and instructions
+        addresses. */
+    for(std::map<SgAsmElfSection*, rose_addr_t>::iterator segIter = segmentOldAddr.begin();
+        segIter != segmentOldAddr.end(); ++segIter) {
+        /*  Blocks that belong to the segment. */
+        std::vector<SgAsmBlock*> segmentBlocks;
+        /*  Old address of the segment and the old size of it. */
+        rose_addr_t segOldAddr = segIter->second;
+        rose_addr_t segOldSize = segmentOldSize.find(segIter->first)->second;
+        rose_addr_t segOldEndAddr = segOldAddr + segOldSize;
 
+        /*  Go through the basic block vector and find all blocks that belong to the
+            Segment. Save them to iterater later. */
+        for(std::vector<SgAsmBlock*>::iterator basicIter = basicBlockVector.begin();
+            basicIter != basicBlockVector.end(); ++basicIter) {
+            //TODO For each segment identify all the basic blocks that belong to it.
+            /*  Block address. */
+            rose_addr_t blockAddr = (*basicIter)->get_id();
+            /*  Check if the address of the block is within the current segment. */
+            if (segOldAddr <= blockAddr && blockAddr <= segOldEndAddr) {
+                /*  The block belongs to the segment so it will be moved.
+                    Save it in the vector. */
+                segmentBlocks.push_back(*basicIter);
+            }
+        }
+
+        //TODO perhaps ensure that the vector is not empty?
+        /*  Go though the basic blocks that belong to the segment and
+            rewrite the addresses. Blocks will be traversel in address
+            order so the list is sorted first. */
+        std::sort(segmentBlocks.begin(), segmentBlocks.end(), blockSortStruct());
+        /*  Before iteration check if there is an address gap between the segments
+            address and the first basic block, if there is preserve it. */
+        SgAsmBlock* firstBlock = segmentBlocks.front();
+        /*  Variables used to determine gaps between the basic blocks.
+            They are used to preserve the gaps. between blocks. */
+        rose_addr_t firstBlockAddr = firstBlock->get_id();
+        rose_addr_t secondBlockAddr; // = firstBlock->get_id();
+        /*  The first blocks address needs to be set before iteration in order
+            to determine the gap between it and the segments start address. */
+        if (segOldAddr < firstBlockAddr) {
+            /*  There was a gap between segments first address and first block
+                in the old address space, replicate it. */
+        } else if (segOldAddr == firstBlockAddr) {
+            /*  The first basic block was at the first address so no gap.
+                Do the same in the new address space. */
+            firstBlock->set_id((segIter->first)->get_mapped_preferred_rva());
+        }
+
+        /*  Go through the basic blocks and start rewriting addresses.
+            The address sequence is determined by checking the blocks address.
+            The gap is determined to the next block and that block is assigned its address. */
+        for(std::vector<SgAsmBlock*>::iterator segBlockIter = segmentBlocks.begin();
+            segBlockIter != segmentBlocks.end(); ++segBlockIter) {
+        }
+
+        //TODO Take consideration that if there is some address space between the
+        //TODO start of the segment and first basic blocks address.
+
+        //TODO Iterate over the basic blocks in address order and rewrite the address.
+        //TODO if the instruction had an address then save it just in case.
+    }
+}
 

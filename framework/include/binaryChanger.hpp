@@ -68,6 +68,9 @@ class binaryChanger {
     /*  Find open spaces within the virtual address space.
         This is to find suitable open spaces to move segments. */
     void findFreeVirtualSpace();
+    /*  For each moved segment find the basic blocks that belong to it
+        and assign them new addresses. */
+    void moveSegmentBasicBlocks();
 
     /*  Private variables. */
     /*  Debugging variable. */
@@ -92,6 +95,13 @@ class binaryChanger {
         Will contain all segments, including data.
         This is to have a entire picture. */
     std::vector<SgAsmElfSection*> segmentVector;
+    /*  Map containing an segments previous address. Need it to keep track of
+        which basic blocks belong to the segment and should have a new address.
+        Also to ensure that i keep any gap between the start address of the segment
+        and the first instruction. */
+    std::map<SgAsmElfSection*, rose_addr_t> segmentOldAddr;
+    /*  For for the old size. */
+    std::map<SgAsmElfSection*, rose_addr_t> segmentOldSize;
     /*  Hashmap containing information regarding if there
         is space between a two segments. If a segment is present
         then there is some address space available between the
@@ -107,6 +117,8 @@ class binaryChanger {
     /*  Map for the blocks end address. */
     std::map<SgAsmBlock*, rose_addr_t> blockEndAddrMap;
     /*  Map between old addresses and new. */
+    //TODO consider if i need to save any instruction addresses other than
+    //TODO basic blocks start address.
     std::map<rose_addr_t, rose_addr_t> oldToNewAddrMap;
 
     /*  Map storing the original block size of blocks.
