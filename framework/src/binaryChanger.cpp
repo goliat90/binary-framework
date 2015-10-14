@@ -451,6 +451,7 @@ void binaryChanger::reallocateSegments() {
         /*  Start with the segment that has grown the most, check if it
             can remain in its current position or if it has to be moved. */
         rose_addr_t neededSegSpace = modifiedElfSections.back();
+        //TODO if two segments have the same required space this approach wont work.
         SgAsmElfSection* checkedSegment = segmentSizeDifference.right.find(neededSegSpace)->second;
         /*  Size of the checked segment. */
         rose_addr_t segSize = checkedSegment->get_mapped_size();
@@ -490,22 +491,45 @@ void binaryChanger::reallocateSegments() {
         for(addressVoidType::left_iterator addrVoidIter = addressVoids.left.begin();
             addrVoidIter != addressVoids.left.end(); ++addrVoidIter) {
             /*  Check if the space is large enough. It needs to be able to
-                hold the original size plus the new space. */
+                hold the original size plus the new space. Before checking
+                i need to check the alignment, which might mean i need more
+                space due to the alignment. */
+            rose_addr_t requiredSpace = (segSize + neededSegSpace);
+            /*  Segment that has space after it. */
+            SgAsmElfSection* spaceSegment = addrVoidIter->second;
+            /*  Calculate the new base address for the segment. */
+            rose_addr_t spaceStartAddress = spaceSegment->get_mapped_preferred_rva() + spaceSegment->get_mapped_size();
+            /*  Get the alignment of the segment that is being moved. */
+            rose_addr_t mappedAlign = checkedSegment->get_mapped_alignment();
+            /*  Calculate modulo on the start address, if is not aligned
+                then add the missing amount to requiredSpace to get the
+                segment aligned. */
+            rose_addr_t missAlignment = spaceStartAddress % mappedAlign;
+            /*  Check if the start address is not aligned. */
+            if (0 != missAlignment) {
+                /*  Include extra space for alignment. */
+                requiredSpace += mappedAlign - missAlignment;
+            }
+
+            //TODO this is actually alignment of the mapped section, i can get that parameter.
+            //TODO then modulo the address, if the result is zero then it is okay,
+            //TODO otherwise add appropriate value to get the segment starting address aligned.
+            //TODO looks like i need to adjust the address over with alignment.
+            //TODO i need to determine the segSize with alignment included.
+
             if ((segSize + neededSegSpace) <= addrVoidIter->first) {
                 /*  Found space after a segment that is large enough. */
-                SgAsmElfSection* segment = addrVoidIter->second;
-                /*  Calculate the new base address for the segment. */
-                newAddress = segment->get_mapped_preferred_rva() + segment->get_mapped_size();
-                //TODO check the address so the last number hex number is 0,4,8,c...
-                //TODO this is actually alignment of the mapped section, i can get that parameter.
-                //TODO then modulo the address, if the result is zero then it is okay,
-                //TODO otherwise add appropriate value to get the segment starting address aligned.
-                //TODO looks like i need to adjust the address over with alignment.
+//                SgAsmElfSection* segment = addrVoidIter->second;
+//                /*  Calculate the new base address for the segment. */
+                newAddress = spaceStartAddress + (mappedAlign - missAlignment);
+                //TODO adjust here for alignment
+                /*  Adjust the address so it is aligned correctly. */
+                //newAddress += mappedAlign - missAlignment;
                 /*  Set flag to true. */
                 segmentMoved = true;
                 /*  debugging. */
                 if (debugging) {
-                    SgAsmGenericString* elfString = segment->get_name();
+                    SgAsmGenericString* elfString = spaceSegment->get_name();
                     std::cout << "Placing segment after segment " << elfString->get_string() << std::endl
                                 << "New calculated address: " << std::hex << newAddress << std::endl;
                 }
