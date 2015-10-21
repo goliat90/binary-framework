@@ -111,14 +111,15 @@ class binaryChanger {
     /*  Container for the block pointers.
         It will be sorted according to address. */
     std::vector<SgAsmBlock*> basicBlockVector;
-    /*  Map for the blocks starting address. I assume it is
+    /*  Map for the blocks original starting address. I assume it is
         the blocks address or the first instructions. */
     std::map<SgAsmBlock*, rose_addr_t> blockStartAddrMap;
-    /*  Map for the blocks end address. */
+    /*  Map for the blocks original end address. */
     std::map<SgAsmBlock*, rose_addr_t> blockEndAddrMap;
-    /*  Map between old addresses and new. */
-    //TODO consider if i need to save any instruction addresses other than
-    //TODO basic blocks start address.
+    /*  Map between old addresses and new. The only addresses
+        that are saved are for the basic blocks there is no
+        reason to save an address for an instruction in the
+        middle of the block. */
     std::map<rose_addr_t, rose_addr_t> oldToNewAddrMap;
 
     /*  Map storing the original block size of blocks.

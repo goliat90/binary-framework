@@ -53,8 +53,6 @@ binaryChanger::binaryChanger(CFGhandler* cfgH, SgProject* passedProjectPtr) {
     the transformations are applied. */
 void binaryChanger::preTransformationAnalysis() {
     /*  Collect needed data and structures for sections, segments etc. */
-    //TODO consider adding in this function finding the gaps in the address space.
-    //TODO 
     preSegmentSectionCollection();
 
     /*  Analyze all the basic blocks and collect information about them. */
@@ -74,7 +72,7 @@ void binaryChanger::postTransformationWork() {
 
     /*  Segments have now been moved if they needed to be and
         their mapped size fixed to include the changes.
-        Now the basicblocks will be moved to the new address space.*/
+        Now the basic blocks address will be moved to the new address space.*/
     moveSegmentBasicBlocks();
 
     /*  After the segments have their basic blocks moved then
@@ -660,7 +658,6 @@ void binaryChanger::findFreeVirtualSpace() {
         //TODO with the last i need to check against the following section.
         //TODO with the first i might not need to care other than i do not allow anything to be moved above
         //TODO the first segments address.
-
 }
 
 
@@ -668,7 +665,15 @@ void binaryChanger::findFreeVirtualSpace() {
 /*  Moves basic blocks to the new location of the segment. It finds the basic
     blocks that are in that segment and assigns them new addresses in the new
     address space of the segment. */
+//TODO what happens when two segments trade address space?
+//TODO i need to consider this case, currently my code can probably not
+//TODO handle that and will screw up things.
+//TODO Fast solution is to probably use a copy of basicBlockVector and
+//TODO remove blocks as they are identified.
 void binaryChanger::moveSegmentBasicBlocks() {
+    /*  Make a local copy of the basicBlockVector, it is used to find
+        blocks belonging to a segment in its old position. */
+    std::vector<SgAsmBlock*> basicBlocks(basicBlockVector.begin(), basicBlockVector.end());
     /*  Go through all the modified segments and rewrite blocks and instructions
         addresses. */
     for(std::map<SgAsmElfSection*, rose_addr_t>::iterator segIter = segmentOldAddr.begin();
@@ -682,9 +687,9 @@ void binaryChanger::moveSegmentBasicBlocks() {
 
         /*  Go through the basic block vector and find all blocks that belong to the
             Segment. Save them to iterater later. */
-        for(std::vector<SgAsmBlock*>::iterator basicIter = basicBlockVector.begin();
-            basicIter != basicBlockVector.end(); ++basicIter) {
-            //TODO For each segment identify all the basic blocks that belong to it.
+        //TODO need to change this to remove blocks that have been rewritte.
+        for(std::vector<SgAsmBlock*>::iterator basicIter = basicBlocks.begin();
+            basicIter != basicBlocks.end(); ++basicIter) {
             /*  Block address. */
             rose_addr_t blockAddr = (*basicIter)->get_id();
             /*  Check if the address of the block is within the current segment. */
@@ -694,8 +699,8 @@ void binaryChanger::moveSegmentBasicBlocks() {
                 segmentBlocks.push_back(*basicIter);
             }
         }
-
         //TODO perhaps ensure that the vector is not empty?
+
         /*  Go though the basic blocks that belong to the segment and
             rewrite the addresses. Blocks will be traversel in address
             order so the list is sorted first. */
@@ -707,15 +712,31 @@ void binaryChanger::moveSegmentBasicBlocks() {
             They are used to preserve the gaps. between blocks. */
         rose_addr_t firstBlockAddr = firstBlock->get_id();
         rose_addr_t secondBlockAddr; // = firstBlock->get_id();
+
         /*  The first blocks address needs to be set before iteration in order
             to determine the gap between it and the segments start address. */
         if (segOldAddr < firstBlockAddr) {
             /*  There was a gap between segments first address and first block
                 in the old address space, replicate it. */
+            /*  Get the gap difference. */
+            rose_addr_t newAddr = firstBlockAddr - segOldAddr;
+            /*  Add the segment address. The blocks address will
+                be the segment addres plus the gap. */
+            newAddr = (segIter->first)->get_mapped_preferred_rva();
+            /*  Set the address of the first block. */
+            firstBlock->set_id(newAddr);
         } else if (segOldAddr == firstBlockAddr) {
             /*  The first basic block was at the first address so no gap.
                 Do the same in the new address space. */
             firstBlock->set_id((segIter->first)->get_mapped_preferred_rva());
+        }
+        //TODO Need to make an entry regarding the basic blocks new addres,
+        //TODO make a mapping between the new and old address, is for symboltable rewritting.
+
+        /*  Debugging. Print address. */
+        if (debugging) {
+            std::cout << "First blocks address set to: " 
+                << std::hex << firstBlock->get_id() << std::endl;
         }
 
         /*  Go through the basic blocks and start rewriting addresses.
@@ -723,13 +744,48 @@ void binaryChanger::moveSegmentBasicBlocks() {
             The gap is determined to the next block and that block is assigned its address. */
         for(std::vector<SgAsmBlock*>::iterator segBlockIter = segmentBlocks.begin();
             segBlockIter != segmentBlocks.end(); ++segBlockIter) {
-        }
+            /*  Get the current blocks id. */
+            rose_addr_t blockAddr = (*segBlockIter)->get_id();
+            //TODO perhaps add the mapping here between old blocks
+            //TODO address and their new one?
+            //TODO i get its new address here, and i can get its old from
+            //TODO the map.
+            //TODO perhaps add it later, in the if statement.
 
+            /*  Get the blocks statement list. */
+            SgAsmStatementPtrList& stmtList = (*segBlockIter)->get_statementList();
+
+            /*  Iterate through the statement lists and rewrite the addresses.
+                The first instruction will have the same address as basic block. */
+            for(SgAsmStatementPtrList::iterator stmtIter = stmtList.begin();
+                stmtIter != stmtList.end(); ++stmtIter) {
+                /*  Assign the new address the instruction. */
+                (*stmtIter)->set_address(blockAddr);
+                /*  Increment the variable. */
+                blockAddr += 4;
+            }
+            /*  Subtract 4 from blockAddr so it will point to the last
+                instructions address. */
+            blockAddr -= 4;
+            /*  All instructions have had their address rewritten.
+                Now to determine the address gap to the next basic block.
+                If it is the last block then skip this process. */
+            if (segmentBlocks.end() != (segBlockIter+1)) {
+                /*  Get the blocks old last address. */
+                rose_addr_t blockEndAddr = blockEndAddrMap.find(*segBlockIter)->second;
+                /*  Get the next block and its start address. */
+                SgAsmBlock* nextBlock = *(segBlockIter+1);
+                rose_addr_t nextBlockAddr = blockStartAddrMap.find(nextBlock)->second;
+                /*  Get the difference in addresses between the blocks. */
+                rose_addr_t addrDiff = nextBlockAddr - blockEndAddr;
+                /*  Add the gap to the address to replicate the gap. */
+                blockAddr += addrDiff;
+                /*  Assign the address to the next block. */
+                nextBlock->set_id(blockAddr);
+            }
+        }
         //TODO Take consideration that if there is some address space between the
         //TODO start of the segment and first basic blocks address.
-
-        //TODO Iterate over the basic blocks in address order and rewrite the address.
-        //TODO if the instruction had an address then save it just in case.
     }
 }
 
