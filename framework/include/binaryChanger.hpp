@@ -8,6 +8,7 @@
 
 /*  Includes. */
 #include "cfgHandler.hpp"
+#include "binaryDebug.hpp"
 #include "boost/bimap.hpp"
 #include "boost/bimap/set_of.hpp"
 #include "boost/bimap/multiset_of.hpp"

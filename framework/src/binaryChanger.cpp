@@ -711,7 +711,6 @@ void binaryChanger::moveSegmentBasicBlocks() {
         /*  Variables used to determine gaps between the basic blocks.
             They are used to preserve the gaps. between blocks. */
         rose_addr_t firstBlockAddr = firstBlock->get_id();
-        rose_addr_t secondBlockAddr; // = firstBlock->get_id();
 
         /*  The first blocks address needs to be set before iteration in order
             to determine the gap between it and the segments start address. */
@@ -744,13 +743,12 @@ void binaryChanger::moveSegmentBasicBlocks() {
             The gap is determined to the next block and that block is assigned its address. */
         for(std::vector<SgAsmBlock*>::iterator segBlockIter = segmentBlocks.begin();
             segBlockIter != segmentBlocks.end(); ++segBlockIter) {
-            /*  Get the current blocks id. */
+            /*  Get the current blocks id, which is the new one at this point */
             rose_addr_t blockAddr = (*segBlockIter)->get_id();
-            //TODO perhaps add the mapping here between old blocks
-            //TODO address and their new one?
-            //TODO i get its new address here, and i can get its old from
-            //TODO the map.
-            //TODO perhaps add it later, in the if statement.
+            /*  Get the blocks old starting address. */
+            rose_addr_t oldBlockAddr = blockStartAddrMap.find(*segBlockIter)->second;
+            /*  Create mapping between old and new address. */
+            oldToNewAddrMap.insert(std::pair<rose_addr_t, rose_addr_t>(oldBlockAddr, blockAddr));
 
             /*  Get the blocks statement list. */
             SgAsmStatementPtrList& stmtList = (*segBlockIter)->get_statementList();
@@ -762,11 +760,10 @@ void binaryChanger::moveSegmentBasicBlocks() {
                 /*  Assign the new address the instruction. */
                 (*stmtIter)->set_address(blockAddr);
                 /*  Increment the variable. */
-                blockAddr += 4;
+                if (stmtList.end() != (stmtIter+1)) {
+                    blockAddr += 4;
+                }
             }
-            /*  Subtract 4 from blockAddr so it will point to the last
-                instructions address. */
-            blockAddr -= 4;
             /*  All instructions have had their address rewritten.
                 Now to determine the address gap to the next basic block.
                 If it is the last block then skip this process. */
@@ -780,9 +777,11 @@ void binaryChanger::moveSegmentBasicBlocks() {
                 rose_addr_t addrDiff = nextBlockAddr - blockEndAddr;
                 /*  Add the gap to the address to replicate the gap. */
                 blockAddr += addrDiff;
-                /*  Assign the address to the next block. */
+                /*  Assign the address to the next block, which will be traversed next. */
                 nextBlock->set_id(blockAddr);
             }
+            /*  Printout the basic blocks, to inspect addresses, */
+            printBasicBlockInstructions(*segBlockIter);
         }
         //TODO Take consideration that if there is some address space between the
         //TODO start of the segment and first basic blocks address.
