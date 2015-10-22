@@ -39,6 +39,12 @@ enum instructionType {
     J_RS,           //jr,
     J_RD_RS,        //jalr,
 
+    /*  Other categories of instructions. */
+    SYSCALL,        //System call instruction. Seems to need to arguments?
+
+    /*  Intructions for floating point. */
+    FPCONTROL_TO_GPR, //copy fp control register to a gpr reg.
+
     MIPS_UNKNOWN    //The instruction is not included and format is therefore unknown. 
 };
 
