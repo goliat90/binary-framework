@@ -72,6 +72,9 @@ class binaryChanger {
     /*  For each moved segment find the basic blocks that belong to it
         and assign them new addresses. */
     void moveSegmentBasicBlocks();
+    /*  Correct the branch instructions in the basic blocks. */
+    void redirectBranchInstructions();
+
 
     /*  Private variables. */
     /*  Debugging variable. */

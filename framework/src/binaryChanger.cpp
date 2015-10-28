@@ -78,6 +78,7 @@ void binaryChanger::postTransformationWork() {
     /*  After the segments have their basic blocks moved then
         go through all basic blocks and check all jump instructions
         and correct their jump target to the new address space. */
+    redirectBranchInstructions();
 
 
     /*  At this point segments have been moved, their basic blocks as well,
@@ -786,5 +787,16 @@ void binaryChanger::moveSegmentBasicBlocks() {
         //TODO Take consideration that if there is some address space between the
         //TODO start of the segment and first basic blocks address.
     }
+}
+
+
+/*  Iterates through all the basic blocks and check for branch instructions.
+    All branch instructions which has a new target address is exchanged
+    for the new instructions address. */
+void binaryChanger::redirectBranchInstructions() {
+    
+    /*  Go through all the basic blocks and identify the branch instructions. */
+
+
 }
 
