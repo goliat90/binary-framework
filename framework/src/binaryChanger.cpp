@@ -794,9 +794,66 @@ void binaryChanger::moveSegmentBasicBlocks() {
     All branch instructions which has a new target address is exchanged
     for the new instructions address. */
 void binaryChanger::redirectBranchInstructions() {
-    
+
     /*  Go through all the basic blocks and identify the branch instructions. */
+    for(std::vector<SgAsmBlock*>::iterator blockIter = basicBlockVector.begin();
+        blockIter != basicBlockVector.end(); ++blockIter) {
+        /*  Get the statement list. */
+        SgAsmStatementPtrList& stmtList = (*blockIter)->get_statementList();
+        /*  Iterate through the list and find branch/jump instructions. */
+        for(SgAsmStatementPtrList::iterator stmtIter = stmtList.begin();
+            stmtIter != stmtList.end(); ++stmtIter) {
+            /*  Check the instructions if they are branch/jump. */
+            SgAsmMipsInstruction* mips = isSgAsmMipsInstruction(*stmtIter);
+            /*  Get the enum. */
+            MipsInstructionKind kind = mips->get_kind();
+            /*  Check if the enum kind is of a desired instruction.
+                For these instructions change the target address. */
+            switch(kind) {
+                case mips_beq:
+                case mips_bne:
+                
+                case mips_bgez:
+                case mips_bgezal:
+                case mips_bgtz:
+                case mips_blez:
+                case mips_bltz:
 
-
+                case mips_j:
+                case mips_jal:
+                case mips_jr:
+                case mips_jalr: {
+                    /*  Get the operands. */
+                    SgAsmExpressionPtrList& opList = mips->get_operandList()->get_operands();
+                    /*  Go through the operands and get the instruction constant. */
+                    for(SgAsmExpressionPtrList::iterator opIter = opList.begin();
+                        opIter != opList.end(); ++opIter) {
+                        /*  Check if the operand is the target address. */
+                        if (V_SgAsmIntegerValueExpression == (*opIter)->variantT()) {
+                            /*  Cast pointer. */
+                            SgAsmIntegerValueExpression* valueExpr = isSgAsmIntegerValueExpression(*opIter);
+                            /*  It is the target address. Of the instruction. */
+                            rose_addr_t target = valueExpr->get_absoluteValue();
+                            /*  Check if the target address has been moved.
+                                If it has then redirect. */
+                            if (1 == oldToNewAddrMap.count(target)) {
+                                /*  Target has been moved. Redirect. */
+                                rose_addr_t newTargetAddr = oldToNewAddrMap.find(target)->second;
+                                /*  Assign the new target address. */
+                                valueExpr->set_absoluteValue(newTargetAddr);
+                                /*  Debug print. */
+                                if (true) {
+                                    std::cout << "Branch target: " << std::hex << target
+                                        << " changed to " << newTargetAddr
+                                        << " at address " << mips->get_address() << std::endl;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            /*  Continue with the next instruction. */
+        }
+    }
 }
 

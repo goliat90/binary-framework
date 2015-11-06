@@ -42,6 +42,8 @@ typedef boost::bimap<boost::bimaps::set_of<SgAsmElfSection*>,
                     boost::bimaps::multiset_of<rose_addr_t, std::greater<rose_addr_t> > > segDiffType;
 typedef boost::bimap<rose_addr_t, SgAsmElfSection*> addressVoidType; 
 
+
+/*  Class declaration. */
 class binaryChanger {
     public:
     /*  Take CFG handler pointer so the program cfg is available. */
