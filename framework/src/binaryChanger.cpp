@@ -57,7 +57,11 @@ void binaryChanger::preTransformationAnalysis() {
 
     /*  Analyze all the basic blocks and collect information about them. */
     preBlockInformationCollection();
- 
+
+    /*  Collect information on which target address blocks has. */
+    /*  Has to be collected as some branches are connected to their target
+        instruction, when it moved the target changes. */
+    preBranchAnalysis();
 }
 
 
@@ -113,7 +117,7 @@ void binaryChanger::preBlockInformationCollection() {
         blockOriginalSize.insert(std::pair<SgAsmBlock*, int>(nodeBlock, blockSize));
 
         /*  Get the address of the block and store it. */
-        blockStartAddrMap.insert(std::pair<SgAsmBlock*, rose_addr_t>(nodeBlock, nodeBlock->get_id()));
+        blockStartAddrMap.left.insert(std::pair<SgAsmBlock*, rose_addr_t>(nodeBlock, nodeBlock->get_id()));
         /*  Get the address of the last instruction in the block and store it. */
         rose_addr_t lastAddress;
         if (!stmtList.empty()) {
@@ -353,6 +357,21 @@ void binaryChanger::preSegmentSectionCollection() {
         }
         std::cout << "---- End Segments ----" << std::endl << std::endl;
     }
+}
+
+
+/*  Analyze branches and their targets. The information collected here
+    is used to after transformations to fix the branches. */
+void binaryChanger::preBranchAnalysis(){
+    /*  Go through all the basic blocks and find all blocks
+        with branching instructions. */
+
+    /*  For each block check for a branching instruction. */
+    //TODO could just check last? Or at least reverse iterate.
+
+    /*  Save identified branch and their target addres.
+        The address should be the address of a basic block. */
+    //TODO check that this is always true?
 }
 
 
@@ -672,6 +691,7 @@ void binaryChanger::findFreeVirtualSpace() {
 //TODO Fast solution is to probably use a copy of basicBlockVector and
 //TODO remove blocks as they are identified.
 void binaryChanger::moveSegmentBasicBlocks() {
+    int blocksMoved = 0;
     /*  Make a local copy of the basicBlockVector, it is used to find
         blocks belonging to a segment in its old position. */
     std::vector<SgAsmBlock*> basicBlocks(basicBlockVector.begin(), basicBlockVector.end());
@@ -701,6 +721,8 @@ void binaryChanger::moveSegmentBasicBlocks() {
             }
         }
         //TODO perhaps ensure that the vector is not empty?
+
+        blocksMoved = segmentBlocks.size();
 
         /*  Go though the basic blocks that belong to the segment and
             rewrite the addresses. Blocks will be traversel in address
@@ -747,7 +769,7 @@ void binaryChanger::moveSegmentBasicBlocks() {
             /*  Get the current blocks id, which is the new one at this point */
             rose_addr_t blockAddr = (*segBlockIter)->get_id();
             /*  Get the blocks old starting address. */
-            rose_addr_t oldBlockAddr = blockStartAddrMap.find(*segBlockIter)->second;
+            rose_addr_t oldBlockAddr = blockStartAddrMap.left.find(*segBlockIter)->second;
             /*  Create mapping between old and new address. */
             oldToNewAddrMap.insert(std::pair<rose_addr_t, rose_addr_t>(oldBlockAddr, blockAddr));
 
@@ -773,7 +795,7 @@ void binaryChanger::moveSegmentBasicBlocks() {
                 rose_addr_t blockEndAddr = blockEndAddrMap.find(*segBlockIter)->second;
                 /*  Get the next block and its start address. */
                 SgAsmBlock* nextBlock = *(segBlockIter+1);
-                rose_addr_t nextBlockAddr = blockStartAddrMap.find(nextBlock)->second;
+                rose_addr_t nextBlockAddr = blockStartAddrMap.left.find(nextBlock)->second;
                 /*  Get the difference in addresses between the blocks. */
                 rose_addr_t addrDiff = nextBlockAddr - blockEndAddr;
                 /*  Add the gap to the address to replicate the gap. */
@@ -786,6 +808,17 @@ void binaryChanger::moveSegmentBasicBlocks() {
         }
         //TODO Take consideration that if there is some address space between the
         //TODO start of the segment and first basic blocks address.
+    }
+    /*  test to see that the number of basic blocks moved are the
+        same as the amount of entries in old to new. */
+    if (blocksMoved != oldToNewAddrMap.size()) {
+        std::cout << "all moved blocks do not have a entry in oldToNewMapping" << std::endl
+            << "blocksMoved = " << blocksMoved << std::endl
+            << "oldtonewmap = " << oldToNewAddrMap.size() << std::endl;
+    }
+
+    if (1 == oldToNewAddrMap.count(0x400378)) {
+        std::cout << "block found!" << std::endl;
     }
 }
 
@@ -834,18 +867,28 @@ void binaryChanger::redirectBranchInstructions() {
                             SgAsmIntegerValueExpression* valueExpr = isSgAsmIntegerValueExpression(*opIter);
                             /*  It is the target address. Of the instruction. */
                             rose_addr_t target = valueExpr->get_absoluteValue();
+                            if (0x400360 == blockStartAddrMap.left.find(*blockIter)->second) {
+                                std::cout << "block 400360 has a branch instruction" << std::endl
+                                    << "target is " << target << std::endl;
+                                printInstruction(mips);
+                            }
                             /*  Check if the target address has been moved.
                                 If it has then redirect. */
                             if (1 == oldToNewAddrMap.count(target)) {
                                 /*  Target has been moved. Redirect. */
                                 rose_addr_t newTargetAddr = oldToNewAddrMap.find(target)->second;
                                 /*  Assign the new target address. */
+                                printInstruction(mips);
                                 valueExpr->set_absoluteValue(newTargetAddr);
                                 /*  Debug print. */
                                 if (true) {
                                     std::cout << "Branch target: " << std::hex << target
                                         << " changed to " << newTargetAddr
                                         << " at address " << mips->get_address() << std::endl;
+                                }
+
+                                if (1 == oldToNewAddrMap.count(0x400378)) {
+                                    std::cout << "found 400378 found" << std::endl;
                                 }
                             }
                         }

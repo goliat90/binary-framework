@@ -58,11 +58,17 @@ class binaryChanger {
     private:
     /*  Hide default constructor. */
     binaryChanger();
+
+    /*  Analysis functions used before transformations. */
     /*  Collect information about basic blocks. */
     void preBlockInformationCollection();
     /*  Collect information about sections and segments. */
     void preSegmentSectionCollection();
+    /*  Map branches targets. */
+    void preBranchAnalysis();
 
+
+    /*  Functions used after transformations applied. */
     /*  Check how blocks have changed due to transformations and
         the segments they belong to. Not the sizes. */
     void postChanges();
@@ -114,12 +120,16 @@ class binaryChanger {
         segment and the next one. */
     boost::bimap<rose_addr_t, SgAsmElfSection*> addressVoids;
 
+    /*  Bimap for storing branches and their initial target. */
+    std::map<SgAsmInstruction*, rose_addr_t> branchTargetMap;
+
     /*  Container for the block pointers.
         It will be sorted according to address. */
     std::vector<SgAsmBlock*> basicBlockVector;
     /*  Map for the blocks original starting address. I assume it is
         the blocks address or the first instructions. */
-    std::map<SgAsmBlock*, rose_addr_t> blockStartAddrMap;
+//    std::map<SgAsmBlock*, rose_addr_t> blockStartAddrMap;
+    boost::bimap<SgAsmBlock*, rose_addr_t> blockStartAddrMap;
     /*  Map for the blocks original end address. */
     std::map<SgAsmBlock*, rose_addr_t> blockEndAddrMap;
     /*  Map between old addresses and new. The only addresses
