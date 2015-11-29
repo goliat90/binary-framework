@@ -120,8 +120,9 @@ class binaryChanger {
         segment and the next one. */
     boost::bimap<rose_addr_t, SgAsmElfSection*> addressVoids;
 
-    /*  Bimap for storing branches and their initial target. */
-    std::map<SgAsmInstruction*, rose_addr_t> branchTargetMap;
+    /*  Bimap for storing branches and their initial target.
+        It is the instruction connected to the target basic block pointer. */
+    std::map<SgAsmMipsInstruction*, SgAsmBlock*> branchTargetMap;
 
     /*  Container for the block pointers.
         It will be sorted according to address. */
