@@ -871,10 +871,6 @@ void binaryChanger::moveSegmentBasicBlocks() {
             << "blocksMoved = " << blocksMoved << std::endl
             << "oldtonewmap = " << oldToNewAddrMap.size() << std::endl;
     }
-
-    if (1 == oldToNewAddrMap.count(0x400378)) {
-        std::cout << "block found!" << std::endl;
-    }
 }
 
 
@@ -897,22 +893,68 @@ void binaryChanger::redirectBranchInstructions() {
         SgAsmMipsInstruction* branchInst = branchIter->first;
         /*  Get the target basic block. */
         SgAsmBlock* targetBlock = branchIter->second;
+        /*  Get the target blocks original address. */
+        rose_addr_t blockOriginalAddress = blockStartAddrMap.left.find(targetBlock)->second;
+        /*  Save the blocks new address. */
+        rose_addr_t blockNewAddress = targetBlock->get_id();
+        /*  Get the statement list of the block. */
+        SgAsmStatementPtrList& blockStmtList = targetBlock->get_statementList();
+        /*  Get the address of the last instruction in the block. */
+        rose_addr_t blockNewEndAddress = blockStmtList.back()->get_address();
 
-        /*  Get the branch instructions target address. */
+        /*  Retrieve the branch instructions target address. */
+        //rose_addr_t targetAddr = 0;
+        /*  Get the operands. */
+        SgAsmExpressionPtrList& opList = branchInst->get_operandList()->get_operands();
+        /*  Go through the operands and get the instruction constant. */
+        for(SgAsmExpressionPtrList::iterator opIter = opList.begin();
+            opIter != opList.end(); ++opIter) {
+            /*  Check if the operand is the target address. */
+            if (V_SgAsmIntegerValueExpression == (*opIter)->variantT()) {
+                /*  Cast pointer. */
+                SgAsmIntegerValueExpression* valueExpr = isSgAsmIntegerValueExpression(*opIter);
+                /*  It is the target address. Of the instruction. */
+                rose_addr_t targetAddr = valueExpr->get_absoluteValue();
+
+                /*  Check if the target address is the original one but
+                    the block has a new address. This means that the
+                    branch target address is not mapped to a instruction in
+                    the block. Just change the target in this case. */
+                if ((targetAddr == blockOriginalAddress) && (blockOriginalAddress != blockNewAddress)) {
+                    /*  Change the value to the new start address of the block. */
+                    valueExpr->set_absoluteValue(blockNewAddress);
+                    /*  debug print */
+                    if (true) {
+                        std::cout << "Constant branch target changed from " 
+                            << std::hex << targetAddr << " to " << blockNewAddress << std::endl;
+                        printBasicBlockInstructions(targetBlock);
+                    }
+                }
+                /*  Check if the target address belongs to an instruction
+                    withing the block. If true then the branch is relative so
+                    point it to the first instruction in the block. */
+                else if ((blockNewAddress < targetAddr) && (targetAddr <= blockNewEndAddress)) {
+                    /*  Target is an instruction within the block but not the first.
+                        The address of the target is linked to the branch target. */
+//                    SgAsmMipsInstruction* blockFirstInstruction = isSgAsmMipsInstruction(blockStmtList.front());
+                    /*  Set the first instruction as the relative instruction
+                        for the target offset for the branch instruction. */
+                    valueExpr->makeRelativeTo(blockStmtList.front());
+                    /*  Debug print. */
+                    if (true) {
+                        std::cout << "Relative branch target changed from " 
+                            << targetAddr << " to " << blockNewAddress << std::endl;
+                            printBasicBlockInstructions(targetBlock);
+                    }
+                }
+            }
+        }
+
 
         /*  Check if the blocks address matches the target address.
             This will match if a block has not been moved or no
             instructions have been inserted and the branch has a mapping
             to the first instruction. */
-
-        /*  Check if the target address belongs to an instruction
-            withing the block. If true then the branch is relative so
-            point it to the first instruction in the block. */
-
-        /*  Check if the target address is the original one but
-            the block has a new address. This means that the
-            branch target address is not mapped to a instruction in
-            the block. Just change the target in this case. */
     }
 
     /*  Go through all the basic blocks and identify the branch instructions. */

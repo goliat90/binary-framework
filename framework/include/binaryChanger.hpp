@@ -129,7 +129,6 @@ class binaryChanger {
     std::vector<SgAsmBlock*> basicBlockVector;
     /*  Map for the blocks original starting address. I assume it is
         the blocks address or the first instructions. */
-//    std::map<SgAsmBlock*, rose_addr_t> blockStartAddrMap;
     boost::bimap<SgAsmBlock*, rose_addr_t> blockStartAddrMap;
     /*  Map for the blocks original end address. */
     std::map<SgAsmBlock*, rose_addr_t> blockEndAddrMap;
@@ -137,6 +136,8 @@ class binaryChanger {
         that are saved are for the basic blocks there is no
         reason to save an address for an instruction in the
         middle of the block. */
+    //TODO this is basically the blockstartaddrmap..... which has
+    //TODO the original address and then the block has the new one.
     std::map<rose_addr_t, rose_addr_t> oldToNewAddrMap;
 
     /*  Map storing the original block size of blocks.
