@@ -35,9 +35,9 @@ void BinaryRewriter::functionSelect(std::list<std::string>* names) {
 }
 
 
-void BinaryRewriter::printInformation() {
-    std::cout << "Decisions made " << decisionsMade << std::endl;
-}
+//void BinaryRewriter::printInformation() {
+//    std::cout << "Decisions made " << decisionsMade << std::endl;
+//}
 
 
 // Does the actual traversal and applies transformations to the binary.
@@ -226,17 +226,7 @@ void BinaryRewriter::useOptimizedTransform() {
     useOptimized = true;
 }
 
-
-//Select method allocation method
-void BinaryRewriter::selectRegisterAllocation() {
-
-}
-//Select scheduling method.
-void BinaryRewriter::selectInstructionScheduling() {
-
-}
-
 /* enable disable debugging */
-void BinaryRewriter::setDebug(bool setting) {
+void BinaryRewriter::setDebugging(bool setting) {
     debugging = setting;
 }

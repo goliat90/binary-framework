@@ -41,7 +41,7 @@ int main(int argc, char** argv) {
     userFramework* ut = new userFramework(2, argv);
     /* enable printing */
     if (1 == verbose) {
-        ut->setDebug(true);
+        ut->setDebugging(true);
     }
 
     /* set which function is to be transformed */

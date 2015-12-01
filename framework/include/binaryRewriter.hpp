@@ -37,12 +37,8 @@ class BinaryRewriter {
         //Selects naive or optimized transform.
         void useNaiveTransform();
         void useOptimizedTransform();
-        //Configure register allocation
-        void selectRegisterAllocation();
-        //Configure instruction scheduling
-        void selectInstructionScheduling();
         //enable debugg printing.
-        void setDebug(bool);
+        void setDebugging(bool);
         /* Function that is to be transformed */
         void functionSelect(std::list<std::string>* functionNames);
 
@@ -68,9 +64,9 @@ class BinaryRewriter {
         * Misc. 
         **********************************************************************/
         //Print statistics.
-        void printInformation();
+        //void printInformation();
         //Print out a basic blocks instructions.
-        void printBasicBlock(SgAsmBlock*);
+        //void printBasicBlock(SgAsmBlock*);
 
     private:
         /**********************************************************************
