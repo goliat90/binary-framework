@@ -91,7 +91,7 @@ void binaryChanger::postTransformationWork() {
         checked and adjusted so instructions such as jalr are correct. */
     //TODO this is an assumption that symbol tables do not change themselfes.
     //TODO could be worth checking if they adjust themselves.
-
+    correctSymbolTableFunctionEntries();
 
     /*  The physical file offsets need to be fixed, since some segments
         have grown the physical size of it needs to be fixed. Then
@@ -962,5 +962,31 @@ void binaryChanger::redirectBranchInstructions() {
             instructions have been inserted and the branch has a mapping
             to the first instruction. */
     }
+}
+
+
+
+/*  Goes through the symbol tables and adjust the entries
+    for function addresses. */
+void binaryChanger::correctSymbolTableFunctionEntries() {
+    /*  Get the sgasmelfsymbolsection. */
+    std::vector<SgAsmElfSymbolSection*> elfSymbolSections =
+        SageInterface::querySubTree<SgAsmElfSymbolSection>(changerProjectPtr);
+
+    /* Debug printout. */
+    if (true) {
+        std::cout << "symbolsections found: " << elfSymbolSections.size() << std::endl;
+    }
+
+    /*  Get the list of symbols object from the section. */
+    //TODO assuming there are several sections, iterate over them?
+    SgAsmElfSymbolList* elfSymbolListObject = elfSymbolSections.front()->get_symbols();
+
+    /*  Get the vector of sgasmelfsymbols. */
+    SgAsmElfSymbolPtrList& elfSymbolList = elfSymbolListObject->get_symbols();
+
+    /*  Check symbols if they are for a function. */
+
+
 }
 

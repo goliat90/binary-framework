@@ -82,6 +82,9 @@ class binaryChanger {
     void moveSegmentBasicBlocks();
     /*  Correct the branch instructions in the basic blocks. */
     void redirectBranchInstructions();
+    /*  Function that checks the symbol table entries that they
+        are correct for function names. */
+    void correctSymbolTableFunctionEntries();
 
 
     /*  Private variables. */
