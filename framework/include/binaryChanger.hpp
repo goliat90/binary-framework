@@ -138,6 +138,7 @@ class binaryChanger {
         middle of the block. */
     //TODO this is basically the blockstartaddrmap..... which has
     //TODO the original address and then the block has the new one.
+    //TODO probabaly need this map for the symbol table changes.
     std::map<rose_addr_t, rose_addr_t> oldToNewAddrMap;
 
     /*  Map storing the original block size of blocks.
