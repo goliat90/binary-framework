@@ -967,7 +967,9 @@ void binaryChanger::redirectBranchInstructions() {
 
 
 /*  Goes through the symbol tables and adjust the entries
-    for function addresses. */
+    for function addresses. It does this by checking the address
+    for a function. If the function address has been changed
+    the new address is set in the table. */
 void binaryChanger::correctSymbolTableFunctionEntries() {
     /*  Get the sgasmelfsymbolsection. */
     std::vector<SgAsmElfSymbolSection*> elfSymbolSections =
@@ -986,7 +988,34 @@ void binaryChanger::correctSymbolTableFunctionEntries() {
     SgAsmElfSymbolPtrList& elfSymbolList = elfSymbolListObject->get_symbols();
 
     /*  Check symbols if they are for a function. */
-
-
+    for(SgAsmElfSymbolPtrList::iterator symbolIter = elfSymbolList.begin();
+        symbolIter != elfSymbolList.end(); ++symbolIter) {
+        /*  Get the SgAsmSymbol. */
+        SgAsmElfSymbol* elfSym = (*symbolIter);
+        /*  Check if the symbol is related to a function. */
+        if (SgAsmElfSymbol::STT_FUNC == elfSym->get_elf_type()) {
+            /*  Test setting the value. */
+            if (1 == oldToNewAddrMap.count(elfSym->get_value())) {
+                /*  printout for debugging purposes. */
+                if (true) {
+                    /*  Get the string object. */
+                    SgAsmGenericString* nameObject = elfSym->get_name();
+                    /*  Extract the string. */
+                    std::cout << "func name: " << nameObject->get_string() << std::endl;
+                    /*  Get the value that is related to the symbol.
+                        Since it is a function this should be the address. */
+                    std::cout << "value: " << std::hex << elfSym->get_value() << std::endl;
+                }
+                /*  Get the new address for the function. */
+                rose_addr_t newSymAddr = oldToNewAddrMap.find(elfSym->get_value())->second;
+                /*  Assign the new address to the symbol entry. */
+                elfSym->set_value(newSymAddr);
+                /*  Debug print for the new value. */
+                if (true) {
+                    std::cout << "new value: " << newSymAddr << std::endl;
+                }
+            }
+        }
+    }
 }
 
