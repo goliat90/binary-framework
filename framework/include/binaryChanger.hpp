@@ -85,6 +85,8 @@ class binaryChanger {
     /*  Function that checks the symbol table entries that they
         are correct for function names. */
     void correctSymbolTableFunctionEntries();
+    /*  Fix the physical file offset of the binary. */
+    void fixSectionOffsets();
 
 
     /*  Private variables. */

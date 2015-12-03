@@ -45,7 +45,6 @@ binaryChanger::binaryChanger(CFGhandler* cfgH, SgProject* passedProjectPtr) {
     changerProjectPtr = passedProjectPtr;
     /*  set debugging to false as default. */
     debugging = false;
-
 }
 
 
@@ -89,14 +88,12 @@ void binaryChanger::postTransformationWork() {
         branches have been corrected. However the symboltable is possibly
         incorrect since it will still contain old addresses. It needs to be
         checked and adjusted so instructions such as jalr are correct. */
-    //TODO this is an assumption that symbol tables do not change themselfes.
-    //TODO could be worth checking if they adjust themselves.
     correctSymbolTableFunctionEntries();
 
     /*  The physical file offsets need to be fixed, since some segments
         have grown the physical size of it needs to be fixed. Then
         all preceding segments needs to have their offset fixed. */
-
+    fixSectionOffsets();
 }
 
 
@@ -859,7 +856,7 @@ void binaryChanger::moveSegmentBasicBlocks() {
                 nextBlock->set_id(blockAddr);
             }
             /*  Printout the basic blocks, to inspect addresses, */
-            printBasicBlockInstructions(*segBlockIter);
+            //printBasicBlockInstructions(*segBlockIter);
         }
         //TODO Take consideration that if there is some address space between the
         //TODO start of the segment and first basic blocks address.
@@ -1017,5 +1014,15 @@ void binaryChanger::correctSymbolTableFunctionEntries() {
             }
         }
     }
+}
+
+
+
+/*  Function that adjusts the physical offsets in the binary.
+    This needs to be done if code has been inserted somewhere
+    then following sections need to be adjusted. */
+void binaryChanger::fixSectionOffsets() {
+    /*  Make a copy of all the elf sections. */
+    std::vector<SgAsmElfSection*> physicalElfSections(elfSections);
 }
 
