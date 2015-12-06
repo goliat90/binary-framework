@@ -93,7 +93,13 @@ void binaryChanger::postTransformationWork() {
     /*  The physical file offsets need to be fixed, since some segments
         have grown the physical size of it needs to be fixed. Then
         all preceding segments needs to have their offset fixed. */
+    //TODO i need to respect file alignment
     fixSectionOffsets();
+
+    //TODO fix the size of the segment with all the code (LOAD#1)
+    //TODO find the last section in it and check its offset and size.
+    //TODO the physical offset plus size of the last section determines the size of the segment.
+    //TODO i think this needs to be done for the LOAD#2
 }
 
 
@@ -313,7 +319,7 @@ void binaryChanger::preSegmentSectionCollection() {
             std::cout << "Size (file)        : " << std::hex << (*elfIter)->get_size() << std::endl;
             /*  Alignment of section in file. */
             std::cout << "alignment (mapped ): " << std::hex << (*elfIter)->get_mapped_alignment() << std::endl;
-            std::cout << "alignment (file)   : " << std::hex << (*elfIter)->get_file_alignment() << std::endl;
+            std::cout << "alignment (file)   : " << std::hex << "0x" << (*elfIter)->get_file_alignment() << std::endl;
             /*  offsets. */
             std::cout << "Offset(file)    : " << std::hex << (*elfIter)->get_offset() << std::endl;
 
@@ -350,6 +356,7 @@ void binaryChanger::preSegmentSectionCollection() {
             std::cout << "alignment (mapped ): " << std::hex << (*elfIter)->get_mapped_alignment() << std::endl;
             /*  offsets. */
             std::cout << "Offset(file)       : " << std::hex << (*elfIter)->get_offset() << std::endl;
+            std::cout << "alignment (file)   : " << std::hex << (*elfIter)->get_file_alignment() << std::endl;
 
             std::cout << std::endl;
             
@@ -994,7 +1001,7 @@ void binaryChanger::correctSymbolTableFunctionEntries() {
             /*  Test setting the value. */
             if (1 == oldToNewAddrMap.count(elfSym->get_value())) {
                 /*  printout for debugging purposes. */
-                if (true) {
+                if (false) {
                     /*  Get the string object. */
                     SgAsmGenericString* nameObject = elfSym->get_name();
                     /*  Extract the string. */
@@ -1008,7 +1015,7 @@ void binaryChanger::correctSymbolTableFunctionEntries() {
                 /*  Assign the new address to the symbol entry. */
                 elfSym->set_value(newSymAddr);
                 /*  Debug print for the new value. */
-                if (true) {
+                if (false) {
                     std::cout << "new value: " << newSymAddr << std::endl;
                 }
             }
@@ -1021,8 +1028,219 @@ void binaryChanger::correctSymbolTableFunctionEntries() {
 /*  Function that adjusts the physical offsets in the binary.
     This needs to be done if code has been inserted somewhere
     then following sections need to be adjusted. */
+    //TODO need to consider file alignments when moving!!!
 void binaryChanger::fixSectionOffsets() {
     /*  Make a copy of all the elf sections. */
     std::vector<SgAsmElfSection*> physicalElfSections(elfSections);
+    /*  Sort the sections according to file offset. */
+    std::sort(physicalElfSections.begin(), physicalElfSections.end(), elfSectionFileSortStruct());
+
+    /*  Shift offset. Used to track the overall shift needed
+        to get the offsets correct. It includes size changes
+        and aligments needed by segments when moved. */
+    rose_addr_t sectionShift = 0;
+
+    /*  Iterate over the sections. For each check if their size has changed.
+        If it has then increase its size accordingly. Remember changes in size
+        so preceeding segments are moved correctly. */
+    for(std::vector<SgAsmElfSection*>::iterator physIter = physicalElfSections.begin();
+        physIter != physicalElfSections.end(); ++physIter) {
+        /*  Get the size of the section in the binary. */
+        rose_addr_t sectionFileOffset = (*physIter)->get_offset();
+
+        /*  Check if a section needs to be moved due to previous
+            sections changes to previous sections. */
+        if (0 < sectionShift) {
+            /*  Then move it accordingly and include file alignment needs
+                of the section. */
+            /*  Get the file alignment of the section. */
+            rose_addr_t fileAlign = (*physIter)->get_file_alignment();
+
+            /*  Calculate the new file offset. */
+            rose_addr_t newFileOffset = sectionFileOffset + sectionShift;
+            /*  Calculate potential file missalignment */
+            rose_addr_t fileMissAlign = newFileOffset % fileAlign;
+
+            /*  Check if the new offset is aligned to the segment. */
+            if (0 != fileMissAlign) {
+                /*  The alignment is not right. Fix the offset to be
+                    correct to the sections file alignment. */
+                newFileOffset += fileAlign - fileMissAlign;
+                /*  Include this fix in the sectionShift */
+                //sectionShift += (fileAlign - fileMissAlign);
+                /*  Set the new offset. */
+                (*physIter)->set_offset(newFileOffset);
+            } else {
+                /*  The aligment is acceptable so the offset can be changed right away. */
+                (*physIter)->set_offset(newFileOffset);
+            }
+
+            /*  debug printout */
+            if (true) {
+                std::cout << std::endl << "Section: " <<  (*physIter)->get_name()->get_string()
+                    << " has been moved to offset: " << std::hex << (*physIter)->get_offset() 
+                    << " from offset: " << std::hex << sectionFileOffset <<  std::endl;
+            }
+        }
+
+
+        /*  When the section has been moved. Check if the size of the
+            section has changed. If so change it. */
+        /*  Difference in new and old size of segment. */
+        rose_addr_t sectionSizeDiffBytes = 0;
+        /*  Get the size difference. */
+        if (1 == segmentSizeDifference.left.count(*physIter)) {
+            /*  The size has changed. Get the difference. */
+            sectionSizeDiffBytes = segmentSizeDifference.left.find(*physIter)->second;
+        }
+        /*  if the section has changed size then adjustments are made. */
+        if (0 != sectionSizeDiffBytes) {
+            /*  Get the current size of the segment */
+            rose_addr_t currentSize = (*physIter)->get_size();
+            /*  Add the difference to the size. */
+            rose_addr_t newSize = currentSize + sectionSizeDiffBytes;
+            /*  Set the new size. */
+            (*physIter)->set_size(newSize);
+            /*  Debug printout. */
+            if (true) {
+                /*  print name of section. */
+                std::cout << std::endl << "Section: " <<  (*physIter)->get_name()->get_string()
+                    << " changed size from " << std::hex << currentSize
+                    << " to " << std::hex << newSize << std::endl;
+            }
+        }
+
+        /*  When a section has potentially been moved and has its size changed
+            check if the following section has to be moved. There might be free
+            space that has not been used which removes the need for moving following
+            sections. */
+        /*  Get the end offset of the current section. */
+        rose_addr_t sectionEndOffset = (*physIter)->get_end_offset();
+        /*  Get the following sections offset. It is set as default to
+            the current sections end offset.*/
+        rose_addr_t nextSectionOffset = sectionEndOffset;
+        /*  Get the next sections offset. */
+        if ((physIter+1) != physicalElfSections.end()) {
+            /*  There is a section after this one. */
+            nextSectionOffset = (*(physIter+1))->get_offset();
+        }
+        /*  Check if the current section is either LOAD#1 or LOAD#2.
+            If so then i need to handle shifting the next section
+            just enough so it is after the LOAD section. */
+        if (sectionVector.end() != std::find(sectionVector.begin(), 
+                sectionVector.end(), (*physIter))) {
+            /*  The following section should only be moved enough to
+                have the original address spacing to the LOAD. */
+            /*  Calculate if there is any space between LOAD and the section after it. */
+            rose_addr_t sectionSpacing = nextSectionOffset - sectionFileOffset;
+            /*  Get the new offset of LOAD. */
+            rose_addr_t offsetLoad = (*physIter)->get_offset();
+            /*  Check if the next section is overlapped with the LOAD section. */
+            if (nextSectionOffset < offsetLoad) {
+                /*  Set the sectionShift to move the section to LOADs
+                    address plus the spacing. */
+                sectionShift = (offsetLoad - nextSectionOffset) + sectionSpacing;
+            } else if ((offsetLoad - nextSectionOffset) < sectionSpacing) {
+                /*  The section after load is still after it address wise
+                    but the they had between them is lost. Set sectionshift
+                    to restore it. */
+                sectionShift = sectionSpacing - (offsetLoad - nextSectionOffset);
+            } else {
+                /*  The spacing between the LOAD and next section is acceptable
+                    so no shifting is needed. */
+                sectionShift = 0;
+            }
+        } else {
+            /*  The section is a regular one. */
+            /*  If the offset of the next section is less than the end offset of
+                the current section then it means this one overlaps the next one. */
+            //TODO need to cover case when sections has no size.
+            if (nextSectionOffset < sectionEndOffset) {
+                /*  current section overlaps with the following. Determine how
+                    much the following section has to be moved at least
+                    and set sectionShift to it. */
+                sectionShift = sectionEndOffset - nextSectionOffset;
+                /*  debug print */
+                if (true) {
+                    /*  print how much the section overlaps. */
+                    std::cout << std::endl << "Section: " <<  (*physIter)->get_name()->get_string()
+                        << " overlaps the next section with " 
+                        << std::hex << sectionShift << std::endl;
+                }
+            } else {
+                /*  The section does not overlap with the following so
+                    set sectionShift to 0. */
+                sectionShift = 0;
+                if (true) {
+                    /*  print how much the section overlaps. */
+                    std::cout << std::endl << "Section: " <<  (*physIter)->get_name()->get_string()
+                        << " does not overlap the next section" << std::endl;
+                }
+            }
+        }
+    }
+
+    /*  Print them for debugging. */
+    if (true) {
+        std::cout << "-------- sections sorted by file offset. --------" << std::endl;
+        /*  print out information of each section. */
+        for(std::vector<SgAsmElfSection*>::iterator elfIter = physicalElfSections.begin();
+            elfIter != physicalElfSections.end(); ++elfIter) {
+            /*  Debug printout of all sgasmsections. */
+            switch((*elfIter)->get_purpose()) {
+                case SgAsmElfSection::SP_UNSPECIFIED:
+                    std::cout << "Unknown elf" << std::endl;
+                    break;
+                case SgAsmElfSection::SP_PROGRAM:
+                    std::cout << "Program-supplied, code, data etc." << std::endl;
+                    break;
+                case SgAsmElfSection::SP_HEADER:
+                    std::cout << "header for executable format" << std::endl;
+                    break;
+                case SgAsmElfSection::SP_SYMTAB:
+                    std::cout << "symbol table" << std::endl;
+                    break;
+                case SgAsmElfSection::SP_OTHER:
+                    std::cout << "file specified purpose than other categories." << std::endl;
+                    break;
+                default:
+                    std::cout << "unknown purpose enum." << std::endl;
+                    break;
+            }   
+            /*  Extract the name of the segment. */
+            SgAsmGenericString* elfString = (*elfIter)->get_name();
+            /*  Get the string name. */
+            std::cout << "Name: " << elfString->get_string() << std::endl;
+            /*  Print flags of the section. */
+            if ((*elfIter)->get_mapped_rperm()) {
+                std::cout << "Readable." << std::endl;
+            }   
+            if ((*elfIter)->get_mapped_wperm()) {
+                std::cout << "Writable." << std::endl;
+            }   
+            if ((*elfIter)->get_mapped_xperm()) {
+                std::cout << "Executable." << std::endl;
+            }
+            /* Check if it should be mapped. */
+            std::cout << "Is mapped: " << std::boolalpha << (*elfIter)->is_mapped() << std::endl;
+            /* print base address of section. */
+            std::cout << "Address (mapped_preferred_rva): " << std::hex << (*elfIter)->get_mapped_preferred_rva() << std::endl;
+            /* size of section. */
+            std::cout << "Size (mapped): " << std::hex << (*elfIter)->get_mapped_size() << std::endl;
+            std::cout << "Size (file)  : " << std::hex << (*elfIter)->get_size() << std::endl;
+            /*  offsets. */
+            std::cout << "Offset(file) : " << std::hex << (*elfIter)->get_offset() << std::endl;
+            std::cout << "End Offset(file) : " << std::hex << (*elfIter)->get_end_offset() << std::endl;
+            /*  alignment */
+            std::cout << "alignment (file)   : " << std::hex << "0x" << (*elfIter)->get_file_alignment() << std::endl;
+
+            std::cout << std::endl;
+        }
+        std::cout << "---- end -----" << std::endl;
+    }
 }
+
+
+
+
 
