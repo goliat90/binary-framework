@@ -1083,7 +1083,6 @@ void binaryChanger::fixSectionOffsets() {
             }
         }
 
-
         /*  When the section has been moved. Check if the size of the
             section has changed. If so change it. */
         /*  Difference in new and old size of segment. */
@@ -1119,10 +1118,13 @@ void binaryChanger::fixSectionOffsets() {
         /*  Get the following sections offset. It is set as default to
             the current sections end offset.*/
         rose_addr_t nextSectionOffset = sectionEndOffset;
-        /*  Get the next sections offset. */
+        rose_addr_t nextSectionSize = 0;
+        /*  Get the next sections offset and size */
         if ((physIter+1) != physicalElfSections.end()) {
             /*  There is a section after this one. */
             nextSectionOffset = (*(physIter+1))->get_offset();
+            /*  Get the file size of the next section. */
+            nextSectionSize = (*(physIter+1))->get_size();
         }
         /*  Check if the current section is either LOAD#1 or LOAD#2.
             If so then i need to handle shifting the next section
@@ -1150,12 +1152,20 @@ void binaryChanger::fixSectionOffsets() {
                     so no shifting is needed. */
                 sectionShift = 0;
             }
+            /*  debug print */
+            if (true) {
+                /*  print how much the section overlaps. */
+                std::cout << std::endl << "Special Section: " <<  (*physIter)->get_name()->get_string()
+                    << " enforces the next section to move by " 
+                    << std::hex << sectionShift << " to maintain spacing." << std::endl;
+            }
+
         } else {
             /*  The section is a regular one. */
             /*  If the offset of the next section is less than the end offset of
-                the current section then it means this one overlaps the next one. */
-            //TODO need to cover case when sections has no size.
-            if (nextSectionOffset < sectionEndOffset) {
+                the current section then it means this one overlaps the next one.
+                There is an exception to this when the following section has no file size. */
+            if ((nextSectionOffset < sectionEndOffset) && (0 != nextSectionSize)) {
                 /*  current section overlaps with the following. Determine how
                     much the following section has to be moved at least
                     and set sectionShift to it. */
@@ -1166,6 +1176,27 @@ void binaryChanger::fixSectionOffsets() {
                     std::cout << std::endl << "Section: " <<  (*physIter)->get_name()->get_string()
                         << " overlaps the next section with " 
                         << std::hex << sectionShift << std::endl;
+                }
+            } else if (sectionFileOffset == nextSectionOffset) {
+                /*  the next section has no file size. Check if it was placed at the
+                    same offset as this section before it was changed. If so then replicate. */
+                //TODO if the section has changed in size there is no adjustment
+                //TODO of the next section with a size, in the case it will overlap.
+                /*  Check if the section has been moved or not. */
+                if (sectionFileOffset != (*physIter)->get_offset()) {
+                    /*  The offset has been changed. Fix so the next
+                        section is moved accordingly. */
+                    sectionShift = (*physIter)->get_offset() - sectionFileOffset;
+                } else {
+                    /*  The current section has not been moved so do not move
+                        the following zero size section. */
+                    sectionShift = 0;
+                }
+
+                if (true) {
+                    /*  print how much the section overlaps. */
+                    std::cout << std::endl << "Section: " <<  (*physIter)->get_name()->get_string()
+                        << " has the same offset as the next section with no size." << std::endl;
                 }
             } else {
                 /*  The section does not overlap with the following so
