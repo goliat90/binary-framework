@@ -30,6 +30,8 @@ struct elfSectionSortStruct {
 };
 
 /*  Sort segments according to the file offset. */
+//TODO improve this sorting so sections with the same offset get
+//TODO compared with their size, a zero size section is placed ahead of one with size.
 struct elfSectionFileSortStruct {
     bool operator()(SgAsmElfSection* i, SgAsmElfSection* j) const {
         return (i->get_offset() < j->get_offset());
