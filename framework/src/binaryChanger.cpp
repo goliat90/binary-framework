@@ -100,6 +100,9 @@ void binaryChanger::postTransformationWork() {
     //TODO find the last section in it and check its offset and size.
     //TODO the physical offset plus size of the last section determines the size of the segment.
     //TODO i think this needs to be done for the LOAD#2
+    /*  When segments have been moved and their sizes been changed the size
+        of the section/program header(LOAD#1 or LOAD#2) needs to be made correct. */
+    fixHeaderSize();
 }
 
 
@@ -1273,5 +1276,12 @@ void binaryChanger::fixSectionOffsets() {
 
 
 
+/*  Checks the headers for LOAD#1 and LOAD#2 to make sure they
+    have the correct sizes to include all their segments/sections. */
+void binaryChanger::fixHeaderSize() {
+    /*  For each header find the highest segment/section. */
 
+    //TODO then calculate the new size of the headers.
+    //TODO the size is the end offset in both virtual and physical side.
+}
 
