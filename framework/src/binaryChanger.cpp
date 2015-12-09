@@ -1280,6 +1280,54 @@ void binaryChanger::fixSectionOffsets() {
     have the correct sizes to include all their segments/sections. */
 void binaryChanger::fixHeaderSize() {
     /*  For each header find the highest segment/section. */
+    
+    SgAsmElfSection* rxHeader = sectionVector.front();
+    SgAsmElfSection* rwHeader = sectionVector.back();
+
+    SgAsmElfSection* highestVirtAddrSegment = segmentVector.front();
+    SgAsmElfSection* highestFileOffsetSegment = segmentVector.front();
+
+    /*  Go through the segments that are executable. Find the one with
+        the highest virtual address and the segment with the highest
+        physical offset. */
+    for(std::vector<SgAsmElfSection*>::iterator segIter = segmentVector.begin();
+        segIter != segmentVector.end(); ++segIter) {
+        /*  Check the virtual address and the file offset for each segment
+            and save the ones with the highest value. */
+        if ((*segIter)->get_mapped_preferred_rva() >
+                highestVirtAddrSegment->get_mapped_preferred_rva()) {
+            /*  The segment found has a higher virtual address. */
+            highestVirtAddrSegment = (*segIter);
+        }
+        /*  Check the file offset. */
+        if ((*segIter)->get_offset() > highestFileOffsetSegment->get_offset()) {
+            highestFileOffsetSegment = (*segIter);
+        }
+    }
+
+    /*  Debug printout. */
+    if (debugging) {
+        /*  print segment with highest virtual address and the segment
+            with the higest file offest. In the LOAD#1 section. */
+        std::cout << "Segment with highest virtual address is: " 
+            << highestVirtAddrSegment->get_name()->get_string() << std::endl;
+
+        std::cout << "Segment with highest file offset is: " 
+            << highestFileOffsetSegment->get_name()->get_string() << std::endl;
+    }
+
+    //TODO For the first header(LOAD#1) just take the its starting address.
+    //TODO and take the second header (LOAD#2) address and use as an upper bound.
+
+    //TODO for the second header just find the segment with the highest address.
+    
+
+    //TODO the size of the headers is the basically the ending address of the
+    //TODO highest addressed segment.
+
+
+    //TODO i need to fix the size both virtually and physically.
+
 
     //TODO then calculate the new size of the headers.
     //TODO the size is the end offset in both virtual and physical side.
