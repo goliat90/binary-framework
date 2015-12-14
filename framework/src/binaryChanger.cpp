@@ -1316,6 +1316,22 @@ void binaryChanger::fixHeaderSize() {
             << highestFileOffsetSegment->get_name()->get_string() << std::endl;
     }
 
+    /*  With the each of the highests segments both virtual and physical
+        adjust the size and offset. */
+
+    /*  With the section with highest virtual offset fix the mapped size
+        of the LOAD#1 segment/section. Its size is the highests sections
+        file offset. */
+    rose_addr_t virtSize = highestVirtAddrSegment->get_mapped_preferred_rva() + highestVirtAddrSegment->get_mapped_size();
+    rxHeader->set_mapped_size(virtSize);
+
+    /*  With the section that has the highest fileOffset the physical file
+        size of the LOAD#1 segment is fixed. */
+    rwHeader->set_size(highestFileOffsetSegment->get_end_offset());
+
+    //std::cout << "Size (mapped): " << std::hex << (*elfIter)->get_mapped_size() << std::endl;
+
+
     //TODO For the first header(LOAD#1) just take the its starting address.
     //TODO and take the second header (LOAD#2) address and use as an upper bound.
 
@@ -1331,5 +1347,43 @@ void binaryChanger::fixHeaderSize() {
 
     //TODO then calculate the new size of the headers.
     //TODO the size is the end offset in both virtual and physical side.
+
+    /*  debug printing. */
+    if (debugging) {
+        /* Print out content in the section vector. */
+        std::cout << "---- Sections ----" << std::endl;
+        for(asmElfVector::iterator elfIter = sectionVector.begin();
+            elfIter != sectionVector.end(); ++elfIter) {
+            /*  Extract the name of the segment. */
+            SgAsmGenericString* elfString = (*elfIter)->get_name();
+            /*  Get the string name. */
+            std::cout << "Name: " << elfString->get_string() << std::endl;
+            /*  Print flags of the section. */
+            if ((*elfIter)->get_mapped_rperm()) {
+                std::cout << "Readable." << std::endl;
+            }   
+            if ((*elfIter)->get_mapped_wperm()) {
+                std::cout << "Writable." << std::endl;
+            }   
+            if ((*elfIter)->get_mapped_xperm()) {
+                std::cout << "Executable." << std::endl;
+            }
+            /* Check if it should be mapped. */
+            std::cout << "Is mapped: " << std::boolalpha << (*elfIter)->is_mapped() << std::endl;
+            /* print base address of section. */
+            std::cout << "Address (mapped_preferred_rva): " << std::hex << (*elfIter)->get_mapped_preferred_rva() << std::endl;
+            /* size of section. */
+            std::cout << "Size (mapped)      : " << std::hex << (*elfIter)->get_mapped_size() << std::endl;
+            std::cout << "Size (file)        : " << std::hex << (*elfIter)->get_size() << std::endl;
+            /*  Alignment of section in file. */
+            std::cout << "alignment (mapped ): " << std::hex << (*elfIter)->get_mapped_alignment() << std::endl;
+            std::cout << "alignment (file)   : " << std::hex << "0x" << (*elfIter)->get_file_alignment() << std::endl;
+            /*  offsets. */
+            std::cout << "Offset(file)    : " << std::hex << (*elfIter)->get_offset() << std::endl;
+
+            std::cout << std::endl;
+        }
+        std::cout << "---- End Sections ----" << std::endl << std::endl;
+    }
 }
 
