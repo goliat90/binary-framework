@@ -1322,14 +1322,20 @@ void binaryChanger::fixHeaderSize() {
     /*  With the section with highest virtual offset fix the mapped size
         of the LOAD#1 segment/section. Its size is the highests sections
         file offset. */
+    //TODO i need to figure out how to get calculate the virtual size.
+    /*  Get the higest virt address size and start address to get the end offset. */
     rose_addr_t virtSize = highestVirtAddrSegment->get_mapped_preferred_rva() + highestVirtAddrSegment->get_mapped_size();
+    /*  Then subtract the mapped address of the header to get the size. */
+
+    /*  Set the size. */
     rxHeader->set_mapped_size(virtSize);
 
     /*  With the section that has the highest fileOffset the physical file
         size of the LOAD#1 segment is fixed. */
-    rwHeader->set_size(highestFileOffsetSegment->get_end_offset());
+    rxHeader->set_size(highestFileOffsetSegment->get_end_offset());
 
-    //std::cout << "Size (mapped): " << std::hex << (*elfIter)->get_mapped_size() << std::endl;
+
+    //TODO for the LOAD#2 segment i only need to fix the 
 
 
     //TODO For the first header(LOAD#1) just take the its starting address.
@@ -1379,7 +1385,10 @@ void binaryChanger::fixHeaderSize() {
             std::cout << "alignment (mapped ): " << std::hex << (*elfIter)->get_mapped_alignment() << std::endl;
             std::cout << "alignment (file)   : " << std::hex << "0x" << (*elfIter)->get_file_alignment() << std::endl;
             /*  offsets. */
-            std::cout << "Offset(file)    : " << std::hex << (*elfIter)->get_offset() << std::endl;
+            std::cout << "Offset(file) : " << std::hex << (*elfIter)->get_offset() << std::endl;
+            std::cout << "End Offset(file) : " << std::hex << (*elfIter)->get_end_offset() << std::endl;
+            /*  alignment */
+            std::cout << "alignment (file)   : " << std::hex << "0x" << (*elfIter)->get_file_alignment() << std::endl;
 
             std::cout << std::endl;
         }
