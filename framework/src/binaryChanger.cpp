@@ -1309,23 +1309,21 @@ void binaryChanger::fixHeaderSize() {
     if (debugging) {
         /*  print segment with highest virtual address and the segment
             with the higest file offest. In the LOAD#1 section. */
-        std::cout << "Segment with highest virtual address is: " 
+        std::cout << "Segment with highest virtual address for LOAD#1 is: " 
             << highestVirtAddrSegment->get_name()->get_string() << std::endl;
 
-        std::cout << "Segment with highest file offset is: " 
+        std::cout << "Segment with highest file offset for LOAD#1 is: " 
             << highestFileOffsetSegment->get_name()->get_string() << std::endl;
     }
 
-    /*  With the each of the highests segments both virtual and physical
-        adjust the size and offset. */
-
     /*  With the section with highest virtual offset fix the mapped size
         of the LOAD#1 segment/section. Its size is the highests sections
-        file offset. */
-    //TODO i need to figure out how to get calculate the virtual size.
+        mapped address plus size minus LOAD#1 mapped base address.. */
     /*  Get the higest virt address size and start address to get the end offset. */
-    rose_addr_t virtSize = highestVirtAddrSegment->get_mapped_preferred_rva() + highestVirtAddrSegment->get_mapped_size();
+    rose_addr_t virtSize = (highestVirtAddrSegment->get_mapped_preferred_rva() 
+        + highestVirtAddrSegment->get_mapped_size());
     /*  Then subtract the mapped address of the header to get the size. */
+    virtSize -= rxHeader->get_mapped_preferred_rva();
 
     /*  Set the size. */
     rxHeader->set_mapped_size(virtSize);
@@ -1334,25 +1332,37 @@ void binaryChanger::fixHeaderSize() {
         size of the LOAD#1 segment is fixed. */
     rxHeader->set_size(highestFileOffsetSegment->get_end_offset());
 
+    //TODO in the current state of the framework i do not need to
+    //TODO do anything with LOAD#2 since i do not move it virually.
+    //TODO Its file offset can potentially be moved.
 
-    //TODO for the LOAD#2 segment i only need to fix the 
+
+    /*  Go through the segments that are read/writable. Find the one with
+        the highest virtual address and the segment with the highest
+        physical offset. */
+    for(std::vector<SgAsmElfSection*>::iterator segIter = segmentVector.begin();
+        segIter != segmentVector.end(); ++segIter) {
+        /*  Check the virtual address and the file offset for each segment
+            and save the ones with the highest value. */
+        if ((*segIter)->get_mapped_preferred_rva() >
+                highestVirtAddrSegment->get_mapped_preferred_rva()) {
+            /*  The segment found has a higher virtual address. */
+            highestVirtAddrSegment = (*segIter);
+        }
+        /*  Check the file offset. */
+        if ((*segIter)->get_offset() > highestFileOffsetSegment->get_offset()) {
+            highestFileOffsetSegment = (*segIter);
+        }
+    }
 
 
-    //TODO For the first header(LOAD#1) just take the its starting address.
-    //TODO and take the second header (LOAD#2) address and use as an upper bound.
 
-    //TODO for the second header just find the segment with the highest address.
-    
+    //TODO for the LOAD#2 segment i only need to fix the file offset...
 
     //TODO the size of the headers is the basically the ending address of the
     //TODO highest addressed segment.
 
 
-    //TODO i need to fix the size both virtually and physically.
-
-
-    //TODO then calculate the new size of the headers.
-    //TODO the size is the end offset in both virtual and physical side.
 
     /*  debug printing. */
     if (debugging) {
