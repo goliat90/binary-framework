@@ -156,18 +156,36 @@ void BinaryRewriter::transformBinary() {
     /*  Analyze the changes to the binary and make adjustment to make it functional. */
     sizeHandler->postTransformationWork();
 
+    //Printout to see where the transformed function was placed.
+    for(std::list<std::string>::iterator functionNameIter = functionVector->begin();
+        functionNameIter != functionVector->end(); ++functionNameIter) {
+        /*  Take the CFG handler and select the function to transform
+            and build its function cfg. */
+        cfgContainer->createFunctionCFG(*functionNameIter);
+        /* Traverse the function cfg and apply the user transformations.
+            Get the function CFG and traverse its blocks. */
+        CFG* functionGraph = cfgContainer->getFunctionCFG();
+        if(true) {
+            for(std::pair<CFGVIter, CFGVIter> vPair = vertices(*functionGraph);
+                vPair.first != vPair.second; ++vPair.first) {
+                /* get the basic block from the property map */
+                SgAsmBlock* currentBB = get(boost::vertex_name, *functionGraph, *vPair.first);
+                /* Print the block, assembly and debug if selected.. */
+                printBasicBlockInstructions(currentBB);
+                std::cout << std::endl;
+            }
+        }
+    }
+
+
     /*  Pass the program to Rose backend that produces the binary. */
+    int buildStatus = backend(binaryProjectPtr);
 
-    /* Correct addresses */
-
-    /* Debug print */
-
-    /* Correct branch instructions */
-
-    /* Debug print */
-
-    /* Adjust segment sizes */
-
+    if (0 == buildStatus) {
+        std::cout << "Binary built." << std::endl;
+    } else {
+        std::cout << "Failed to build binary." << std::endl;
+    }
 }
 
 
