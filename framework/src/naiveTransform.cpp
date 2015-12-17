@@ -60,7 +60,6 @@ void naiveHandler::applyTransformation() {
     }
     /*  Modify the stack. */
     modifyStack();
-
 }
 
 /* Goes applies the naive transformation in a basic block. */
@@ -448,112 +447,115 @@ void naiveHandler::modifyStack() {
     /*  Get the activation set and check if it contains activation instructions.
         If there are then modify them, otherwise create instructions. */
     std::set<SgAsmMipsInstruction*>* activationSet = cfgContainer->getActivationInstructions();
-    /*  Check if the set has activation instructions. */
-    if (0 < activationSet->size()) {
-        /*  There are activation instructions. modify them. */
-        for(std::set<SgAsmMipsInstruction*>::iterator actIter = activationSet->begin();
-            actIter != activationSet->end(); ++actIter) {
-            /*  Retrieve the instructions operand list. */
-            SgAsmExpressionPtrList& allocOperands = (*actIter)->get_operandList()->get_operands();
-            /*  Go through the operands, find the constant, modify it. */
-            for(SgAsmExpressionPtrList::iterator iter = allocOperands.begin();
-                iter != allocOperands.end(); ++iter) {
-                /*  Find the constant in the instruction */
-                if (V_SgAsmIntegerValueExpression == (*iter)->variantT()) {
-                    /*  Get the value of it and adjust it for the new stack */
-                    SgAsmIntegerValueExpression* valConst = isSgAsmIntegerValueExpression(*iter);
-                    /* Get the current constant value */
-                    uint64_t  constant = valConst->get_absoluteValue();
-                    /*  adjust the value to reflect the new stack size, increase the
-                        subtraction stack value.    */
-                    constant -= (maximumSymbolicsUsed * 4);
-                    /* set the new value */
-                    valConst->set_absoluteValue(constant);
+    /*  Check if any symbolics have been used. If not then skip transformation. */
+    if (0 != maximumSymbolicsUsed) {
+        /*  Check if the set has activation instructions. */
+        if (0 < activationSet->size()) {
+            /*  There are activation instructions. modify them. */
+            for(std::set<SgAsmMipsInstruction*>::iterator actIter = activationSet->begin();
+                actIter != activationSet->end(); ++actIter) {
+                /*  Retrieve the instructions operand list. */
+                SgAsmExpressionPtrList& allocOperands = (*actIter)->get_operandList()->get_operands();
+                /*  Go through the operands, find the constant, modify it. */
+                for(SgAsmExpressionPtrList::iterator iter = allocOperands.begin();
+                    iter != allocOperands.end(); ++iter) {
+                    /*  Find the constant in the instruction */
+                    if (V_SgAsmIntegerValueExpression == (*iter)->variantT()) {
+                        /*  Get the value of it and adjust it for the new stack */
+                        SgAsmIntegerValueExpression* valConst = isSgAsmIntegerValueExpression(*iter);
+                        /* Get the current constant value */
+                        uint64_t  constant = valConst->get_absoluteValue();
+                        /*  adjust the value to reflect the new stack size, increase the
+                            subtraction stack value.    */
+                        constant -= (maximumSymbolicsUsed * 4);
+                        /* set the new value */
+                        valConst->set_absoluteValue(constant);
+                    }
                 }
             }
-        }
-    } else {
-        /*  There are no activation instructions. Create my own. */
-        /*  Instruction struct. */
-        instructionStruct naiveActivation;
-        /*  Register struct for the SP register. */
-        registerStruct regSP;
-        regSP.regName = sp;
-        /*  Set kind, mnemonic, format. */
-        naiveActivation.kind = mips_addiu;
-        naiveActivation.mnemonic = "addiu";
-        naiveActivation.format = getInstructionFormat(mips_addiu);
-        /*  set the constant, which is the stack space allocated. */
-        naiveActivation.instructionConstant = -(maximumSymbolicsUsed * 4);
-        naiveActivation.significantBits = 32;
-        /*  Set SP as both source and destination register. */
-        naiveActivation.sourceRegisters.push_back(regSP);
-        naiveActivation.destinationRegisters.push_back(regSP);
-        /*  Build instruction. */
-        SgAsmMipsInstruction* mipsAlloc = buildInstruction(&naiveActivation);
-        /*  Get entry block. */
-        SgAsmBlock* eb = cfgContainer->getEntryBlock();
-        /*  Get statement list. */
-        SgAsmStatementPtrList& stmtList = eb->get_statementList();
-        /*  Insert activation instruction in the beginning of the statement list. */
-        stmtList.insert(stmtList.begin(), mipsAlloc);
-    }
-
-    /*  Check the deactivation set and to the same as for the
-        activation instructions. */
-    std::set<SgAsmMipsInstruction*>* deactivationSet = cfgContainer->getDeactivationInstructions();
-    /*  Check the sets size. */
-    if (0 < deactivationSet->size()) {
-        /*  There are deactivation instructions, modify them. */
-        for(std::set<SgAsmMipsInstruction*>::iterator deIter = deactivationSet->begin();
-            deIter != deactivationSet->end(); ++deIter) {
-            /*  Get the instructions operand list. */
-            SgAsmExpressionPtrList& deallocOperands = (*deIter)->get_operandList()->get_operands();
-            /*  Go through the operands, find the constant, modify it. */
-            for(SgAsmExpressionPtrList::iterator iter = deallocOperands.begin();
-                iter != deallocOperands.end(); ++iter) {
-                /*  Find the constant in the instruction */
-                if (V_SgAsmIntegerValueExpression == (*iter)->variantT()) {
-                    /*  Get the value of it and adjust it for the new stack */
-                    SgAsmIntegerValueExpression* valConst = isSgAsmIntegerValueExpression(*iter);
-                    /* Get the current constant value */
-                    uint64_t  constant = valConst->get_absoluteValue();
-                    /*  adjust the value to reflect the new stack size, increase the
-                        added value stack value.    */
-                    constant += (maximumSymbolicsUsed * 4);
-                    /* set the new value */
-                    valConst->set_absoluteValue(constant);
-                }
-            }
-        }
-    } else {
-        /*  There are not deactivation instructions so create and insert into the
-            exit blocks. */
-        std::set<SgAsmBlock*>* exitBlockSet = cfgContainer->getExitBlocks();
-        /*  Iterate over the blocks and add a deactivation instructions. */
-        for(std::set<SgAsmBlock*>::iterator ebIter = exitBlockSet->begin();
-            ebIter != exitBlockSet->end(); ++ebIter) {
+        } else {
+            /*  There are no activation instructions. Create my own. */
             /*  Instruction struct. */
-            instructionStruct naiveDeactivation;
+            instructionStruct naiveActivation;
             /*  Register struct for the SP register. */
             registerStruct regSP;
             regSP.regName = sp;
             /*  Set kind, mnemonic, format. */
-            naiveDeactivation.kind = mips_addiu;
-            naiveDeactivation.mnemonic = "addiu";
-            naiveDeactivation.format = getInstructionFormat(mips_addiu);
+            naiveActivation.kind = mips_addiu;
+            naiveActivation.mnemonic = "addiu";
+            naiveActivation.format = getInstructionFormat(mips_addiu);
             /*  set the constant, which is the stack space allocated. */
-            naiveDeactivation.instructionConstant = (maximumSymbolicsUsed * 4);
-            naiveDeactivation.significantBits = 32;
+            naiveActivation.instructionConstant = -(maximumSymbolicsUsed * 4);
+            naiveActivation.significantBits = 32;
             /*  Set SP as both source and destination register. */
-            naiveDeactivation.sourceRegisters.push_back(regSP);
-            naiveDeactivation.destinationRegisters.push_back(regSP);
+            naiveActivation.sourceRegisters.push_back(regSP);
+            naiveActivation.destinationRegisters.push_back(regSP);
             /*  Build instruction. */
-            SgAsmMipsInstruction* mipsDealloc = buildInstruction(&naiveDeactivation);
+            SgAsmMipsInstruction* mipsAlloc = buildInstruction(&naiveActivation);
+            /*  Get entry block. */
+            SgAsmBlock* eb = cfgContainer->getEntryBlock();
             /*  Get statement list. */
-            SgAsmStatementPtrList& stmtList = (*ebIter)->get_statementList();
-            /*  Insert the deactivation instruction second to last is the list. */
-            stmtList.insert(--stmtList.end(), mipsDealloc);
+            SgAsmStatementPtrList& stmtList = eb->get_statementList();
+            /*  Insert activation instruction in the beginning of the statement list. */
+            stmtList.insert(stmtList.begin(), mipsAlloc);
+        }
+
+        /*  Check the deactivation set and to the same as for the
+            activation instructions. */
+        std::set<SgAsmMipsInstruction*>* deactivationSet = cfgContainer->getDeactivationInstructions();
+        /*  Check the sets size. */
+        if (0 < deactivationSet->size()) {
+            /*  There are deactivation instructions, modify them. */
+            for(std::set<SgAsmMipsInstruction*>::iterator deIter = deactivationSet->begin();
+                deIter != deactivationSet->end(); ++deIter) {
+                /*  Get the instructions operand list. */
+                SgAsmExpressionPtrList& deallocOperands = (*deIter)->get_operandList()->get_operands();
+                /*  Go through the operands, find the constant, modify it. */
+                for(SgAsmExpressionPtrList::iterator iter = deallocOperands.begin();
+                    iter != deallocOperands.end(); ++iter) {
+                    /*  Find the constant in the instruction */
+                    if (V_SgAsmIntegerValueExpression == (*iter)->variantT()) {
+                        /*  Get the value of it and adjust it for the new stack */
+                        SgAsmIntegerValueExpression* valConst = isSgAsmIntegerValueExpression(*iter);
+                        /* Get the current constant value */
+                        uint64_t  constant = valConst->get_absoluteValue();
+                        /*  adjust the value to reflect the new stack size, increase the
+                            added value stack value.    */
+                        constant += (maximumSymbolicsUsed * 4);
+                        /* set the new value */
+                        valConst->set_absoluteValue(constant);
+                    }
+                }
+            }
+        } else {
+            /*  There are not deactivation instructions so create and insert into the
+                exit blocks. */
+            std::set<SgAsmBlock*>* exitBlockSet = cfgContainer->getExitBlocks();
+            /*  Iterate over the blocks and add a deactivation instructions. */
+            for(std::set<SgAsmBlock*>::iterator ebIter = exitBlockSet->begin();
+                ebIter != exitBlockSet->end(); ++ebIter) {
+                /*  Instruction struct. */
+                instructionStruct naiveDeactivation;
+                /*  Register struct for the SP register. */
+                registerStruct regSP;
+                regSP.regName = sp;
+                /*  Set kind, mnemonic, format. */
+                naiveDeactivation.kind = mips_addiu;
+                naiveDeactivation.mnemonic = "addiu";
+                naiveDeactivation.format = getInstructionFormat(mips_addiu);
+                /*  set the constant, which is the stack space allocated. */
+                naiveDeactivation.instructionConstant = (maximumSymbolicsUsed * 4);
+                naiveDeactivation.significantBits = 32;
+                /*  Set SP as both source and destination register. */
+                naiveDeactivation.sourceRegisters.push_back(regSP);
+                naiveDeactivation.destinationRegisters.push_back(regSP);
+                /*  Build instruction. */
+                SgAsmMipsInstruction* mipsDealloc = buildInstruction(&naiveDeactivation);
+                /*  Get statement list. */
+                SgAsmStatementPtrList& stmtList = (*ebIter)->get_statementList();
+                /*  Insert the deactivation instruction second to last is the list. */
+                stmtList.insert(--stmtList.end(), mipsDealloc);
+            }
         }
     }
 }
