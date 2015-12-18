@@ -95,7 +95,8 @@ void BinaryRewriter::transformBinary() {
                     if(cfgContainer->isForbiddenInstruction(inspectedInstruction) == false) {
                         /* The instruction is allowed to be transformed.
                             Call the user decision function. */
-                        transformDecision(inspectedInstruction);
+//                        transformDecision(inspectedInstruction);
+                        saveInstruction();
                     } else {
                         /* Instruction is not allowed to be transformed save it and move on */
                         saveInstruction();
@@ -177,15 +178,22 @@ void BinaryRewriter::transformBinary() {
         }
     }
 
+    std::vector<SgAsmGenericFile*> files = SageInterface::querySubTree<SgAsmGenericFile>(binaryProjectPtr);
+    if (files.empty() != true) {
+        std::cout << "files: " << files.size() << std::endl;
+        SgAsmGenericFile* file = files.back();
+        std::ofstream f("test.out");
+        file->unparse(f);
+    }
 
     /*  Pass the program to Rose backend that produces the binary. */
-    int buildStatus = backend(binaryProjectPtr);
-
-    if (0 == buildStatus) {
-        std::cout << "Binary built." << std::endl;
-    } else {
-        std::cout << "Failed to build binary." << std::endl;
-    }
+//    int buildStatus = backend(binaryProjectPtr);
+//
+//    if (0 == buildStatus) {
+//        std::cout << "Binary built." << std::endl;
+//    } else {
+//        std::cout << "Failed to build binary." << std::endl;
+//    }
 }
 
 

@@ -3,6 +3,8 @@
 /* header file */
 #include "binaryDebug.hpp"
 
+#include <bitset>
+
 /* Forward declaration */
 /* initfunction for register enum to string map.  */
 std::map<mipsRegisterName, std::string> initRegStringMap();
@@ -46,6 +48,14 @@ void printBasicBlockInstructions(SgAsmBlock* block) {
         instructionStruct instruction = decodeInstruction(mipsInst);
         /* call print instruction */
         printInstruction(&instruction);
+        // print the instructions raw bytes
+        SgUnsignedCharList rawBytes = mipsInst->get_raw_bytes();
+        for(SgUnsignedCharList::reverse_iterator rawIter = rawBytes.rbegin();
+            rawIter != rawBytes.rend(); ++rawIter) {
+            std::bitset<8> charBits(*rawIter);
+            std::cout << charBits << " ";
+        }
+        std::cout << std::endl;
     }
     /* print some delimiter as well */
     std::cout << "********** "

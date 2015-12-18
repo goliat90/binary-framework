@@ -51,8 +51,20 @@ static biRegMap registerNameMap = initRegisterNameMap();
 ******************************************************************************/
 /* Builds an SgAsmMipsInstruction that can be inserted into the binary */
 SgAsmMipsInstruction* buildInstruction(instructionStruct* instInfo) {
+
+
     /* Construct a mips instruction, use information from the struct. */
     SgAsmMipsInstruction* mipsInst = new SgAsmMipsInstruction;
+    //Test here to just create a the raw bytes for a nop and add it to the instruction
+    //this is to see if they will be added to the framework.
+//    SgUnsignedCharList bytes;
+//    bytes.push_back(0);
+//    bytes.push_back(0);
+//    bytes.push_back(0);
+//    bytes.push_back(0);
+//    //set it to the instruction.
+//    mipsInst->set_raw_bytes(bytes);
+
     /* Create statementlist pointer reference */
     SgAsmOperandList* asmOpList; 
     /* depending on instruction format use right arguments for build function
